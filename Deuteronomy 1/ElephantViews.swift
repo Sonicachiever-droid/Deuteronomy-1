@@ -1,0 +1,141 @@
+import SwiftUI
+
+// MARK: - Full Screen Elephant Background
+
+struct FullScreenElephantBackground: View {
+    var body: some View {
+        GeometryReader { geo in
+            let bleed: CGFloat = 48
+
+            Image("MARSHALL ELEPHANT")
+                .resizable(resizingMode: .tile)
+                .frame(width: geo.size.width + bleed * 2, height: geo.size.height + bleed * 2)
+                .scaleEffect(x: 1.15, y: 1.15, anchor: .center)
+                .brightness(0.08)
+                .saturation(1.05)
+                .overlay(Color.black.opacity(0.18))
+                .offset(x: -bleed, y: -bleed)
+        }
+    }
+}
+
+// MARK: - Marshall Elephant Overlay (with hole cutout)
+
+struct MarshallElephantOverlay: View {
+    let canvasSize: CGSize
+    let highlightWidth: CGFloat
+    let highlightHeight: CGFloat
+    let highlightCenter: CGPoint
+    let highlightCornerRadius: CGFloat
+
+    var body: some View {
+        let bleed: CGFloat = 36
+
+        Image("MARSHALL ELEPHANT")
+            .resizable(resizingMode: .tile)
+            .frame(width: canvasSize.width + (bleed * 2), height: canvasSize.height + (bleed * 2))
+            .scaleEffect(x: 1.15, y: 1.15, anchor: .center)
+            .brightness(0.12)
+            .saturation(1.05)
+            .overlay(Color.black.opacity(0.2))
+            .offset(x: -bleed, y: -bleed)
+        .frame(width: canvasSize.width, height: canvasSize.height)
+        .clipped()
+        .mask(maskShape)
+        .frame(width: canvasSize.width, height: canvasSize.height)
+    }
+
+    private var maskShape: some View {
+        Rectangle()
+            .frame(width: canvasSize.width, height: canvasSize.height)
+            .overlay {
+                HighlightWindowShape(cornerRadius: highlightCornerRadius)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .position(x: highlightCenter.x, y: highlightCenter.y)
+                    .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+    }
+}
+
+// MARK: - Elephant Window View (elephant + gold border combined)
+
+struct ElephantWindowView: View {
+    let canvasSize: CGSize
+    let highlightWidth: CGFloat
+    let highlightHeight: CGFloat
+    let highlightCenter: CGPoint
+    let highlightCornerRadius: CGFloat
+
+    var body: some View {
+        ZStack {
+            // Elephant with the hole cut out
+            MarshallElephantOverlay(
+                canvasSize: canvasSize,
+                highlightWidth: highlightWidth,
+                highlightHeight: highlightHeight,
+                highlightCenter: highlightCenter,
+                highlightCornerRadius: highlightCornerRadius
+            )
+            
+            // Gold border drawn in the exact same position as the hole
+            HighlightWindowGoldBorder(
+                width: highlightWidth,
+                height: highlightHeight,
+                cornerRadius: highlightCornerRadius
+            )
+            .position(x: highlightCenter.x, y: highlightCenter.y)
+        }
+    }
+}
+
+// MARK: - Highlight Window Gold Border
+
+struct HighlightWindowGoldBorder: View {
+    let width: CGFloat
+    let height: CGFloat
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        HighlightWindowShape(cornerRadius: cornerRadius)
+            .strokeBorder(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.95, green: 0.82, blue: 0.47),
+                        Color(red: 0.78, green: 0.6, blue: 0.22),
+                        Color(red: 0.97, green: 0.85, blue: 0.5)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 4
+            )
+            .frame(width: width, height: height)
+    }
+}
+
+// MARK: - Dark Matte Overlay
+
+struct DarkMatteOverlay: View {
+    let canvasSize: CGSize
+    let highlightWidth: CGFloat
+    let highlightHeight: CGFloat
+    let highlightCenter: CGPoint
+    let highlightCornerRadius: CGFloat
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82)
+                .frame(width: canvasSize.width, height: canvasSize.height)
+
+            RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                .fill(Color.black)
+                .frame(width: highlightWidth, height: highlightHeight)
+                .position(x: highlightCenter.x, y: highlightCenter.y)
+                .blendMode(.destinationOut)
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height)
+        .compositingGroup()
+        .allowsHitTesting(false)
+    }
+}
