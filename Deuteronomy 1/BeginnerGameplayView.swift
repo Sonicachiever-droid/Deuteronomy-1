@@ -842,6 +842,7 @@ struct BeginnerGameplayView: View {
     @State private var correctAnswerSide: AnswerSide = .left
     @State private var isResolvingAnswer: Bool = false
     @State private var activePickedStringNumbers: [Int] = [1]
+    @State private var autoPlayLastStringByNote: [String: Int] = [:]
     @State private var activeAnswerFeedback: ThumbGlowState? = nil
     @State private var currentQuestionIsAccidental: Bool = false
     @State private var introWindowBlack: Bool = true
@@ -2790,6 +2791,7 @@ struct BeginnerGameplayView: View {
     }
 
     private func advanceBeginnerScaleStage(afterCompletionFromString selectedString: Int, playTransitionNote: Bool = true) {
+        autoPlayLastStringByNote = [:]
         let completedStageWasCycleEnd = beginnerCurrentScaleStage.endsCycle
         beginnerRuntime.rewardNoteTextByString = nil
         beginnerRuntime.rewardScheduledStrings = []
@@ -2797,6 +2799,22 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.rewardScheduledNoteTextByString = [:]
         beginnerRuntime.rewardSustainMultiplier = 3.0
         beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
+        if completedStageWasCycleEnd {
+            beginnerRuntime.scaleRepetitionsRemaining -= 1
+            if beginnerRuntime.scaleRepetitionsRemaining > 0 {
+                beginnerRuntime.scaleStageIndex = 0
+                beginnerRuntime.scaleSequenceIndex = 0
+                beginnerRuntime.pentatonicRevealCount = 0
+                beginnerRuntime.roundOneIntroActive = true
+                beginnerRuntime.roundOneSequenceStartDate = Date()
+                roundRevealElapsedBeats = 0
+                if lessonStyle == .chord {
+                    beginnerRuntime.showRoundZeroIntroSequence = true
+                    beginnerRuntime.introStartBeatBucket = 0
+                }
+                return
+            }
+        }
         if completedStageWasCycleEnd {
             let nextFret: Int?
             if isDescendingPhase {
@@ -3049,6 +3067,7 @@ struct BeginnerGameplayView: View {
                 beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
                 return
             }
+            autoPlayLastStringByNote[expectedNote] = selectedString
             let buttonIndex = selectedString <= 3 ? (6 - selectedString) : (selectedString - 4)
             handleBeginnerConsoleButtonPress(selectedNote: expectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
             beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
@@ -3072,6 +3091,12 @@ struct BeginnerGameplayView: View {
             && expectedNote == stageRoot
             && isFinalNoteInStage {
             return highToLow
+        }
+
+        // Force alternation between string 1 and 6 for notes that appear on both
+        if let lastString = autoPlayLastStringByNote[expectedNote] {
+            if lastString == 6 { return highToLow }
+            if lastString == 1 { return lowToHigh }
         }
 
         return lowToHigh
@@ -3556,19 +3581,14 @@ struct BeginnerGameplayView: View {
                 beginnerPressedButtonCorrect = false
             }
             if safeSequenceIndex == currentScaleNotes.count - 1 {
-                if beginnerRuntime.scaleRepetitionsRemaining <= 1 {
-                    if let rewardPolicy = beginnerRewardPolicyForCurrentStage() {
-                        playGuitarNote(forString: selectedString, fret: max(currentRound, 0), velocity: 0.98)
-                        scheduleBeginnerRewardChordThenAdvance(selectedString: selectedString, policy: rewardPolicy)
-                    } else {
-                        playGuitarNote(forString: selectedString, fret: max(currentRound, 0), velocity: 0.98)
-                        scheduleBeginnerAdvanceAfterFinalNoteHold(selectedString: selectedString)
-                    }
-                    return
+                if let rewardPolicy = beginnerRewardPolicyForCurrentStage() {
+                    playGuitarNote(forString: selectedString, fret: max(currentRound, 0), velocity: 0.98)
+                    scheduleBeginnerRewardChordThenAdvance(selectedString: selectedString, policy: rewardPolicy)
+                } else {
+                    playGuitarNote(forString: selectedString, fret: max(currentRound, 0), velocity: 0.98)
+                    scheduleBeginnerAdvanceAfterFinalNoteHold(selectedString: selectedString)
                 }
-
-                beginnerRuntime.scaleRepetitionsRemaining -= 1
-                beginnerRuntime.scaleSequenceIndex = 0
+                return
             } else {
                 beginnerRuntime.scaleSequenceIndex += 1
             }

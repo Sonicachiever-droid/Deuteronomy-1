@@ -3,8 +3,7 @@ import Combine
 
 // MARK: - Unified Audio Engine
 // Single AVAudioEngine with guitar sampler + MIDI samplers on one mixer.
-// Fixes: two-engine clipping (A1), bass > unity (A2), outputVolume abuse (A3),
-//        chord velocity summing (A4), session conflict (A5).
+// Fixes: two-engine clipping (A1), bass > unity (A2), outputVolume abuse (A3), session conflict (A5).
 
 final class SharedAudioEngine: ObservableObject {
 
@@ -186,10 +185,7 @@ final class SharedAudioEngine: ObservableObject {
         }
 
         let adjustedVelocity = effectiveVelocity(for: toneConfiguration.preset, requested: velocity)
-        // FIX A4: Scale velocity down by sqrt(noteCount) to prevent summing clips.
-        let noteCount = Float(clampedNotes.count)
-        let chordVelocity = adjustedVelocity / sqrt(max(noteCount, 1.0))
-        let velocityValue = UInt8(max(1, min(Int(chordVelocity * 127.0), 127)))
+        let velocityValue = UInt8(max(1, min(Int(adjustedVelocity * 127.0), 127)))
         let noteValues = clampedNotes.map(UInt8.init)
         for noteValue in noteValues {
             guitarSampler.startNote(noteValue, withVelocity: velocityValue, onChannel: 0)
