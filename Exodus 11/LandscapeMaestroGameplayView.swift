@@ -182,7 +182,7 @@ struct LandscapeMaestroGameplayView: View {
                 .allowsHitTesting(false)
 
                 // Transport bar below neck window
-                let windowHalfHBelow = proxy.size.height * 0.22
+                let windowHalfHBelow = proxy.size.height * 0.26
                 let windowBottomY = screenCenterY + windowHalfHBelow
                 let transportScale: CGFloat = 0.8
                 let transportHeight: CGFloat = 40 * transportScale
@@ -227,6 +227,51 @@ struct LandscapeMaestroGameplayView: View {
                 )
                 .frame(width: highlightWidth * 0.72, height: transportHeight)
                 .position(x: screenCenterX, y: transportCenterY)
+
+                // Thumb buttons — centered in side gaps beside the neck window
+                let thumbDiameter = min(proxy.size.width, proxy.size.height) * 0.336
+                let leftGapCenter = (screenCenterX - highlightWidth / 2) / 2
+                let rightGapCenter = screenCenterX + highlightWidth / 2 + leftGapCenter
+
+                // Mini TV screens — grid row 8 of 40, matching observed layout
+                let miniTVHeight: CGFloat = max(min(thumbDiameter * 0.52, 52), 44)
+                let miniTVWidth: CGFloat = miniTVHeight * 1.6
+                let vRowH = proxy.size.height / 40.0
+                let miniTVCenterY = 8.0 * vRowH
+
+                if !isCodeScreensaverMode {
+                    MiniTVFrame(
+                        text: leftChoiceNote,
+                        width: miniTVWidth,
+                        height: miniTVHeight,
+                        fontScale: 1.0,
+                        isDarkScreen: leftChoiceNote.contains("#") || leftChoiceNote.contains("b")
+                    )
+                    .position(x: leftGapCenter, y: miniTVCenterY)
+                    .allowsHitTesting(false)
+
+                    MiniTVFrame(
+                        text: rightChoiceNote,
+                        width: miniTVWidth,
+                        height: miniTVHeight,
+                        fontScale: 1.0,
+                        isDarkScreen: rightChoiceNote.contains("#") || rightChoiceNote.contains("b")
+                    )
+                    .position(x: rightGapCenter, y: miniTVCenterY)
+                    .allowsHitTesting(false)
+                }
+
+                Button(action: { submitAnswer(.left) }) {
+                    ThumbButtonView(diameter: thumbDiameter, label: "", state: leftThumbState)
+                }
+                .buttonStyle(.plain)
+                .position(x: leftGapCenter, y: screenCenterY)
+
+                Button(action: { submitAnswer(.right) }) {
+                    ThumbButtonView(diameter: thumbDiameter, label: "", state: rightThumbState)
+                }
+                .buttonStyle(.plain)
+                .position(x: rightGapCenter, y: screenCenterY)
 
                 // Gold perimeter
                 GoldPipingBorder(bottomInset: 0)
@@ -399,6 +444,7 @@ struct LandscapeMaestroGameplayView: View {
     }
     
     private func prepareNextQuestion() {
+        isCodeScreensaverMode = false
         currentRound += 1
         let useFlats = false
         let targetString = Int.random(in: 1...6)
@@ -582,15 +628,15 @@ private struct LandscapeDevConsoleFrame: View {
                             ZStack {
                                 if !showStartupSequence {
                                     LandscapeDevCodeRunnerView()
-                                        .padding(.horizontal, 12)
-                                        .padding(.top, 24)
-                                        .padding(.bottom, 10)
+                                        .padding(.horizontal, 6)
+                                        .padding(.top, 6)
+                                        .padding(.bottom, 4)
                                 }
                                 if showStartupSequence {
                                     LandscapeMaestroStartupSequenceView(elapsed: startupElapsed)
-                                        .padding(.horizontal, 10)
-                                        .padding(.top, 24)
-                                        .padding(.bottom, 8)
+                                        .padding(.horizontal, 6)
+                                        .padding(.top, 0)
+                                        .padding(.bottom, 0)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                 }
                             }
