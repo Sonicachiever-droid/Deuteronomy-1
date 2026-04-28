@@ -350,6 +350,14 @@ final class SharedAudioEngine: ObservableObject {
                     bankLSB: 0
                 )
                 print("[SharedAudioEngine] Loaded guitar sounds from \(instrumentURL.lastPathComponent)")
+                // Prime the sampler to avoid first-note glitch
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    guard let self else { return }
+                    self.guitarSampler.startNote(40, withVelocity: 1, onChannel: 0)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        self.guitarSampler.stopNote(40, onChannel: 0)
+                    }
+                }
                 return
             } catch {
                 print("[SharedAudioEngine] Failed loading \(instrumentURL.lastPathComponent) - \(error)")
