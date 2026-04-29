@@ -106,6 +106,11 @@ enum ThumbGlowState: CaseIterable {
     case red
 }
 
+enum Orientation: String, CaseIterable {
+    case portrait
+    case landscape
+}
+
 // MARK: - Core Types
 
 struct HighlightWindowShape: InsettableShape {

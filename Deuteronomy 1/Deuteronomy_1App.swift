@@ -1,8 +1,18 @@
 import SwiftUI
 import AVFoundation
+import UIKit
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    static var orientationLock: UIInterfaceOrientationMask = .portrait
+
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return AppDelegate.orientationLock
+    }
+}
 
 @main
 struct Deuteronomy_1App: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var selectedMenuOption: GameplayMenuOption?
     @State private var layoutMode: LayoutMode? = nil
     @AppStorage("numbers3.progress.walletPoints") private var walletPoints: Int = 0
@@ -15,8 +25,21 @@ struct Deuteronomy_1App: App {
     @AppStorage("numbers3.setup.lessonStyle") private var lessonStyleRawValue: String = "chord"
     @AppStorage("numbers3.setup.selectedMode") private var selectedModeRawValue: String = "beginner"
     @AppStorage("numbers3.setup.progression") private var progressionRawValue: String = "highToLow"
+    @AppStorage("numbers3.setup.orientation") private var orientationRawValue: String = Orientation.portrait.rawValue
+
+    private var orientation: Orientation {
+        Orientation(rawValue: orientationRawValue) ?? .portrait
+    }
 
     init() {
+        let savedMode = UserDefaults.standard.string(forKey: "numbers3.setup.selectedMode") ?? "beginner"
+        let savedOrientation = UserDefaults.standard.string(forKey: "numbers3.setup.orientation") ?? Orientation.portrait.rawValue
+        // Only allow landscape lock if maestro mode
+        if savedMode == "maestro" && savedOrientation == Orientation.landscape.rawValue {
+            AppDelegate.orientationLock = .landscape
+        } else {
+            AppDelegate.orientationLock = .portrait
+        }
         // FIX A5: Single audio session configuration — no per-engine conflicts
         #if os(iOS)
         do {
@@ -70,7 +93,8 @@ struct Deuteronomy_1App: App {
                             playLessonStyle: $lessonStyleRawValue,
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
-                            balanceDollars: $balancePoints
+                            balanceDollars: $balancePoints,
+                            orientation: orientation
                         )
                     }
                 } else {
@@ -117,8 +141,31 @@ struct Deuteronomy_1App: App {
             .onChange(of: layoutMode) { _, newMode in
                 if newMode == .beginner {
                     selectedModeRawValue = "beginner"
+                    // Beginner has no landscape — always lock portrait
+                    AppDelegate.orientationLock = .portrait
+                    #if os(iOS)
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                        windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)) { _ in }
+                    }
+                    #endif
                 } else if newMode == .maestro {
                     selectedModeRawValue = "maestro"
+                    // Apply saved orientation for maestro
+                    if orientationRawValue == Orientation.landscape.rawValue {
+                        AppDelegate.orientationLock = .landscape
+                        #if os(iOS)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                            windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)) { _ in }
+                        }
+                        #endif
+                    } else {
+                        AppDelegate.orientationLock = .portrait
+                        #if os(iOS)
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                            windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)) { _ in }
+                        }
+                        #endif
+                    }
                 }
                 SharedAudioEngine.shared.stopAll()
             }
@@ -134,8 +181,34 @@ struct Deuteronomy_1App: App {
                     enableHighFrets: $enableHighFrets,
                     lessonStyleRawValue: $lessonStyleRawValue,
                     progressionRawValue: $progressionRawValue,
-                    layoutMode: $layoutMode
+                    layoutMode: $layoutMode,
+                    orientationRawValue: $orientationRawValue
                 )
+            }
+            .onChange(of: orientationRawValue) { _, newValue in
+                // Only allow landscape if in maestro mode
+                guard layoutMode == .maestro else {
+                    AppDelegate.orientationLock = .portrait
+                    return
+                }
+                if newValue == Orientation.landscape.rawValue {
+                    AppDelegate.orientationLock = .landscape
+                } else {
+                    AppDelegate.orientationLock = .portrait
+                }
+                #if os(iOS)
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                    let geometryPreferences: UIWindowScene.GeometryPreferences.iOS
+                    if newValue == Orientation.landscape.rawValue {
+                        geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)
+                    } else {
+                        geometryPreferences = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
+                    }
+                    windowScene.requestGeometryUpdate(geometryPreferences) { error in
+                        print("[Deuteronomy 1] Orientation change error: \(error)")
+                    }
+                }
+                #endif
             }
         }
     }
@@ -153,6 +226,7 @@ private struct Deuteronomy1MenuSheet: View {
     @Binding var lessonStyleRawValue: String
     @Binding var progressionRawValue: String
     @Binding var layoutMode: LayoutMode?
+    @Binding var orientationRawValue: String
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var isButtonPressed: Bool = false
@@ -169,6 +243,15 @@ private struct Deuteronomy1MenuSheet: View {
                     Section("Progress") {
                         LabeledContent("Wallet", value: "\(walletPoints)")
                         LabeledContent("Balance", value: "\(balancePoints)")
+                    }
+                    if layoutMode == .maestro {
+                        Section("Orientation") {
+                            Picker("Layout", selection: $orientationRawValue) {
+                                Text("Portrait").tag(Orientation.portrait.rawValue)
+                                Text("Landscape").tag(Orientation.landscape.rawValue)
+                            }
+                            .pickerStyle(.segmented)
+                        }
                     }
                 case .learn:
                     Section("Lesson Setup") {
