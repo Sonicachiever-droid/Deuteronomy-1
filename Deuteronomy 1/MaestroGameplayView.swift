@@ -1358,9 +1358,10 @@ struct MaestroGameplayView: View {
         let gridRowHeight = portraitHeight / 8.0
         let neckWidth = (portraitWidth - padding * 2) * 0.8
         let highlightHeight = 2 * gridRowHeight
-        let visibleClipHeight = portraitWidth * 0.96
+        let visibleClipHeight = proxy.size.width * 0.96
         let unclippedHeight = visibleClipHeight / visibleRatio
-        let neckHeight = max(unclippedHeight, portraitWidth * 1.35)
+        let minimumNeckHeight = proxy.size.width * 1.35
+        let neckHeight = max(unclippedHeight, minimumNeckHeight)
         let nutHeight = max(neckHeight * 0.02, 18)
         let nutVisualHeight = nutHeight * 0.4
         let highlightWidth = neckWidth
