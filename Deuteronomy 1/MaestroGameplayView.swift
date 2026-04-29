@@ -832,6 +832,204 @@ struct MaestroGameplayView: View {
         }
     }
 
+    // MARK: - Portrait Neck Layer (Stage 1 extraction; portrait-authoritative neck/window/screensaver/fretboard-guide)
+    // Identical to the inline block previously in portraitBody. Computes F1–F5 from `size` so the
+    // same view tree can be reused (and, in a later stage, rotated) without duplicating geometry math.
+    @ViewBuilder
+    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false) -> some View {
+        let padding: CGFloat = 24
+        let neckWidth = (size.width - padding * 2) * 0.8
+        let fretRatios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: scaleLengthInches)
+        let visibleFrets = min(totalFrets, 5)
+        let visibleFretIndex = min(visibleFrets, fretRatios.count - 1)
+        let visibleRatio = max(fretRatios[visibleFretIndex], 0.05)
+        let visibleClipHeight = size.height * 0.96
+        let unclippedHeight = visibleClipHeight / visibleRatio
+        let minimumNeckHeight = size.height * 1.35
+        let neckHeight = max(unclippedHeight, minimumNeckHeight)
+        let nutHeight = max(neckHeight * 0.02, 18)
+        let nutVisualHeight = nutHeight * 0.4
+        let debugGridRows = 8
+        let gridRowHeight = size.height / CGFloat(debugGridRows)
+        let highlightHeight = 2 * gridRowHeight
+        let lockedWindowTopRowIndex: CGFloat = 1.0
+        let highlightTopGridLineY = lockedWindowTopRowIndex * gridRowHeight
+
+        let scale = displayScale
+
+        let highlightCenterYSnapped: CGFloat = {
+            let raw = highlightTopGridLineY + highlightHeight / 2
+            return (raw * scale).rounded() / scale
+        }()
+        let viewingWindowShiftY: CGFloat = gridRowHeight * 0.5
+        let viewingWindowCenterY = highlightCenterYSnapped + viewingWindowShiftY
+        let pipingCenterY = viewingWindowCenterY
+        let orangeGreenUnitCenterY = pipingCenterY - (gridRowHeight * 0.5)
+        let highlightAvailableWidth = max(size.width - padding * 2, 0)
+        let highlightExtraWidth = max(highlightAvailableWidth - neckWidth, 0)
+        let highlightWidth = neckWidth + highlightExtraWidth / 2
+        let highlightCornerRadius = min(24, highlightWidth * 0.08)
+        let windowBottomY = highlightCenterYSnapped + highlightHeight / 2
+        let topStatusOuterHeight = max(min(gridRowHeight * 1.35, 120), 74)
+
+        let unsignedN = abs(currentFretStart)
+        let activeMidpointIndex: Int = {
+            if currentFretStart > 0 {
+                return max(currentFretStart - 1, 0)
+            }
+            return unsignedN
+        }()
+        let clampedN = min(activeMidpointIndex, fretRatios.count - 2)
+        let topRatio = fretRatios[clampedN]
+        let bottomRatio = fretRatios[clampedN + 1]
+        let midRatio = (topRatio + bottomRatio) / 2.0
+        let sign: CGFloat = currentFretStart >= 0 ? 1.0 : -1.0
+        let activeMidpoint = midRatio * neckHeight * sign
+
+        let nutTargetY = baselineNutTargetY(highlightTopGridLineY: highlightTopGridLineY, gridRowHeight: gridRowHeight)
+        let neckTopY = resolvedNeckTopY(
+            currentFretStart: currentFretStart,
+            nutTargetY: nutTargetY,
+            highlightCenterY: pipingCenterY,
+            activeMidpoint: activeMidpoint
+        )
+
+        let neckOffsetY: CGFloat = {
+            if currentFretStart == 0 {
+                let raw = neckTopY - size.height / 2 + neckHeight / 2
+                return (raw * scale).rounded() / scale
+            } else {
+                let raw = pipingCenterY - activeMidpoint - size.height / 2 + neckHeight / 2
+                return (raw * scale).rounded() / scale
+            }
+        }()
+
+        let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
+        let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
+        let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
+        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+        let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
+        let stringTopY = nutBottomY + stringStopInset
+
+        HStack {
+            Spacer()
+            ZStack {
+                ZStack(alignment: .top) {
+                    ZStack {
+                        RosewoodSegmentedBackground(
+                            fretRatios: fretRatios,
+                            cornerRadius: 18
+                        )
+                        BindingLayer()
+                        FretWireLayer(fretRatios: fretRatios)
+                        FretMarkerLayer(fretRatios: fretRatios)
+                    }
+                    .frame(width: neckWidth, height: neckHeight)
+
+                    NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
+                        .frame(width: neckWidth * 0.99, height: nutVisualHeight)
+                        .offset(y: -nutVisualHeight * 0.85)
+                }
+                .frame(width: neckWidth, height: neckHeight)
+                .offset(y: finalNeckOffsetY)
+            }
+            .frame(width: neckWidth, height: visibleClipHeight)
+            .clipped()
+            Spacer()
+        }
+        .padding(.horizontal, padding)
+
+        StringLineOverlay(
+            neckWidth: neckWidth,
+            horizontalPadding: padding,
+            stringTopY: stringTopY
+        )
+
+        RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+            .fill(Color.black)
+            .frame(width: highlightWidth, height: highlightHeight)
+            .position(x: size.width / 2, y: pipingCenterY)
+            .allowsHitTesting(false)
+            .opacity(introWindowBlack ? 1 : 0)
+
+        ElephantWindowView(
+            canvasSize: size,
+            highlightWidth: highlightWidth,
+            highlightHeight: highlightHeight,
+            highlightCenter: CGPoint(x: size.width / 2, y: centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY),
+            highlightCornerRadius: highlightCornerRadius
+        )
+        .allowsHitTesting(false)
+
+        if isCodeScreensaverMode {
+            ZStack {
+                Image("REFRETLOGOSET")
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .clipped()
+                    .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+
+                HighlightWindowGoldBorder(
+                    width: highlightWidth,
+                    height: highlightHeight,
+                    cornerRadius: highlightCornerRadius
+                )
+            }
+            .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
+            .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
+            .position(x: size.width / 2, y: centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY)
+            .allowsHitTesting(false)
+        }
+
+        if showFretboardGuide && !isCodeScreensaverMode {
+            let guideBoxHeight = topStatusOuterHeight * 0.5
+            let guideBoxCenterY = windowBottomY - (guideBoxHeight / 2) - 4
+            let stringCenters = GuitarStringLayout.stringCenters(containerWidth: size.width, neckWidth: neckWidth)
+            let centerSpacings = (1..<stringCenters.count).map { stringCenters[$0] - stringCenters[$0 - 1] }
+            let minCenterSpacing = centerSpacings.min() ?? 60
+            let spacingGap = max(minCenterSpacing * 0.12, 6)
+            let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
+            let boxWidth = min(guideBoxHeight * 1.8, maxBoxWidthFromSpacing)
+            let fretboardStrings = (0..<GuitarStringLayout.totalStrings).map { GuitarStringLayout.highestStringNumber - $0 }
+            ZStack {
+                // Six individual translucent backgrounds for each note box
+                ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.black.opacity(0.42))
+                        .frame(width: boxWidth, height: guideBoxHeight)
+                        .position(x: stringCenters[index], y: guideBoxCenterY)
+                }
+
+                ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
+                    let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: maestroUsesFlats)
+                    let isAccidental: Bool = note.contains("#") || note.contains("b")
+                    let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
+                    let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
+                    let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
+                    let textSize = min(guideBoxHeight * 0.78, 28)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(fillColor)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(strokeColor, lineWidth: 2)
+                        )
+                        .overlay(
+                            Text(note)
+                                .font(.system(size: textSize, weight: .black, design: .monospaced))
+                                .foregroundStyle(textColor)
+                                .minimumScaleFactor(0.32)
+                                .lineLimit(1)
+                        )
+                        .frame(width: boxWidth, height: guideBoxHeight)
+                        .position(x: stringCenters[index], y: guideBoxCenterY)
+                }
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
     @ViewBuilder
     private func portraitBody(proxy: GeometryProxy) -> some View {
             let padding: CGFloat = 24
@@ -993,123 +1191,7 @@ struct MaestroGameplayView: View {
                 FullScreenElephantBackground()
                     .ignoresSafeArea()
 
-                HStack {
-                    Spacer()
-                    ZStack {
-                        ZStack(alignment: .top) {
-                            ZStack {
-                                RosewoodSegmentedBackground(
-                                    fretRatios: fretRatios,
-                                    cornerRadius: 18
-                                )
-                                BindingLayer()
-                                FretWireLayer(fretRatios: fretRatios)
-                                FretMarkerLayer(fretRatios: fretRatios)
-                            }
-                            .frame(width: neckWidth, height: neckHeight)
-
-                            NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
-                                .frame(width: neckWidth * 0.99, height: nutVisualHeight)
-                                .offset(y: -nutVisualHeight * 0.85)
-                        }
-                        .frame(width: neckWidth, height: neckHeight)
-                        .offset(y: finalNeckOffsetY)
-                    }
-                    .frame(width: neckWidth, height: visibleClipHeight)
-                    .clipped()
-                    Spacer()
-                }
-                .padding(.horizontal, padding)
-
-                StringLineOverlay(
-                    neckWidth: neckWidth,
-                    horizontalPadding: padding,
-                    stringTopY: stringTopY
-                )
-
-                RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
-                    .fill(Color.black)
-                    .frame(width: highlightWidth, height: highlightHeight)
-                    .position(x: proxy.size.width / 2, y: pipingCenterY)
-                    .allowsHitTesting(false)
-                    .opacity(introWindowBlack ? 1 : 0)
-
-                ElephantWindowView(
-                    canvasSize: proxy.size,
-                    highlightWidth: highlightWidth,
-                    highlightHeight: highlightHeight,
-                    highlightCenter: CGPoint(x: proxy.size.width / 2, y: orangeGreenUnitCenterY),
-                    highlightCornerRadius: highlightCornerRadius
-                )
-                .allowsHitTesting(false)
-
-                if isCodeScreensaverMode {
-                    ZStack {
-                        Image("REFRETLOGOSET")
-                            .resizable()
-                            .scaledToFill()
-                            .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
-                            .frame(width: highlightWidth, height: highlightHeight)
-                            .clipped()
-                            .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
-
-                        HighlightWindowGoldBorder(
-                            width: highlightWidth,
-                            height: highlightHeight,
-                            cornerRadius: highlightCornerRadius
-                        )
-                    }
-                    .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
-                    .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
-                    .position(x: proxy.size.width / 2, y: orangeGreenUnitCenterY)
-                    .allowsHitTesting(false)
-                }
-
-                if showFretboardGuide && !isCodeScreensaverMode {
-                    let guideBoxHeight = topStatusOuterHeight * 0.5
-                    let guideBoxCenterY = windowBottomY - (guideBoxHeight / 2) - 4
-                    let stringCenters = GuitarStringLayout.stringCenters(containerWidth: proxy.size.width, neckWidth: neckWidth)
-                    let centerSpacings = (1..<stringCenters.count).map { stringCenters[$0] - stringCenters[$0 - 1] }
-                    let minCenterSpacing = centerSpacings.min() ?? 60
-                    let spacingGap = max(minCenterSpacing * 0.12, 6)
-                    let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
-                    let boxWidth = min(guideBoxHeight * 1.8, maxBoxWidthFromSpacing)
-                    let fretboardStrings = (0..<GuitarStringLayout.totalStrings).map { GuitarStringLayout.highestStringNumber - $0 }
-                    ZStack {
-                        // Six individual translucent backgrounds for each note box
-                        ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.black.opacity(0.42))
-                                .frame(width: boxWidth, height: guideBoxHeight)
-                                .position(x: stringCenters[index], y: guideBoxCenterY)
-                        }
-
-                        ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
-                            let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: maestroUsesFlats)
-                            let isAccidental: Bool = note.contains("#") || note.contains("b")
-                            let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
-                            let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
-                            let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
-                            let textSize = min(guideBoxHeight * 0.78, 28)
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(fillColor)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .stroke(strokeColor, lineWidth: 2)
-                                )
-                                .overlay(
-                                    Text(note)
-                                        .font(.system(size: textSize, weight: .black, design: .monospaced))
-                                        .foregroundStyle(textColor)
-                                        .minimumScaleFactor(0.32)
-                                        .lineLimit(1)
-                                )
-                                .frame(width: boxWidth, height: guideBoxHeight)
-                                .position(x: stringCenters[index], y: guideBoxCenterY)
-                        }
-                    }
-                    .allowsHitTesting(false)
-                }
+                portraitNeckLayer(size: proxy.size)
 
                 fretIndicatorOverlay(
                     leftX: leftFretIndicatorX,
@@ -1475,115 +1557,18 @@ struct MaestroGameplayView: View {
             FullScreenElephantBackground()
                 .ignoresSafeArea()
 
-            // Neck behind the window (with fret tracking offset)
-            HStack {
-                Spacer()
-                ZStack(alignment: .top) {
-                    ZStack {
-                        RosewoodSegmentedBackground(fretRatios: fretRatios, cornerRadius: 18)
-                        BindingLayer()
-                        FretWireLayer(fretRatios: fretRatios)
-                        FretMarkerLayer(fretRatios: fretRatios)
-                    }
-                    .frame(width: neckWidth, height: neckHeight)
-
-                    NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
-                        .frame(width: neckWidth * 0.99, height: nutVisualHeight)
-                        .offset(y: -nutVisualHeight * 0.85)
-                }
-                .frame(width: neckWidth, height: neckHeight)
-                .offset(y: finalNeckOffsetY)
-                .frame(width: neckWidth, height: visibleClipHeight)
-                .clipped()
-                Spacer()
+            // Stage 2a: rotate the portrait neck/window/screensaver/fretboard-guide layer
+            // 90° to align with landscape orientation. Inherits portrait F1–F5 unchanged.
+            // Render the helper at full portrait proportions; elephant texture is gone so the
+            // layout box no longer needs to be clipped to the console-to-transport band.
+            // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
+            // lands on screenCenterY, aligning with the chrome white note boxes.
+            ZStack {
+                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true)
             }
-            .padding(.horizontal, padding)
-
-            // String lines
-            StringLineOverlay(neckWidth: neckWidth, horizontalPadding: (proxy.size.width - neckWidth) / 2, stringTopY: stringTopY)
-
-            // Intro black window (fades to reveal neck/nut)
-            RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
-                .fill(Color.black)
-                .frame(width: highlightWidth, height: highlightHeight)
-                .position(x: screenCenterX, y: screenCenterY)
-                .allowsHitTesting(false)
-                .opacity(introWindowBlack ? 1 : 0)
-
-            // Elephant overlay with gold window border
-            ElephantWindowView(
-                canvasSize: proxy.size,
-                highlightWidth: highlightWidth,
-                highlightHeight: highlightHeight,
-                highlightCenter: CGPoint(x: screenCenterX, y: screenCenterY),
-                highlightCornerRadius: highlightCornerRadius
-            )
-            .allowsHitTesting(false)
-
-            // Screensaver logo in window
-            if isCodeScreensaverMode {
-                ZStack {
-                    Image("REFRETLOGOSET")
-                        .resizable()
-                        .scaledToFill()
-                        .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
-                        .frame(width: highlightWidth, height: highlightHeight)
-                        .clipped()
-                        .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
-
-                    HighlightWindowGoldBorder(width: highlightWidth, height: highlightHeight, cornerRadius: highlightCornerRadius)
-                }
-                .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
-                .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
-                .position(x: screenCenterX, y: screenCenterY)
-                .allowsHitTesting(false)
-            }
-
-            // Fretboard guide (note names on neck)
-            if showFretboardGuide && !isCodeScreensaverMode {
-                let guideBoxHeight = consoleHeight * 0.5
-                let guideBoxCenterY = (screenCenterY + highlightHeight / 2) - (guideBoxHeight / 2) - 4
-                let stringCenters = GuitarStringLayout.stringCenters(containerWidth: proxy.size.width, neckWidth: neckWidth)
-                let centerSpacings = (1..<stringCenters.count).map { stringCenters[$0] - stringCenters[$0 - 1] }
-                let minCenterSpacing = centerSpacings.min() ?? 60
-                let spacingGap = max(minCenterSpacing * 0.12, 6)
-                let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
-                let boxWidth = min(guideBoxHeight * 1.8, maxBoxWidthFromSpacing)
-                let fretboardStrings = (0..<GuitarStringLayout.totalStrings).map { GuitarStringLayout.highestStringNumber - $0 }
-                ZStack {
-                    ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.black.opacity(0.42))
-                            .frame(width: boxWidth, height: guideBoxHeight)
-                            .position(x: stringCenters[index], y: guideBoxCenterY)
-                    }
-
-                    ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
-                        let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: maestroUsesFlats)
-                        let isAccidental: Bool = note.contains("#") || note.contains("b")
-                        let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
-                        let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
-                        let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
-                        let textSize = min(guideBoxHeight * 0.78, 28)
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(fillColor)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(strokeColor, lineWidth: 2)
-                            )
-                            .overlay(
-                                Text(note)
-                                    .font(.system(size: textSize, weight: .black, design: .monospaced))
-                                    .foregroundStyle(textColor)
-                                    .minimumScaleFactor(0.32)
-                                    .lineLimit(1)
-                            )
-                            .frame(width: boxWidth, height: guideBoxHeight)
-                            .position(x: stringCenters[index], y: guideBoxCenterY)
-                    }
-                }
-                .allowsHitTesting(false)
-            }
+            .frame(width: proxy.size.height, height: proxy.size.width)
+            .offset(y: proxy.size.width * 0.1875)
+            .frame(width: proxy.size.width, height: proxy.size.height)
 
             // Fret indicators (left/right of window)
             fretIndicatorOverlay(
@@ -1789,11 +1774,20 @@ struct MaestroGameplayView: View {
         autoPlayNextDate = currentDate.addingTimeInterval(0.38)
     }
 
-    private func startGameFromBeginning() {
+    private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
         currentRound = playStartingFret
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
         isDescendingPhase = isPhaseDescending
+        if animateNeckSlideFromStartup {
+            // Mirror BeginnerGameplayView: jump nut/neck off-screen, then animate slide-in.
+            currentFretStart = isDescendingPhase ? maxFretOffset : minFretOffset
+            DispatchQueue.main.async {
+                withAnimation(.easeInOut(duration: 0.78)) {
+                    currentFretStart = currentRound
+                }
+            }
+        }
         bankDollars = 0
         displayedBankDollars = 0
         walletDollars = 0
@@ -1832,6 +1826,8 @@ struct MaestroGameplayView: View {
             isLaunchTransitionAnimating = true
             launchTileScale = 1
             launchTileOpacity = 1
+            // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
+            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
             withAnimation(.easeIn(duration: 0.4725)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
@@ -1842,8 +1838,7 @@ struct MaestroGameplayView: View {
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
                 startupSpeechPhase = .idle
-                currentFretStart = playStartingFret
-                startGameFromBeginning()
+                startGameFromBeginning(animateNeckSlideFromStartup: true)
                 syncMaestroBackingTrack()
                 isLaunchTransitionAnimating = false
                 launchTileScale = 1
@@ -1906,6 +1901,8 @@ struct MaestroGameplayView: View {
             isLaunchTransitionAnimating = true
             launchTileScale = 1
             launchTileOpacity = 1
+            // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
+            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
             withAnimation(.easeIn(duration: 0.4725)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
@@ -1915,8 +1912,7 @@ struct MaestroGameplayView: View {
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
                 startupSpeechPhase = .idle
-                currentFretStart = playStartingFret
-                startGameFromBeginning()
+                startGameFromBeginning(animateNeckSlideFromStartup: true)
                 isLaunchTransitionAnimating = false
                 launchTileScale = 1
                 launchTileOpacity = 1
