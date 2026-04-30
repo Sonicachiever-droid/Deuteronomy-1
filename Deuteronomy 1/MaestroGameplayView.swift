@@ -1548,10 +1548,13 @@ struct MaestroGameplayView: View {
         let vRowH = proxy.size.height / 40.0
         let miniTVCenterY = 8.0 * vRowH
 
-        // Fret indicators beside window
-        let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
-        let leftFretIndicatorX = screenCenterX - highlightWidth / 2 - sideWindowGap
-        let rightFretIndicatorX = screenCenterX + highlightWidth / 2 + sideWindowGap
+        // Fret indicators centered between button inner edge and window piping
+        let windowLeftEdge = screenCenterX - highlightWidth / 2
+        let windowRightEdge = screenCenterX + highlightWidth / 2
+        let leftThumbInnerEdge = leftGapCenter + thumbDiameter / 2
+        let rightThumbInnerEdge = rightGapCenter - thumbDiameter / 2
+        let leftFretIndicatorX = (windowLeftEdge + leftThumbInnerEdge) / 2
+        let rightFretIndicatorX = (windowRightEdge + rightThumbInnerEdge) / 2
         let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
 
         let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
