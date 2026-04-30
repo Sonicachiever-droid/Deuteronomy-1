@@ -223,23 +223,23 @@ private struct DeveloperConsoleFrame: View {
                         endPoint: .bottom
                     )
                 )
-                .padding(4)
+                .padding(2)
                 .overlay {
                     Group {
                         if isScreensaverMode {
                             ZStack {
                                 if !showStartupSequence {
                                     DeveloperCodeRunnerView()
-                                        .padding(.horizontal, 12)
-                                        .padding(.top, 24)
-                                        .padding(.bottom, 10)
+                                        .padding(.horizontal, 8)
+                                        .padding(.top, 12)
+                                        .padding(.bottom, 6)
                                 }
 
                                 if showStartupSequence {
                                     MaestroStartupSequenceView(elapsed: startupElapsed)
-                                        .padding(.horizontal, 10)
-                                        .padding(.top, 24)
-                                        .padding(.bottom, 8)
+                                        .padding(.horizontal, 6)
+                                        .padding(.top, 12)
+                                        .padding(.bottom, 4)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                                 }
                             }
@@ -263,12 +263,12 @@ private struct DeveloperConsoleFrame: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 14)
+                            .padding(.horizontal, 8)
+                            .padding(.top, 8)
                         }
                     }
                 }
-                .padding(4)
+                .padding(2)
         }
         .frame(width: width, height: height)
     }
