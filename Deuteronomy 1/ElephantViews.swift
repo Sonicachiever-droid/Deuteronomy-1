@@ -27,17 +27,20 @@ struct MarshallElephantOverlay: View {
     let highlightHeight: CGFloat
     let highlightCenter: CGPoint
     let highlightCornerRadius: CGFloat
+    var textureBrightness: Double = 0.12
+    var textureOverlayOpacity: Double = 0.2
+    var textureBleed: CGFloat = 36
 
     var body: some View {
-        let bleed: CGFloat = 36
+        let bleed = textureBleed
 
         Image("MARSHALL ELEPHANT")
             .resizable(resizingMode: .tile)
             .frame(width: canvasSize.width + (bleed * 2), height: canvasSize.height + (bleed * 2))
             .scaleEffect(x: 1.15, y: 1.15, anchor: .center)
-            .brightness(0.12)
+            .brightness(textureBrightness)
             .saturation(1.05)
-            .overlay(Color.black.opacity(0.2))
+            .overlay(Color.black.opacity(textureOverlayOpacity))
             .offset(x: -bleed, y: -bleed)
         .frame(width: canvasSize.width, height: canvasSize.height)
         .clipped()
@@ -66,6 +69,9 @@ struct ElephantWindowView: View {
     let highlightHeight: CGFloat
     let highlightCenter: CGPoint
     let highlightCornerRadius: CGFloat
+    var textureBrightness: Double = 0.12
+    var textureOverlayOpacity: Double = 0.2
+    var textureBleed: CGFloat = 36
 
     var body: some View {
         ZStack {
@@ -75,7 +81,10 @@ struct ElephantWindowView: View {
                 highlightWidth: highlightWidth,
                 highlightHeight: highlightHeight,
                 highlightCenter: highlightCenter,
-                highlightCornerRadius: highlightCornerRadius
+                highlightCornerRadius: highlightCornerRadius,
+                textureBrightness: textureBrightness,
+                textureOverlayOpacity: textureOverlayOpacity,
+                textureBleed: textureBleed
             )
             
             // Gold border drawn in the exact same position as the hole

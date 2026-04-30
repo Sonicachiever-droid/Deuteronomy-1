@@ -836,7 +836,7 @@ struct MaestroGameplayView: View {
     // Identical to the inline block previously in portraitBody. Computes F1–F5 from `size` so the
     // same view tree can be reused (and, in a later stage, rotated) without duplicating geometry math.
     @ViewBuilder
-    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0) -> some View {
+    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0, matchBackgroundTexture: Bool = false) -> some View {
         let padding: CGFloat = 24
         let neckWidth = (size.width - padding * 2) * 0.8
         let fretRatios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: scaleLengthInches)
@@ -957,7 +957,10 @@ struct MaestroGameplayView: View {
             highlightWidth: highlightWidth,
             highlightHeight: highlightHeight,
             highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
-            highlightCornerRadius: highlightCornerRadius
+            highlightCornerRadius: highlightCornerRadius,
+            textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+            textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+            textureBleed: matchBackgroundTexture ? 48 : 36
         )
         .allowsHitTesting(false)
 
@@ -1564,7 +1567,7 @@ struct MaestroGameplayView: View {
             // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
             // lands on screenCenterY, aligning with the chrome white note boxes.
             ZStack {
-                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5)
+                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true)
             }
             .frame(width: proxy.size.height, height: proxy.size.width)
             .offset(y: proxy.size.width * 0.1875 + gridRowHeight * 0.5)
