@@ -1525,11 +1525,16 @@ struct MaestroGameplayView: View {
 
         // ── Exodus 11 element positions ──
         // Console above window
+        let consoleHeightOld: CGFloat = 74
         let windowHalfH = proxy.size.height * 0.28
-        let consoleHeight: CGFloat = 74
-        let consoleBottomGap: CGFloat = 10
-        let rawConsoleCenterY = screenCenterY - windowHalfH - consoleBottomGap - consoleHeight / 2
-        let consoleCenterY = max(rawConsoleCenterY, consoleHeight / 2 + 8)
+        let consoleBottomGapOld: CGFloat = 10
+        let rawConsoleCenterYOld = screenCenterY - windowHalfH - consoleBottomGapOld - consoleHeightOld / 2
+        let consoleCenterYOld = max(rawConsoleCenterYOld, consoleHeightOld / 2 + 8)
+        let consoleTopEdge = consoleCenterYOld - consoleHeightOld / 2
+        let neckWindowTopY = screenCenterY - highlightHeight / 2
+        let consoleBottomGap: CGFloat = 4
+        let consoleHeight = neckWindowTopY - consoleTopEdge - consoleBottomGap
+        let consoleCenterY = consoleTopEdge + consoleHeight / 2
 
         // Transport bar below window
         let windowHalfHBelow = proxy.size.height * 0.26
