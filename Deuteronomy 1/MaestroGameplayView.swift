@@ -1553,8 +1553,9 @@ struct MaestroGameplayView: View {
         let windowRightEdge = screenCenterX + highlightWidth / 2
         let leftThumbInnerEdge = leftGapCenter + thumbDiameter / 2
         let rightThumbInnerEdge = rightGapCenter - thumbDiameter / 2
-        let leftFretIndicatorX = (windowLeftEdge + leftThumbInnerEdge) / 2
-        let rightFretIndicatorX = (windowRightEdge + rightThumbInnerEdge) / 2
+        let fretOffsetFromWindow: CGFloat = 6
+        let leftFretIndicatorX = (windowLeftEdge + leftThumbInnerEdge) / 2 - fretOffsetFromWindow
+        let rightFretIndicatorX = (windowRightEdge + rightThumbInnerEdge) / 2 + fretOffsetFromWindow
         let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
 
         let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
