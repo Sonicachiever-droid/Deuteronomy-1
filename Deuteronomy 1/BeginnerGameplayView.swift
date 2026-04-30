@@ -1746,7 +1746,7 @@ struct BeginnerGameplayView: View {
                     fretTitle: displayedFretStatusLabel,
                     stringTitle: displayedStringStatusLabel,
                     bankText: "$\(displayedBankDollars)",
-                    scaleRepetitionText: "\(beginnerRuntime.scaleRepetitionsRemaining)X",
+                    scaleRepetitionText: beginnerRuntime.scaleRepetitionsRemaining >= Int.max / 2 ? "∞X" : "\(beginnerRuntime.scaleRepetitionsRemaining)X",
                     promptText: developerPromptText,
                     startupElapsed: startupSequenceElapsed,
                     showStartupSequence: startupSequenceActivated,
@@ -3035,7 +3035,9 @@ struct BeginnerGameplayView: View {
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
             let buttonIndex = nextString >= 4 ? (nextString - 4) : (6 - nextString)
+            beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: nextNote, selectedString: nextString, buttonIndex: buttonIndex)
+            beginnerRuntime.isAutoPlayTriggered = false
             beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
             return
         } else {
@@ -3071,7 +3073,9 @@ struct BeginnerGameplayView: View {
             }
             autoPlayLastStringByNote[expectedNote] = selectedString
             let buttonIndex = selectedString <= 3 ? (6 - selectedString) : (selectedString - 4)
+            beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: expectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
+            beginnerRuntime.isAutoPlayTriggered = false
             beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
         }
     }

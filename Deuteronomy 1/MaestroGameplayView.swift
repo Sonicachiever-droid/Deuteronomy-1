@@ -1217,7 +1217,7 @@ struct MaestroGameplayView: View {
                     width: topStatusOuterWidth,
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
-                    scaleRepetitionText: "\(repetitionsRemainingAtFret)X",
+                    scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
                     currentRoundInPhase: currentRound + 1,
                     bankText: "$\(displayedBankDollars)",
                     repetitionCountColor: .white,
@@ -1598,7 +1598,7 @@ struct MaestroGameplayView: View {
                 width: highlightWidth,
                 height: consoleHeight,
                 isScreensaverMode: isCodeScreensaverMode,
-                scaleRepetitionText: "\(repetitionsRemainingAtFret)X",
+                scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
                 currentRoundInPhase: currentRound + 1,
                 bankText: "$\(displayedBankDollars)",
                 repetitionCountColor: .white,
@@ -1891,13 +1891,15 @@ struct MaestroGameplayView: View {
             }
         }
 
+        // Capture autoplay state before delay since flag gets reset
+        let wasAutoPlayTriggered = isAutoPlayTriggered
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             leftThumbState = .neutral
             rightThumbState = .neutral
             if isCorrect {
-                advanceGame(afterCorrectAnswer: true)
+                advanceGame(afterCorrectAnswer: true, fromAutoPlay: wasAutoPlayTriggered)
             } else {
-                advanceGame(afterCorrectAnswer: false)
+                advanceGame(afterCorrectAnswer: false, fromAutoPlay: wasAutoPlayTriggered)
             }
         }
     }
@@ -2013,7 +2015,7 @@ struct MaestroGameplayView: View {
         midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
     }
 
-    private func advanceGame(afterCorrectAnswer isCorrect: Bool) {
+    private func advanceGame(afterCorrectAnswer isCorrect: Bool, fromAutoPlay: Bool = false) {
         if !isCorrect {
             animateBankResetToZero {
                 startGameFromBeginning()
@@ -2021,11 +2023,14 @@ struct MaestroGameplayView: View {
             return
         }
 
-        let payout = payoutForRound(currentRound)
-        bankDollars += payout
-        displayedBankDollars = bankDollars
-        walletDollars = bankDollars
-        balanceDollars += payout
+        // Only award $1 for player correct answers, not autoplay
+        if !fromAutoPlay {
+            let payout = payoutForRound(currentRound)
+            bankDollars += payout
+            displayedBankDollars = bankDollars
+            walletDollars = bankDollars
+            balanceDollars += payout
+        }
 
         // Advance to next string in round
         if usesRandomStringOrder {
