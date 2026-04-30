@@ -1449,7 +1449,9 @@ struct MaestroGameplayView: View {
         let neckHeight = max(unclippedHeight, minimumNeckHeight)
         let nutHeight = max(neckHeight * 0.02, 18)
         let nutVisualHeight = nutHeight * 0.4
-        let highlightWidth = neckWidth
+        let highlightAvailableWidth = max(proxy.size.height - 48, 0)
+        let highlightExtraWidth = max(highlightAvailableWidth - neckWidth, 0)
+        let highlightWidth = neckWidth + highlightExtraWidth / 2
         let highlightCornerRadius = min(24, highlightWidth * 0.08)
         let screenCenterY = proxy.size.height / 2
         let screenCenterX = proxy.size.width / 2
