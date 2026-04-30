@@ -1932,8 +1932,8 @@ struct BeginnerGameplayView: View {
                     let rowYs = [buttonCenterY - beginnerButtonSpacing, buttonCenterY, buttonCenterY + beginnerButtonSpacing]
                     let leftButtonX = proxy.size.width * 0.2335
                     let rightButtonX = proxy.size.width * 0.7665
-                    let beginnerScreenWidth = lowerScreenWidth * 0.54
-                    let beginnerScreenHeight = lowerScreenHeight * 0.76
+                    let beginnerScreenHeight = lowerScreenHeight * 0.76 * 1.2
+                    let beginnerScreenWidth = beginnerScreenHeight * 1.6
                     let noteScreenCenterYOffset = -beginnerButtonDiameter * 0.13
                     let screenInset = beginnerButtonDiameter * 0.88
                     let leftScreenX = leftButtonX + screenInset
@@ -1953,7 +1953,8 @@ struct BeginnerGameplayView: View {
                                 text: buttonNote,
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
-                                fontScale: 1.0
+                                fontScale: 1.0,
+                                isDarkScreen: buttonNote.contains("#") || buttonNote.contains("b")
                             )
                             .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 
@@ -1986,7 +1987,8 @@ struct BeginnerGameplayView: View {
                                 text: buttonNote,
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
-                                fontScale: 1.0
+                                fontScale: 1.0,
+                                isDarkScreen: buttonNote.contains("#") || buttonNote.contains("b")
                             )
                             .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 

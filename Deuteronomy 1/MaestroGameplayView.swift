@@ -1550,7 +1550,7 @@ struct MaestroGameplayView: View {
         let rightGapCenter = screenCenterX + highlightWidth / 2 + leftGapCenter
 
         // Mini TV note choice screens
-        let miniTVHeight: CGFloat = max(min(thumbDiameter * 0.52, 52), 44)
+        let miniTVHeight: CGFloat = max(min(thumbDiameter * 0.52 * 1.75, 91), 77)
         let miniTVWidth: CGFloat = miniTVHeight * 1.6
         let vRowH = proxy.size.height / 40.0
         let miniTVCenterY = 8.0 * vRowH
