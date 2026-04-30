@@ -836,7 +836,7 @@ struct MaestroGameplayView: View {
     // Identical to the inline block previously in portraitBody. Computes F1–F5 from `size` so the
     // same view tree can be reused (and, in a later stage, rotated) without duplicating geometry math.
     @ViewBuilder
-    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false) -> some View {
+    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0) -> some View {
         let padding: CGFloat = 24
         let neckWidth = (size.width - padding * 2) * 0.8
         let fretRatios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: scaleLengthInches)
@@ -948,7 +948,7 @@ struct MaestroGameplayView: View {
         RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
             .fill(Color.black)
             .frame(width: highlightWidth, height: highlightHeight)
-            .position(x: size.width / 2, y: pipingCenterY)
+            .position(x: size.width / 2, y: pipingCenterY + cutoutOffsetY)
             .allowsHitTesting(false)
             .opacity(introWindowBlack ? 1 : 0)
 
@@ -956,7 +956,7 @@ struct MaestroGameplayView: View {
             canvasSize: size,
             highlightWidth: highlightWidth,
             highlightHeight: highlightHeight,
-            highlightCenter: CGPoint(x: size.width / 2, y: centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY),
+            highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
             highlightCornerRadius: highlightCornerRadius
         )
         .allowsHitTesting(false)
@@ -979,7 +979,7 @@ struct MaestroGameplayView: View {
             }
             .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
             .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
-            .position(x: size.width / 2, y: centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY)
+            .position(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY)
             .allowsHitTesting(false)
         }
 
@@ -1564,10 +1564,10 @@ struct MaestroGameplayView: View {
             // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
             // lands on screenCenterY, aligning with the chrome white note boxes.
             ZStack {
-                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true)
+                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5)
             }
             .frame(width: proxy.size.height, height: proxy.size.width)
-            .offset(y: proxy.size.width * 0.1875)
+            .offset(y: proxy.size.width * 0.1875 + gridRowHeight * 0.5)
             .frame(width: proxy.size.width, height: proxy.size.height)
 
             // Fret indicators (left/right of window)
@@ -1630,7 +1630,7 @@ struct MaestroGameplayView: View {
 
                 // White note boxes in the window
                 WhiteNoteBoxOverlay(
-                    centerY: screenCenterY,
+                    centerY: screenCenterY - gridRowHeight * 0.5 + gridRowHeight * 0.5,
                     availableSize: proxy.size,
                     boxHeight: gridRowHeight * 0.9,
                     neckWidth: neckWidth,
