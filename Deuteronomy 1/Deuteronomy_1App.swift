@@ -258,7 +258,6 @@ private struct Deuteronomy1MenuSheet: View {
                         if layoutMode == .beginner {
                             Picker("Style", selection: $lessonStyleRawValue) {
                                 Text("Sequential").tag("sequential")
-                                Text("Random").tag("random")
                                 Text("Chord").tag("chord")
                             }
                             .pickerStyle(.segmented)
@@ -270,17 +269,32 @@ private struct Deuteronomy1MenuSheet: View {
                         Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
 
                         Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
+                            .onChange(of: startingFret) { _, newValue in
+                                if newValue == 0 {
+                                    directionRawValue = LessonDirection.ascending.rawValue
+                                } else if newValue >= (enableHighFrets ? 19 : 12) {
+                                    directionRawValue = LessonDirection.descending.rawValue
+                                }
+                            }
 
-                        let descendingImpossible = startingFret == 0
-                        Picker("Direction", selection: $directionRawValue) {
+                        let upperBound = enableHighFrets ? 19 : 12
+                        let descendingLocked = startingFret == 0
+                        let ascendingLocked = startingFret >= upperBound
+                        Picker("Direction", selection: Binding(
+                            get: { directionRawValue },
+                            set: { newValue in
+                                let isDescending = newValue == LessonDirection.descending.rawValue
+                                if isDescending && descendingLocked { return }
+                                if !isDescending && ascendingLocked { return }
+                                directionRawValue = newValue
+                            }
+                        )) {
                             Text("Ascending").tag(LessonDirection.ascending.rawValue)
                             Text("Descending").tag(LessonDirection.descending.rawValue)
                         }
                         .pickerStyle(.segmented)
-                        .disabled((layoutMode == .beginner && directionLockActive) || descendingImpossible)
-                        .colorMultiply(descendingImpossible ? .red : .white)
 
-                        let progressionLocked = layoutMode == .beginner && (lessonStyleRawValue == "chord" || lessonStyleRawValue == "random")
+                        let progressionLocked = layoutMode == .beginner && lessonStyleRawValue == "chord"
                         Picker("Progression", selection: $progressionRawValue) {
                             Text("High → Low").tag("highToLow")
                             Text("Low → High").tag("lowToHigh")
@@ -331,7 +345,6 @@ private struct Deuteronomy1MenuSheet: View {
                         Text("Choose Beginner Modes to familiarize yourself with fretboard.")
                         Text("Choose Maestro mode to test your knowledge.")
                         Text("Sequential teaches Fret Notes by repetition. Choose progression from high to low or low to high.")
-                        Text("Random reinforces Fret Knowledge.")
                         Text("Chord teaches chords formed from Fret notes.")
                     }
                 case .audio:
@@ -340,6 +353,7 @@ private struct Deuteronomy1MenuSheet: View {
                     }
                 }
             }
+            .onAppear { directionLockActive = false }
             .navigationTitle(option.title)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

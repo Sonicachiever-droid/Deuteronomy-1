@@ -352,7 +352,7 @@ private struct WhiteNoteBoxOverlay: View {
                         )
                     if isActive, let revealedNote {
                         Text(revealedNote)
-                            .font(.system(size: clampedBoxHeight * 0.38, weight: .black, design: .default))
+                            .font(.system(size: min(clampedBoxHeight * 0.34, 26), weight: .black, design: .monospaced))
                             .foregroundColor(currentQuestionIsAccidental ? .white : .black)
                             .minimumScaleFactor(0.5)
                             .lineLimit(1)
@@ -2046,25 +2046,31 @@ struct MaestroGameplayView: View {
                 repetitionsRemainingAtFret -= 1
                 if repetitionsRemainingAtFret <= 0 {
                     repetitionsRemainingAtFret = max(playRepetitions, 1)
-                if !isPhaseDescending {
-                    if currentRound < 12 {
-                        currentRound += 1
+                    if !isPhaseDescending {
+                        if currentRound < 12 {
+                            currentRound += 1
+                        } else {
+                            // At upper boundary - reverse direction
+                            isDescendingPhase = true
+                            playDirectionRawValue = LessonDirection.descending.rawValue
+                            currentRound = 11
+                        }
                     } else {
-                        currentRound = 0
+                        if currentRound > 0 {
+                            currentRound -= 1
+                        } else {
+                            // At lower boundary - reverse direction
+                            isDescendingPhase = false
+                            playDirectionRawValue = LessonDirection.ascending.rawValue
+                            currentRound = 1
+                        }
                     }
-                } else {
-                    if currentRound > 0 {
-                        currentRound -= 1
-                    } else {
-                        currentRound = 12
+                    // Immediate bass transpose
+                    midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
+                    // Immediate neck shift with animation
+                    withAnimation(.easeInOut(duration: 0.9)) {
+                        currentFretStart = max(currentRound, 0)
                     }
-                }
-                // Immediate bass transpose
-                midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
-                // Immediate neck shift with animation
-                withAnimation(.easeInOut(duration: 0.9)) {
-                    currentFretStart = max(currentRound, 0)
-                }
                 }
             }
         }

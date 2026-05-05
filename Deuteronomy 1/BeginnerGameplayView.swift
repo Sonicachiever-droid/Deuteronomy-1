@@ -97,7 +97,7 @@ private struct WhiteNoteBoxOverlay: View {
                     .overlay {
                         if isActive, let displayedNoteText, !displayedNoteText.isEmpty {
                             Text(displayedNoteText)
-                                .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
+                                .font(.system(size: min(clampedBoxHeight * 0.72, 26), weight: .black, design: .monospaced))
                                 .minimumScaleFactor(0.32)
                                 .lineLimit(1)
                                 .foregroundStyle(shouldUseAccidentalStyle ? Color.white.opacity(0.96) : revealedNoteTextColor)
@@ -517,40 +517,32 @@ private struct DeveloperConsoleFrame: View {
                                             let statusLines = beginnerRoundStatusText.components(separatedBy: "\n")
                                             let titleLine: String = statusLines.count >= 2 ? statusLines[0] : ""
                                             let notesLine: String = statusLines.count >= 2 ? statusLines[1] : statusLines[0]
+                                            let titleFontSize: CGFloat = min(width * 0.078, 116)
+                                            let notesFontSize: CGFloat = min(width * 0.088, 132)
 
                                             if !titleLine.isEmpty || !notesLine.isEmpty {
-                                                if titleLine.isEmpty {
-                                                    // Single-line: sequential notes or chord name only
+                                                VStack(spacing: 0) {
+                                                    Spacer(minLength: 0)
+                                                    if !titleLine.isEmpty {
+                                                        Text(titleLine)
+                                                            .font(.system(size: titleFontSize, weight: .black, design: .monospaced))
+                                                            .foregroundStyle(Color.green.opacity(0.98))
+                                                            .minimumScaleFactor(0.2)
+                                                            .lineLimit(1)
+                                                            .multilineTextAlignment(.center)
+                                                            .frame(maxWidth: width * 0.72)
+                                                    }
                                                     Text(notesLine)
-                                                        .font(.system(size: 200, weight: .black, design: .monospaced))
+                                                        .font(.system(size: notesFontSize, weight: .black, design: .monospaced))
                                                         .foregroundStyle(Color.green.opacity(0.98))
-                                                        .minimumScaleFactor(0.1)
+                                                        .minimumScaleFactor(0.2)
                                                         .lineLimit(1)
                                                         .multilineTextAlignment(.center)
-                                                        .frame(maxWidth: hideRoundLabel ? width * 2 / 3 : .infinity, maxHeight: height * 2 / 3, alignment: hideRoundLabel ? .top : .bottom)
-                                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: hideRoundLabel ? .top : .bottom)
-                                                        .allowsHitTesting(false)
-                                                } else {
-                                                    // Two-line: pentatonic title + notes
-                                                    VStack(spacing: 0) {
-                                                        Text(titleLine)
-                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                            .foregroundStyle(Color.green.opacity(0.98))
-                                                            .minimumScaleFactor(0.1)
-                                                            .lineLimit(1)
-                                                            .multilineTextAlignment(.center)
-                                                            .frame(maxWidth: width * 2 / 3)
-                                                        Text(notesLine)
-                                                            .font(.system(size: 200, weight: .black, design: .monospaced))
-                                                            .foregroundStyle(Color.green.opacity(0.98))
-                                                            .minimumScaleFactor(0.1)
-                                                            .lineLimit(1)
-                                                            .multilineTextAlignment(.center)
-                                                            .frame(maxWidth: .infinity)
-                                                    }
-                                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                                    .allowsHitTesting(false)
+                                                        .frame(maxWidth: hideRoundLabel ? width * 0.72 : .infinity)
                                                 }
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                                                .padding(.bottom, 6)
+                                                .allowsHitTesting(false)
                                             } else {
                                                 EmptyView()
                                             }
@@ -1705,6 +1697,7 @@ struct BeginnerGameplayView: View {
                             let tileFill = noteIsAccidental ? Color.black.opacity(0.94) : Color.white.opacity(0.96)
                             let tileStroke = noteIsAccidental ? Color.white.opacity(0.7) : Color.black.opacity(0.68)
                             let textColor = noteIsAccidental ? Color.white.opacity(0.98) : Color.black.opacity(0.95)
+                            let noteFontSize = min(guideBoxHeight * 0.44, 24)
 
                             RoundedRectangle(cornerRadius: guideBoxCornerRadius * 0.45, style: .continuous)
                                 .fill(tileFill)
@@ -1715,7 +1708,7 @@ struct BeginnerGameplayView: View {
                                 .frame(width: guideTileWidth, height: guideTileHeight)
                                 .overlay {
                                     Text(note)
-                                        .font(.system(size: guideBoxHeight * 0.48, weight: .black, design: .monospaced))
+                                        .font(.system(size: noteFontSize, weight: .black, design: .monospaced))
                                         .minimumScaleFactor(0.45)
                                         .lineLimit(1)
                                         .foregroundStyle(textColor)
@@ -2740,15 +2733,6 @@ struct BeginnerGameplayView: View {
         if lessonStyle == .random {
             randomNoteGenerator.resetForNewFret()
             beginnerRuntime.randomRevealCount = 0
-            beginnerRuntime.randomRevealStartBeatBucket = nil
-            beginnerRuntime.roundOneIntroActive = true
-            beginnerRuntime.roundOneSequenceStartDate = Date()
-        } else if lessonStyle == .sequential {
-            sequentialNoteGenerator.resetForNewFret()
-            beginnerRuntime.sequentialRevealCount = 0
-            beginnerRuntime.sequentialRevealStartBeatBucket = nil
-            beginnerRuntime.roundOneIntroActive = true
-            beginnerRuntime.roundOneSequenceStartDate = Date()
         }
 
         // Advance to next fret (or celebrate if at boundary)
@@ -2757,14 +2741,18 @@ struct BeginnerGameplayView: View {
                 currentRound += 1
                 beginnerRuntime.currentRoundInPhase += 1  // Increment round counter within phase
             } else {
-                handlePhaseCompletion()
-                return
+                // At boundary - reverse direction
+                isDescendingPhase = true
+                playDirectionRawValue = LessonDirection.descending.rawValue
+                currentRound = beginnerUpperFretBoundary - 1
             }
         } else {
             if currentRound > beginnerLowerFretBoundary {
                 currentRound -= 1
                 beginnerRuntime.currentRoundInPhase += 1  // Increment round counter within phase
             } else {
+                isDescendingPhase = false
+                playDirectionRawValue = LessonDirection.ascending.rawValue
                 handlePhaseCompletion()
                 return
             }
@@ -2837,6 +2825,17 @@ struct BeginnerGameplayView: View {
                 beginnerRuntime.introStartBeatBucket = nil
                 beginnerRuntime.rewardSelectedString = nil
                 beginnerRuntime.currentRoundInPhase += 1
+            } else {
+                // At boundary - reverse direction and keep the shared binding aligned
+                if isDescendingPhase {
+                    isDescendingPhase = false
+                    playDirectionRawValue = LessonDirection.ascending.rawValue
+                    currentRound = 1
+                } else {
+                    isDescendingPhase = true
+                    playDirectionRawValue = LessonDirection.descending.rawValue
+                    currentRound = beginnerUpperFretBoundary - 1
+                }
             }
         } else {
             beginnerRuntime.scaleStageIndex = min(beginnerRuntime.scaleStageIndex + 1, beginnerScaleStages.count - 1)
@@ -3729,7 +3728,6 @@ struct BeginnerGameplayView: View {
         // Trigger phase announcement for sequential mode only
         if layoutMode == .beginner && lessonStyle == .sequential {
             beginnerRuntime.phaseAnnouncementStartBeat = 0
-            beginnerRuntime.phaseAnnouncementPhase = 1
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
         }
@@ -3760,7 +3758,6 @@ struct BeginnerGameplayView: View {
         // Stage 2: Phase announcement done → enter armed/screensaver state for new phase
         if layoutMode == .beginner, beginnerRuntime.phaseAnnouncementStartBeat != nil {
             beginnerRuntime.phaseAnnouncementStartBeat = nil
-            beginnerRuntime.phaseAnnouncementPhase = 0
             isRoundArmed = true
             isCodeScreensaverMode = true
             startupSequenceActivated = false
@@ -3989,6 +3986,10 @@ struct BeginnerGameplayView: View {
 
         // Set starting fret for the new phase
         let nextPhaseIsDescending = [2, 4].contains(nextPhase)
+        isDescendingPhase = nextPhaseIsDescending
+        playDirectionRawValue = nextPhaseIsDescending
+            ? LessonDirection.descending.rawValue
+            : LessonDirection.ascending.rawValue
         currentRound = nextPhaseIsDescending ? 12 : 0
 
         // Reset counters
