@@ -70,6 +70,24 @@ struct MiniTVFrame: View {
         let bezelHeight = height + 18
 
         return ZStack {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.black.opacity(0.65), lineWidth: 3)
+                .padding(3)
+
             Group {
                 if isDarkScreen {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -117,20 +135,12 @@ struct MiniTVFrame: View {
         }
         .frame(width: bezelWidth, height: bezelHeight)
         .overlay {
-            // Vintage plastic glow - gold border matching highlight window
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 4
-                )
+            if let glowTint {
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(glowTint.opacity(0.78), lineWidth: 1.2)
+                    .padding(3)
+                    .shadow(color: glowTint.opacity(0.42), radius: 10)
+            }
         }
         .allowsHitTesting(hitTestingEnabled)
     }
