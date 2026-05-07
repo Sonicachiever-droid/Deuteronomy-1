@@ -352,9 +352,9 @@ private struct WhiteNoteBoxOverlay: View {
                         )
                     if isActive, let revealedNote {
                         Text(revealedNote)
-                            .font(.system(size: min(clampedBoxHeight * 0.34, 26), weight: .black, design: .monospaced))
+                            .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
                             .foregroundColor(currentQuestionIsAccidental ? .white : .black)
-                            .minimumScaleFactor(0.5)
+                            .minimumScaleFactor(0.32)
                             .lineLimit(1)
                     }
                 }
