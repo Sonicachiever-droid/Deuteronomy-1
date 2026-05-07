@@ -249,7 +249,7 @@ private struct DeveloperConsoleFrame: View {
                                     .font(.system(size: 20, weight: .black, design: .monospaced))
                                     .foregroundStyle(repetitionCountColor)
                                 Spacer()
-                                Text("Round \(currentRound)")
+                                Text("FRET \(currentRound)")
                                     .font(.system(size: 20, weight: .black, design: .monospaced))
                                     .foregroundStyle(Color.white)
                                 Spacer()
@@ -1066,7 +1066,7 @@ struct MaestroGameplayView: View {
             let isGameplayStarted = !isCodeScreensaverMode
             let displayedFretStatusLabel = isGameplayStarted ? cachedFretStatusLabel : ""
             let displayedStringStatusLabel = isGameplayStarted ? cachedStringStatusLabel : ""
-            let roundStatusLabel = "ROUND \(currentRound + 1)"
+            let roundStatusLabel = "FRET \(currentRound)"
             let screenBannerFont = UIFont.systemFont(ofSize: 20, weight: .semibold)
             let screenMeasuredWidth = max(
                 textWidth(for: cachedFretStatusLabel, font: screenBannerFont),
@@ -1208,7 +1208,7 @@ struct MaestroGameplayView: View {
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
                     scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                    currentRound: currentRound + 1,
+                    currentRound: currentRound,
                     bankText: "$\(displayedBankDollars)",
                     repetitionCountColor: .white,
                     startupElapsed: startupSequenceElapsed,
@@ -1593,7 +1593,7 @@ struct MaestroGameplayView: View {
                 height: consoleHeight,
                 isScreensaverMode: isCodeScreensaverMode,
                 scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                currentRound: currentRound + 1,
+                currentRound: currentRound,
                 bankText: "$\(displayedBankDollars)",
                 repetitionCountColor: .white,
                 startupElapsed: startupSequenceElapsed,
@@ -2105,7 +2105,7 @@ struct MaestroGameplayView: View {
         activeAnswerFeedback = nil
 
         // Cache labels so they stay in sync with the question
-        cachedFretStatusLabel = fret == 0 ? "OPEN" : "FRET \(fret)"
+        cachedFretStatusLabel = "FRET \(fret)"
         cachedStringStatusLabel = "STRING \(currentPromptStrings[0])"
 
         if audioEngineEnabled && speakGameplayPrompts {

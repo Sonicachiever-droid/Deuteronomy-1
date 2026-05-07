@@ -433,14 +433,14 @@ private struct DeveloperConsoleFrame: View {
                                                         .font(.system(size: 20, weight: .black, design: .monospaced))
                                                         .foregroundStyle(repetitionCountColor)
                                                     if hideRoundLabel {
-                                                        Text("R\(currentRound)")
+                                                        Text("FRET \(currentRound)")
                                                             .font(.system(size: 20, weight: .black, design: .monospaced))
                                                             .foregroundStyle(Color.white)
                                                     }
                                                 }
                                                 Spacer()
                                                 if !hideRoundLabel {
-                                                    Text("Round \(currentRound)")
+                                                    Text("FRET \(currentRound)")
                                                         .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
                                                         .foregroundStyle(Color.white)
                                                     Spacer()
@@ -1080,16 +1080,8 @@ struct BeginnerGameplayView: View {
         return startupState.phase == .armed
     }
 
-    private var backingTrackShouldBeActive: Bool {
-        return backingTrackShouldPlayInGameplay
-    }
-
     private var canPressStopButton: Bool {
         !isRoundArmed && !isCodeScreensaverMode && !isRoundPaused
-    }
-
-    private var canPressResetButton: Bool {
-        !startupStartButtonAttentionActive
     }
 
     private var shouldLockPlayDirection: Bool {
@@ -1179,7 +1171,7 @@ struct BeginnerGameplayView: View {
             let highlightCornerRadius = min(24, highlightWidth * 0.08)
             let currentTargetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
             let promptStrings = currentPromptStrings.isEmpty ? [currentTargetString] : currentPromptStrings
-            let fretStatusLabel = currentRound == 0 ? "OPEN" : "FRET \(currentRound)"
+            let fretStatusLabel = "FRET \(currentRound)"
             let stringStatusLabel = promptStrings.count > 1
                 ? "STRINGS \(promptStrings.map(String.init).joined(separator: "+"))"
                 : "STRING \(promptStrings[0])"
@@ -1757,7 +1749,6 @@ struct BeginnerGameplayView: View {
                         )
                     Button("RESET") { handleRoundResetButton() }
                         .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(!canPressResetButton)
                         .background(
                             RoundedRectangle(cornerRadius: 7, style: .continuous)
                                 .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
@@ -3027,7 +3018,7 @@ struct BeginnerGameplayView: View {
     ) -> some View {
         let currentTargetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
         let promptStrings = currentPromptStrings.isEmpty ? [currentTargetString] : currentPromptStrings
-        let fretStatusLabel = currentRound == 0 ? "OPEN" : "FRET \(currentRound)"
+        let fretStatusLabel = "FRET \(currentRound)"
         let stringStatusLabel = promptStrings.count > 1
             ? "STRINGS \(promptStrings.map(String.init).joined(separator: "+"))"
             : "STRING \(promptStrings[0])"
@@ -3037,7 +3028,7 @@ struct BeginnerGameplayView: View {
             if lessonStyle == .sequential { return "SEQUENTIAL MODE" }
             return isGameplayStarted ? stringStatusLabel : ""
         }()
-        let roundStatusLabel = "ROUND \(currentRound + 1)"
+        let roundStatusLabel = fretStatusLabel
 
         return DeveloperConsoleFrame(
             width: topStatusOuterWidth,
@@ -3057,7 +3048,7 @@ struct BeginnerGameplayView: View {
             beginnerRoundStatusText: beginnerRoundStatusText,
             centeredStatusMessage: beginnerCenteredStatusMessage,
             centeredStatusColor: Color.green.opacity(0.98),
-            currentRound: currentRound + 1,
+            currentRound: currentRound,
             repetitionCountColor: getRepetitionCountColor(),
             walletColor: getWalletColor(),
             hideRoundLabel: layoutMode == .beginner && lessonStyle == .chord,
@@ -3231,7 +3222,7 @@ struct BeginnerGameplayView: View {
         }
 
         audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
-        guard backingTrackShouldBeActive else {
+        guard backingTrackShouldPlayInGameplay else {
             midiEngine.stop()
             isBackingTrackPlaying = false
             return
@@ -3387,8 +3378,6 @@ struct BeginnerGameplayView: View {
     }
 
     private func handleRoundResetButton() {
-        guard canPressResetButton else { return }
-
         resetButtonPressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             resetButtonPressed = false
