@@ -351,7 +351,7 @@ private struct WhiteNoteBoxOverlay: View {
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                     if isActive, let revealedNote {
-                        Text(revealedNote)
+                        Text(guitarNoteDisplayText(revealedNote))
                             .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
                             .foregroundColor(currentQuestionIsAccidental ? .white : .black)
                             .minimumScaleFactor(0.32)
@@ -997,7 +997,8 @@ struct MaestroGameplayView: View {
 
                 ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
                     let note: String = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: maestroUsesFlats)
-                    let isAccidental: Bool = note.contains("#") || note.contains("b")
+                    let displayNote = guitarNoteDisplayText(note)
+                    let isAccidental: Bool = guitarNoteContainsAccidental(note)
                     let fillColor: Color = isAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
@@ -1009,7 +1010,7 @@ struct MaestroGameplayView: View {
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                         .overlay(
-                            Text(note)
+                            Text(displayNote)
                                 .font(.system(size: textSize, weight: .black, design: .monospaced))
                                 .foregroundStyle(textColor)
                                 .minimumScaleFactor(0.32)
@@ -1259,14 +1260,16 @@ struct MaestroGameplayView: View {
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
 
-                    MiniTVFrame(text: leftChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: leftChoiceNote.contains("#") || leftChoiceNote.contains("b"))
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
+                        .accessibilityHidden(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
-                    MiniTVFrame(text: rightChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: rightChoiceNote.contains("#") || rightChoiceNote.contains("b"))
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
+                        .accessibilityHidden(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
                     WhiteNoteBoxOverlay(
@@ -1605,21 +1608,21 @@ struct MaestroGameplayView: View {
             // Note choice MiniTVs and blue beat light
             if shouldShowQuestionUI {
                 MiniTVFrame(
-                    text: leftChoiceNote,
+                    text: guitarNoteDisplayText(leftChoiceNote),
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: leftChoiceNote.contains("#") || leftChoiceNote.contains("b")
+                    isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote)
                 )
                 .position(x: leftGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
 
                 MiniTVFrame(
-                    text: rightChoiceNote,
+                    text: guitarNoteDisplayText(rightChoiceNote),
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: rightChoiceNote.contains("#") || rightChoiceNote.contains("b")
+                    isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote)
                 )
                 .position(x: rightGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
@@ -2101,7 +2104,7 @@ struct MaestroGameplayView: View {
         currentCorrectNote = correctNote
 
         activePickedStringNumbers = currentPromptStrings
-        currentQuestionIsAccidental = correctNote.contains("#") || correctNote.contains("b")
+        currentQuestionIsAccidental = guitarNoteContainsAccidental(correctNote)
         activeAnswerFeedback = nil
 
         // Cache labels so they stay in sync with the question
@@ -2182,9 +2185,9 @@ struct MaestroGameplayView: View {
 
     private func randomIncorrectNote(excluding correct: String, useFlats: Bool) -> String {
         let source = useFlats ? chromaticFlats : chromaticSharps
-        let correctIsAccidental = correct.contains("#") || correct.contains("b")
+        let correctIsAccidental = guitarNoteContainsAccidental(correct)
         let pool = source.filter { note in
-            note != correct && (note.contains("#") || note.contains("b")) == correctIsAccidental
+            note != correct && guitarNoteContainsAccidental(note) == correctIsAccidental
         }
         return pool.randomElement() ?? (correctIsAccidental ? "C#" : "C")
     }

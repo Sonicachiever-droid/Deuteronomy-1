@@ -56,7 +56,8 @@ private struct WhiteNoteBoxOverlay: View {
                 let stringNumber = totalStrings - index
                 let isActive = activeSet.contains(stringNumber)
                 let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
-                let noteIsAccidental = (displayedNoteText?.contains("#") == true) || (displayedNoteText?.contains("b") == true)
+                let displayText = displayedNoteText.map(guitarNoteDisplayText)
+                let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
                 let shouldUseAccidentalStyle = noteIsAccidental
                 let fillColor: Color = {
                     guard isActive else { return Color.clear }
@@ -95,8 +96,8 @@ private struct WhiteNoteBoxOverlay: View {
                     )
                     .frame(width: boxWidth, height: clampedBoxHeight)
                     .overlay {
-                        if isActive, let displayedNoteText, !displayedNoteText.isEmpty {
-                            Text(displayedNoteText)
+                        if isActive, let displayText, !displayText.isEmpty {
+                            Text(displayText)
                                 .font(.system(size: min(clampedBoxHeight * 0.72, 26), weight: .black, design: .monospaced))
                                 .minimumScaleFactor(0.32)
                                 .lineLimit(1)
@@ -473,7 +474,7 @@ private struct DeveloperConsoleFrame: View {
                                                     Spacer(minLength: 0)
                                                     if !titleLine.isEmpty {
                                                         Text(titleLine)
-                                                            .font(.system(size: titleFontSize, weight: .black, design: .monospaced))
+                                                            .font(.system(size: titleFontSize, weight: .black, design: .default))
                                                             .foregroundStyle(Color.green.opacity(0.98))
                                                             .minimumScaleFactor(0.2)
                                                             .lineLimit(1)
@@ -481,7 +482,7 @@ private struct DeveloperConsoleFrame: View {
                                                             .frame(maxWidth: width * 0.72)
                                                     }
                                                     Text(notesLine)
-                                                        .font(.system(size: notesFontSize, weight: .black, design: .monospaced))
+                                                        .font(.system(size: notesFontSize, weight: .black, design: .default))
                                                         .foregroundStyle(Color.green.opacity(0.98))
                                                         .minimumScaleFactor(0.2)
                                                         .lineLimit(1)
@@ -1407,7 +1408,8 @@ struct BeginnerGameplayView: View {
 
                         ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
                             let note = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
-                            let noteIsAccidental = note.contains("#") || note.contains("b")
+                            let displayNote = guitarNoteDisplayText(note)
+                            let noteIsAccidental = guitarNoteContainsAccidental(note)
                             let tileFill = noteIsAccidental ? Color.black.opacity(0.94) : Color.white.opacity(0.96)
                             let tileStroke = noteIsAccidental ? Color.white.opacity(0.7) : Color.black.opacity(0.68)
                             let textColor = noteIsAccidental ? Color.white.opacity(0.98) : Color.black.opacity(0.95)
@@ -1421,7 +1423,7 @@ struct BeginnerGameplayView: View {
                                 )
                                 .frame(width: guideTileWidth, height: guideTileHeight)
                                 .overlay {
-                                    Text(note)
+                                    Text(displayNote)
                                         .font(.system(size: noteFontSize, weight: .black, design: .monospaced))
                                         .minimumScaleFactor(0.45)
                                         .lineLimit(1)
@@ -1498,13 +1500,13 @@ struct BeginnerGameplayView: View {
                     .accessibilityHidden(!showMaestroOverlays)
                     .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? initialGameplayDimOpacity * introScale : 0))
 
-                    MiniTVFrame(text: leftChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
                         .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? introScale : 0))
 
-                    MiniTVFrame(text: rightChoiceNote, width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
@@ -1625,13 +1627,14 @@ struct BeginnerGameplayView: View {
                         ForEach(0..<3, id: \.self) { idx in
                             let selectedString = leftStrings[idx]
                             let buttonNote = noteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                            let displayButtonNote = guitarNoteDisplayText(buttonNote)
                             let buttonIndex = idx
                             MiniTVFrame(
-                                text: buttonNote,
+                                text: displayButtonNote,
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
                                 fontScale: 1.0,
-                                isDarkScreen: buttonNote.contains("#") || buttonNote.contains("b")
+                                isDarkScreen: guitarNoteContainsAccidental(buttonNote)
                             )
                             .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 
@@ -1659,13 +1662,14 @@ struct BeginnerGameplayView: View {
                         ForEach(0..<3, id: \.self) { idx in
                             let selectedString = rightStrings[idx]
                             let buttonNote = noteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                            let displayButtonNote = guitarNoteDisplayText(buttonNote)
                             let buttonIndex = idx + 3
                             MiniTVFrame(
-                                text: buttonNote,
+                                text: displayButtonNote,
                                 width: beginnerScreenWidth,
                                 height: beginnerScreenHeight,
                                 fontScale: 1.0,
-                                isDarkScreen: buttonNote.contains("#") || buttonNote.contains("b")
+                                isDarkScreen: guitarNoteContainsAccidental(buttonNote)
                             )
                             .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 
@@ -3001,7 +3005,7 @@ struct BeginnerGameplayView: View {
         if layoutMode == .beginner {
             showFretboardGuide.toggle()
         }
-        showDeveloperPrompt("HINT: \(currentCorrectNote)")
+        showDeveloperPrompt("HINT: \(guitarNoteDisplayText(currentCorrectNote))")
     }
 
     private func handleAudioPageDismiss() {
