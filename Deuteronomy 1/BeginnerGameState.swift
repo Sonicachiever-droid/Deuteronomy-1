@@ -7,12 +7,9 @@ import Foundation
 @Observable
 final class BeginnerGameState {
 
-    // MARK: Phase & Round
-    var currentPhaseNumber: Int = 1
-    var currentRoundInPhase: Int = 1
+    // MARK: Round
     var correctAnswersAtCurrentFret: Int = 0
     var scaleRepetitionsRemaining: Int = 1
-    var coursePhase: BeginnerCoursePhase = .round1Ascending
 
     // MARK: Unified Reveal System (one set of counters for all lesson styles)
     var revealCount: Int = 0
@@ -21,15 +18,7 @@ final class BeginnerGameState {
     var roundOneSequenceStartDate: Date? = nil
     var answerBoxReady: Bool = false
 
-    // MARK: Reveal aliases (random & sequential share the unified counters)
-    var randomRevealCount: Int {
-        get { revealCount }
-        set { revealCount = newValue }
-    }
-    var randomRevealStartBeatBucket: Int? {
-        get { revealStartBeatBucket }
-        set { revealStartBeatBucket = newValue }
-    }
+    // MARK: Reveal aliases (sequential shares the unified counters)
     var sequentialRevealCount: Int {
         get { revealCount }
         set { revealCount = newValue }
@@ -38,15 +27,6 @@ final class BeginnerGameState {
         get { revealStartBeatBucket }
         set { revealStartBeatBucket = newValue }
     }
-
-    // MARK: Phase Announcements & Completion
-    var phaseAnnouncementStartBeat: Double? = nil
-    var phaseCompletedMessagePending: Bool = false
-    var phaseCompletedMessageStartBeat: Double? = nil
-    var completedPhaseNumber: Int = 0
-    var pendingPhaseCompletedAutoAdvanceDate: Date? = nil
-    var phaseTransitionPending: Bool = false
-    var nextPhaseNumber: Int = 1
 
     // MARK: Round Shift
     var pendingRoundShiftBeatPosition: Double? = nil
@@ -63,10 +43,6 @@ final class BeginnerGameState {
     var beatLightFlashOn: Bool = false
     var beatLightLastProcessedBeat: Int? = nil
     var beatLightIntroMeasureSkipped: Bool = false
-
-    // MARK: Celebration
-    var celebrationFlashOn: Bool = false
-    var celebrationNextFlashDate: Date? = nil
 
     // MARK: Answer / Reward Display
     var lastPickedNote: String? = nil
@@ -88,20 +64,12 @@ final class BeginnerGameState {
     // MARK: MIDI Stop
     var pendingMidiStopDate: Date? = nil
 
-    // MARK: Computed helpers
-    var isDescendingPhase: Bool { currentPhaseNumber % 2 == 0 }
-    var isAscendingPhase: Bool  { currentPhaseNumber % 2 == 1 }
+    // MARK: Reset
 
-    // MARK: Reset to Phase 1
-
-    func resetToPhaseOne() {
-        currentPhaseNumber = 1
-        currentRoundInPhase = 1
+    func reset() {
         correctAnswersAtCurrentFret = 0
         scaleRepetitionsRemaining = 1
-        coursePhase = .round1Ascending
         clearReveal()
-        clearPhaseMessaging()
         clearAutoPlay()
         clearReward()
     }
@@ -116,15 +84,6 @@ final class BeginnerGameState {
         revealBeatBucket = nil
         introStartBeatBucket = nil
         showRoundZeroIntroSequence = false
-    }
-
-    func clearPhaseMessaging() {
-        phaseAnnouncementStartBeat = nil
-        phaseCompletedMessagePending = false
-        phaseCompletedMessageStartBeat = nil
-        completedPhaseNumber = 0
-        pendingPhaseCompletedAutoAdvanceDate = nil
-        phaseTransitionPending = false
     }
 
     func clearAutoPlay() {

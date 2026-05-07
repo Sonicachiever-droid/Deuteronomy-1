@@ -523,10 +523,6 @@ struct MaestroGameplayView: View {
         LessonDirection(rawValue: playDirectionRawValue) == .descending
     }
 
-    private var usesRandomStringOrder: Bool {
-        [5, 6].contains(selectedPhase)
-    }
-
     private var phaseLabel: String {
         "PHASE \(selectedPhase)"
     }
@@ -619,6 +615,7 @@ struct MaestroGameplayView: View {
     @State private var questionBoxIntroProgress: CGFloat = 0
     @State private var autoPlayEnabled: Bool = false
     @State private var autoPlayNextDate: Date? = nil
+    @State private var resetButtonPressed: Bool = false
 
     private enum StartupSpeechPhase {
         case idle
@@ -862,8 +859,8 @@ struct MaestroGameplayView: View {
             return (raw * scale).rounded() / scale
         }()
         let viewingWindowShiftY: CGFloat = gridRowHeight * 0.5
-        let viewingWindowCenterY = highlightCenterYSnapped + viewingWindowShiftY
-        let pipingCenterY = viewingWindowCenterY
+        let pipingCenterY = highlightCenterYSnapped + viewingWindowShiftY
+
         let orangeGreenUnitCenterY = pipingCenterY - (gridRowHeight * 0.5)
         let highlightAvailableWidth = max(size.width - padding * 2, 0)
         let highlightExtraWidth = max(highlightAvailableWidth - neckWidth, 0)
@@ -1348,7 +1345,11 @@ struct MaestroGameplayView: View {
                         .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
                         .background(
                             RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                                .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                                )
                         )
                 }
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -1702,7 +1703,9 @@ struct MaestroGameplayView: View {
                 Button("RESET") { handleMaestroResetButton() }
                     .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
                     .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
                     )
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -1968,6 +1971,11 @@ struct MaestroGameplayView: View {
     }
 
     private func handleMaestroResetButton() {
+        resetButtonPressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            resetButtonPressed = false
+        }
+
         isRoundPaused = false
         transportStoppedForResume = false
         nextBeatTickDate = nil
@@ -2033,9 +2041,7 @@ struct MaestroGameplayView: View {
         }
 
         // Advance to next string in round
-        if usesRandomStringOrder {
-            roundStringIndex = Int.random(in: 0..<max(activeStringOrder.count, 1))
-        } else if roundStringIndex < activeStringOrder.count - 1 {
+        if roundStringIndex < activeStringOrder.count - 1 {
             roundStringIndex += 1
         } else {
             // Pass through all strings complete — decrement repetition counter
