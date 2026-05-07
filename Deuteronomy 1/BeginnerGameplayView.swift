@@ -3051,7 +3051,7 @@ struct BeginnerGameplayView: View {
             currentRound: currentRound,
             repetitionCountColor: getRepetitionCountColor(),
             walletColor: getWalletColor(),
-            hideRoundLabel: layoutMode == .beginner && lessonStyle == .chord,
+            hideRoundLabel: false,
             pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance
         )
         .position(x: proxyWidth / 2, y: topStatusCenterY)
