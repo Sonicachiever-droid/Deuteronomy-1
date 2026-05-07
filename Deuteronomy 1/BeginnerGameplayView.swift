@@ -938,7 +938,10 @@ struct BeginnerGameplayView: View {
             guard !isCodeScreensaverMode else { return nil }
 
             let revealCount = min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count)
-            let revealedNotes = sequentialNoteGenerator.currentNoteSequence.prefix(revealCount).joined(separator: " ")
+            let revealedNotes = sequentialNoteGenerator.currentNoteSequence
+                .prefix(revealCount)
+                .map(guitarNoteDisplayText)
+                .joined(separator: " ")
             return revealedNotes
         }
 
@@ -959,9 +962,9 @@ struct BeginnerGameplayView: View {
         }
         let progressLine = beginnerPentatonicProgressText
         if progressLine.isEmpty {
-            return beginnerCurrentScaleTitle
+            return guitarNoteDisplayText(beginnerCurrentScaleTitle)
         }
-        return "\(beginnerCurrentScaleTitle)\n\(progressLine)"
+        return "\(guitarNoteDisplayText(beginnerCurrentScaleTitle))\n\(guitarNoteDisplayText(progressLine))"
     }
 
     private var beginnerCenteredStatusMessage: String? {
