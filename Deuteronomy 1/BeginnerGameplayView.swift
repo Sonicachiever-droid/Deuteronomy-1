@@ -336,6 +336,13 @@ private struct DeveloperConsoleFrame: View {
     let hideRoundLabel: Bool
     let pentatonicRevealComplete: Bool
     let noteHighlightIndex: Int?
+    let sequentialSlots: [(note: String, stringNumber: Int)]?
+    let sequentialRevealCount: Int
+    let sequentialAnsweredCount: Int
+    let chordSlots: [(note: String, stringNumber: Int)]?
+    let chordRevealCount: Int
+    let chordAnsweredCount: Int
+    let rewardNoteTextByString: [Int: String]?
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -476,11 +483,80 @@ private struct DeveloperConsoleFrame: View {
                                                             .multilineTextAlignment(.center)
                                                             .frame(maxWidth: width * 0.72)
                                                     }
-                                                    consoleNotesLineText(notesLine, fontSize: notesFontSize, highlightIndex: noteHighlightIndex)
-                                                        .minimumScaleFactor(0.2)
-                                                        .lineLimit(1)
-                                                        .multilineTextAlignment(.center)
-                                                        .frame(maxWidth: hideRoundLabel ? width * 0.72 : .infinity)
+                                                    if titleLine.isEmpty {
+                                                        // Single-line: sequential notes or chord name only
+                                                        if let slots = sequentialSlots {
+                                                            // String-aligned slots: one per physical string
+                                                            GeometryReader { slotGeo in
+                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: slotGeo.size.width, neckWidth: slotGeo.size.width)
+                                                                ZStack {
+                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber
+                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : slotGeo.size.width / 2
+                                                                        let isRevealed = idx < sequentialRevealCount
+                                                                        let isAnswered = idx < sequentialAnsweredCount
+                                                                        Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
+                                                                            .font(.system(size: 37, weight: .black, design: .default))
+                                                                            .minimumScaleFactor(0.1)
+                                                                            .foregroundStyle(idx == sequentialAnsweredCount ? Color.orange : Color.green.opacity(0.98))
+                                                                            .position(x: xPos, y: slotGeo.size.height * 0.86 - 15)
+                                                                            .opacity(isRevealed && !isAnswered ? 1 : 0)
+                                                                    }
+                                                                }
+                                                            }
+                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                            .allowsHitTesting(false)
+                                                        } else {
+                                                            Text(notesLine)
+                                                                .font(.system(size: 50, weight: .black, design: .default))
+                                                                .foregroundStyle(Color.green.opacity(0.98))
+                                                                .minimumScaleFactor(0.1)
+                                                                .lineLimit(1)
+                                                                .multilineTextAlignment(.center)
+                                                                .frame(maxWidth: hideRoundLabel ? width * 2 / 3 : .infinity, maxHeight: height * 2 / 3, alignment: hideRoundLabel ? .top : .bottom)
+                                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: hideRoundLabel ? .top : .bottom)
+                                                                .allowsHitTesting(false)
+                                                        }
+                                                    } else {
+                                                        // Chord style: string-aligned slots or two-line fallback
+                                                        if let slots = chordSlots {
+                                                            GeometryReader { chordGeo in
+                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: chordGeo.size.width, neckWidth: chordGeo.size.width)
+                                                                ZStack {
+                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
+                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber
+                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
+                                                                        let isRevealed = idx < chordRevealCount
+                                                                        let isAnswered = idx < chordAnsweredCount
+                                                                        Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
+                                                                            .font(.system(size: 37, weight: .black, design: .default))
+                                                                            .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
+                                                                            .position(x: xPos, y: chordGeo.size.height * 0.86 - 15)
+                                                                            .opacity(rewardNoteTextByString != nil ? 1 : (isRevealed && !isAnswered ? 1 : 0))
+                                                                    }
+                                                                }
+                                                            }
+                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                        } else {
+                                                            // Two-line: pentatonic title + notes (fallback)
+                                                            VStack(spacing: 0) {
+                                                                Text(titleLine)
+                                                                    .font(.system(size: 50, weight: .black, design: .default))
+                                                                    .foregroundStyle(Color.green.opacity(0.98))
+                                                                    .minimumScaleFactor(0.2)
+                                                                    .lineLimit(1)
+                                                                    .multilineTextAlignment(.center)
+                                                                    .frame(maxWidth: width * 0.72)
+                                                                Text(notesLine)
+                                                                    .font(.system(size: 50, weight: .black, design: .default))
+                                                                    .foregroundStyle(Color.green.opacity(0.98))
+                                                                    .minimumScaleFactor(0.2)
+                                                                    .lineLimit(1)
+                                                                    .multilineTextAlignment(.center)
+                                                                    .frame(maxWidth: width * 0.72)
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                                                 .padding(.bottom, 6)
@@ -904,6 +980,30 @@ struct BeginnerGameplayView: View {
 
     private var beginnerCurrentScaleTitle: String {
         beginnerCurrentScaleStage.title
+    }
+
+    private var chordNoteStringMap: [Int] {
+        let notes = beginnerCurrentScaleNotes
+        let fret = max(currentRound, 0)
+        var map: [Int] = []
+        var usedStrings: Set<Int> = []
+
+        for note in notes {
+            var foundString: Int?
+            // Search strings in low-to-high order (6,5,4,3,2,1), skipping already-used strings
+            for stringNumber in stride(from: 6, through: 1, by: -1) {
+                if !usedStrings.contains(stringNumber) && noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
+                    foundString = stringNumber
+                    usedStrings.insert(stringNumber)
+                    break
+                }
+            }
+            // If note not found on any unused string, skip it (shouldn't happen for valid scales)
+            if let stringNum = foundString {
+                map.append(stringNum)
+            }
+        }
+        return map
     }
 
     private var beginnerCurrentBassSemitoneTarget: Int {
@@ -3104,7 +3204,18 @@ struct BeginnerGameplayView: View {
             walletColor: getWalletColor(),
             hideRoundLabel: false,
             pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance,
-            noteHighlightIndex: lessonStyle == .sequential ? sequentialNoteGenerator.sequenceProgressIndex : beginnerRuntime.scaleSequenceIndex
+            noteHighlightIndex: lessonStyle == .sequential ? sequentialNoteGenerator.sequenceProgressIndex : beginnerRuntime.scaleSequenceIndex,
+            sequentialSlots: (layoutMode == .beginner && lessonStyle == .sequential && !sequentialNoteGenerator.currentNoteSequence.isEmpty)
+                ? zip(sequentialNoteGenerator.currentNoteSequence, sequentialNoteGenerator.noteStringMap).map { (note: $0, stringNumber: $1) }
+                : nil,
+            sequentialRevealCount: min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count),
+            sequentialAnsweredCount: sequentialNoteGenerator.sequenceProgressIndex,
+            chordSlots: (layoutMode == .beginner && lessonStyle == .chord && !beginnerCurrentScaleNotes.isEmpty)
+                ? zip(beginnerCurrentScaleNotes, chordNoteStringMap).map { (note: $0, stringNumber: $1) }
+                : nil,
+            chordRevealCount: min(beginnerRuntime.pentatonicRevealCount, beginnerCurrentScaleNotes.count),
+            chordAnsweredCount: beginnerRuntime.scaleSequenceIndex,
+            rewardNoteTextByString: beginnerRuntime.rewardNoteTextByString
         )
         .position(x: proxyWidth / 2, y: topStatusCenterY)
         .allowsHitTesting(false)
