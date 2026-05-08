@@ -335,6 +335,7 @@ private struct DeveloperConsoleFrame: View {
     let walletColor: Color
     let hideRoundLabel: Bool
     let pentatonicRevealComplete: Bool
+    let noteHighlightIndex: Int?
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -440,12 +441,6 @@ private struct DeveloperConsoleFrame: View {
                                                     }
                                                 }
                                                 Spacer()
-                                                if !hideRoundLabel {
-                                                    Text("FRET \(currentRound)")
-                                                        .font(.system(size: min(width * 0.095, 26), weight: .black, design: .monospaced))
-                                                        .foregroundStyle(Color.white)
-                                                    Spacer()
-                                                }
                                                 VStack(alignment: .trailing, spacing: 2) {
                                                     Text("WALLET")
                                                         .font(.system(size: 12, weight: .bold, design: .monospaced))
@@ -466,8 +461,8 @@ private struct DeveloperConsoleFrame: View {
                                             let statusLines = beginnerRoundStatusText.components(separatedBy: "\n")
                                             let titleLine: String = statusLines.count >= 2 ? statusLines[0] : ""
                                             let notesLine: String = statusLines.count >= 2 ? statusLines[1] : statusLines[0]
-                                            let titleFontSize: CGFloat = min(width * 0.078, 116)
-                                            let notesFontSize: CGFloat = min(width * 0.088, 132)
+                                            let titleFontSize: CGFloat = 50
+                                            let notesFontSize: CGFloat = 37
 
                                             if !titleLine.isEmpty || !notesLine.isEmpty {
                                                 VStack(spacing: 0) {
@@ -481,9 +476,7 @@ private struct DeveloperConsoleFrame: View {
                                                             .multilineTextAlignment(.center)
                                                             .frame(maxWidth: width * 0.72)
                                                     }
-                                                    Text(notesLine)
-                                                        .font(.system(size: notesFontSize, weight: .black, design: .default))
-                                                        .foregroundStyle(Color.green.opacity(0.98))
+                                                    consoleNotesLineText(notesLine, fontSize: notesFontSize, highlightIndex: noteHighlightIndex)
                                                         .minimumScaleFactor(0.2)
                                                         .lineLimit(1)
                                                         .multilineTextAlignment(.center)
@@ -526,6 +519,26 @@ private struct DeveloperConsoleFrame: View {
         let base = min(width * 0.205, 54)
         let reduction = CGFloat(max(count - 4, 0)) * 2.9
         return max(26, base - reduction)
+    }
+
+    private func consoleNotesLineText(_ text: String, fontSize: CGFloat, highlightIndex: Int? = nil) -> Text {
+        let tokens = text.split(separator: " ").map(String.init)
+        guard tokens.count > 1 else {
+            return Text(text)
+                .font(.system(size: fontSize, weight: .black, design: .default))
+                .foregroundStyle(Color.green.opacity(0.98))
+        }
+
+        var line = Text("")
+        for (index, token) in tokens.enumerated() {
+            let suffix = index < tokens.count - 1 ? " " : ""
+            let segment = Text(token + suffix)
+                .foregroundStyle(index == highlightIndex ? Color.orange : Color.green.opacity(0.98))
+            line = line + segment
+        }
+
+        return line
+            .font(.system(size: fontSize, weight: .black, design: .default))
     }
 }
 
@@ -936,6 +949,10 @@ struct BeginnerGameplayView: View {
         // Sequential style: show revealed notes one by one
         if lessonStyle == .sequential {
             guard !isCodeScreensaverMode else { return nil }
+
+            if let pendingSequentialRepeatDisplayText = beginnerRuntime.pendingSequentialRepeatDisplayText {
+                return pendingSequentialRepeatDisplayText
+            }
 
             let revealCount = min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count)
             let revealedNotes = sequentialNoteGenerator.currentNoteSequence
@@ -1981,6 +1998,7 @@ struct BeginnerGameplayView: View {
         }
 
         handlePendingBeginnerRewardPlaybackIfNeeded()
+        handlePendingSequentialRepeatResetIfNeeded()
         handlePendingRoundShiftIfNeeded()
         ensureBeginnerRoundOneRevealSequenceStarted(currentDate: date)
         updateBeginnerRoundOneRevealSequence(currentDate: date)
@@ -2291,7 +2309,8 @@ struct BeginnerGameplayView: View {
     }
 
     private func handlePendingBeginnerRewardPlaybackIfNeeded() {
-        guard beginnerRuntime.pendingRewardStageAdvance,
+        guard layoutMode == .beginner,
+              beginnerRuntime.pendingRewardStageAdvance,
               let targetBeatPosition = beginnerRuntime.rewardTargetBeatPosition,
               let selectedString = beginnerRuntime.rewardSelectedString else { return }
 
@@ -2331,6 +2350,31 @@ struct BeginnerGameplayView: View {
             beginnerRuntime.rewardScheduledNoteTextByString = [:]
             beginnerRuntime.rewardSustainMultiplier = 3.0
             advanceBeginnerScaleStage(afterCompletionFromString: selectedString, playTransitionNote: false)
+        }
+    }
+
+    private func handlePendingSequentialRepeatResetIfNeeded() {
+        guard lessonStyle == .sequential,
+              let targetBeatPosition = beginnerRuntime.pendingSequentialRepeatResetBeatPosition else { return }
+
+        guard roundRevealElapsedBeats >= targetBeatPosition else { return }
+
+        beginnerRuntime.pendingSequentialRepeatResetBeatPosition = nil
+        sequentialNoteGenerator.resetForNewFret()
+        beginnerRuntime.sequentialRevealCount = 0
+        beginnerRuntime.sequentialRevealStartBeatBucket = nil
+        beginnerRuntime.answerBoxReady = false
+
+        let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
+        sequentialNoteGenerator.generateNoteSequence(
+            for: max(currentRound, 0),
+            useFlats: useFlats,
+            lowToHigh: playDirection == .ascending
+        )
+        prepareCurrentQuestion()
+
+        DispatchQueue.main.async {
+            beginnerRuntime.pendingSequentialRepeatDisplayText = nil
         }
     }
 
@@ -3059,7 +3103,8 @@ struct BeginnerGameplayView: View {
             repetitionCountColor: getRepetitionCountColor(),
             walletColor: getWalletColor(),
             hideRoundLabel: false,
-            pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance
+            pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance,
+            noteHighlightIndex: lessonStyle == .sequential ? sequentialNoteGenerator.sequenceProgressIndex : beginnerRuntime.scaleSequenceIndex
         )
         .position(x: proxyWidth / 2, y: topStatusCenterY)
         .allowsHitTesting(false)
@@ -3149,13 +3194,10 @@ struct BeginnerGameplayView: View {
                 }
             } else {
                 beginnerRuntime.scaleRepetitionsRemaining -= 1
-                sequentialNoteGenerator.resetForNewFret()
-                beginnerRuntime.sequentialRevealCount = 0
-                beginnerRuntime.sequentialRevealStartBeatBucket = nil
-                beginnerRuntime.answerBoxReady = false
-                let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-                sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
-                prepareCurrentQuestion()
+                beginnerRuntime.pendingSequentialRepeatDisplayText = sequentialNoteGenerator.currentNoteSequence
+                    .map(guitarNoteDisplayText)
+                    .joined(separator: " ")
+                beginnerRuntime.pendingSequentialRepeatResetBeatPosition = roundRevealElapsedBeats + 2.0
             }
         }
 

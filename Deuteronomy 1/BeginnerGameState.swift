@@ -17,6 +17,8 @@ final class BeginnerGameState {
     var roundOneIntroActive: Bool = false
     var roundOneSequenceStartDate: Date? = nil
     var answerBoxReady: Bool = false
+    var pendingSequentialRepeatResetBeatPosition: Double? = nil
+    var pendingSequentialRepeatDisplayText: String? = nil
 
     // MARK: Reveal aliases (sequential shares the unified counters)
     var sequentialRevealCount: Int {
@@ -80,6 +82,8 @@ final class BeginnerGameState {
         roundOneIntroActive = false
         roundOneSequenceStartDate = nil
         answerBoxReady = false
+        pendingSequentialRepeatResetBeatPosition = nil
+        pendingSequentialRepeatDisplayText = nil
         pentatonicRevealCount = 0
         revealBeatBucket = nil
         introStartBeatBucket = nil
