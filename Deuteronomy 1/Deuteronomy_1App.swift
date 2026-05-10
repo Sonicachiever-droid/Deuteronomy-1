@@ -150,22 +150,14 @@ struct Deuteronomy_1App: App {
                     #endif
                 } else if newMode == .maestro {
                     selectedModeRawValue = "maestro"
-                    // Apply saved orientation for maestro
-                    if orientationRawValue == Orientation.landscape.rawValue {
-                        AppDelegate.orientationLock = .landscape
-                        #if os(iOS)
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                            windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscape)) { _ in }
-                        }
-                        #endif
-                    } else {
-                        AppDelegate.orientationLock = .portrait
-                        #if os(iOS)
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                            windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)) { _ in }
-                        }
-                        #endif
+                    // Always lock portrait when switching to maestro (user must explicitly choose landscape)
+                    orientationRawValue = Orientation.portrait.rawValue
+                    AppDelegate.orientationLock = .portrait
+                    #if os(iOS)
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                        windowScene.requestGeometryUpdate(UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)) { _ in }
                     }
+                    #endif
                 }
                 SharedAudioEngine.shared.stopAll()
             }

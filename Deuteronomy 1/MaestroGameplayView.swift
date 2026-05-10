@@ -2101,7 +2101,7 @@ struct MaestroGameplayView: View {
         let fret = max(currentRound, 0)
         let useFlats = maestroUsesFlats
         let correctNote = noteName(forString: noteString, fret: fret, useFlats: useFlats)
-        let incorrectNote = randomIncorrectNote(excluding: correctNote, useFlats: useFlats)
+        let incorrectNote = randomIncorrectNote(excluding: correctNote, excludingLast: lastResolvedCorrectNote, useFlats: useFlats)
 
         let correctOnLeft = Bool.random()
 
@@ -2198,11 +2198,13 @@ struct MaestroGameplayView: View {
         return scale[noteIndex]
     }
 
-    private func randomIncorrectNote(excluding correct: String, useFlats: Bool) -> String {
+    private func randomIncorrectNote(excluding correct: String, excludingLast lastCorrect: String?, useFlats: Bool) -> String {
         let source = useFlats ? chromaticFlats : chromaticSharps
         let correctIsAccidental = guitarNoteContainsAccidental(correct)
         let pool = source.filter { note in
-            note != correct && guitarNoteContainsAccidental(note) == correctIsAccidental
+            note != correct &&
+            guitarNoteContainsAccidental(note) == correctIsAccidental &&
+            note != lastCorrect
         }
         return pool.randomElement() ?? (correctIsAccidental ? "C#" : "C")
     }
