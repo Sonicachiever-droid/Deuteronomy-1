@@ -530,7 +530,7 @@ private struct DeveloperConsoleFrame: View {
                                                                         let isAnswered = idx < chordAnsweredCount
                                                                         Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
                                                                             .font(.system(size: 37, weight: .black, design: .default))
-                                                                            .foregroundStyle(idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98))
+                                                                            .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : (idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98)))
                                                                             .position(x: xPos, y: chordGeo.size.height * 0.86 - 15)
                                                                             .opacity(rewardNoteTextByString != nil ? 1 : (isRevealed && !isAnswered ? 1 : 0))
                                                                     }
@@ -542,14 +542,14 @@ private struct DeveloperConsoleFrame: View {
                                                             VStack(spacing: 0) {
                                                                 Text(titleLine)
                                                                     .font(.system(size: 50, weight: .black, design: .default))
-                                                                    .foregroundStyle(Color.green.opacity(0.98))
+                                                                    .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : Color.green.opacity(0.98))
                                                                     .minimumScaleFactor(0.2)
                                                                     .lineLimit(1)
                                                                     .multilineTextAlignment(.center)
                                                                     .frame(maxWidth: width * 0.72)
                                                                 Text(notesLine)
                                                                     .font(.system(size: 50, weight: .black, design: .default))
-                                                                    .foregroundStyle(Color.green.opacity(0.98))
+                                                                    .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : Color.green.opacity(0.98))
                                                                     .minimumScaleFactor(0.2)
                                                                     .lineLimit(1)
                                                                     .multilineTextAlignment(.center)
@@ -824,6 +824,7 @@ struct BeginnerGameplayView: View {
     @State private var correctAnswerSide: AnswerSide = .left
     @State private var isResolvingAnswer: Bool = false
     @State private var activePickedStringNumbers: [Int] = [1]
+    @State private var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
     @State private var autoPlayLastStringByNote: [String: Int] = [:]
     @State private var activeAnswerFeedback: ThumbGlowState? = nil
     @State private var currentQuestionIsAccidental: Bool = false
@@ -1645,7 +1646,7 @@ struct BeginnerGameplayView: View {
                             revealedNoteText: layoutMode == .beginner
                                 ? (hasBeginnerSelectedNote ? beginnerRuntime.lastPickedNote : nil)
                                 : (activeAnswerFeedback == .green ? currentCorrectNote : nil),
-                            revealedNoteTextByString: layoutMode == .beginner ? beginnerRuntime.rewardNoteTextByString : nil,
+                            revealedNoteTextByString: layoutMode == .beginner ? (beginnerRuntime.rewardNoteTextByString ?? answeredNotesByStringAtCurrentFret) : nil,
                             revealedNoteTextColor: Color.black.opacity(0.96)
                         )
                         .allowsHitTesting(false)
@@ -2227,6 +2228,7 @@ struct BeginnerGameplayView: View {
         beatQuestionDeadline = nil
         currentPromptStrings = [1]
         activePickedStringNumbers = [1]
+        answeredNotesByStringAtCurrentFret = [:]
         beatCountInRemaining = modeVariant == .beat ? 4 : 0
         nextBeatTickDate = nil
         leftThumbState = .neutral
@@ -2503,19 +2505,23 @@ struct BeginnerGameplayView: View {
         if !isDescendingPhase {
             if currentRound < beginnerUpperFretBoundary {
                 currentRound += 1
+                answeredNotesByStringAtCurrentFret = [:]
             } else {
                 // At boundary - reverse direction
                 isDescendingPhase = true
                 playDirectionRawValue = LessonDirection.descending.rawValue
                 currentRound = beginnerUpperFretBoundary - 1
+                answeredNotesByStringAtCurrentFret = [:]
             }
         } else {
             if currentRound > beginnerLowerFretBoundary {
                 currentRound -= 1
+                answeredNotesByStringAtCurrentFret = [:]
             } else {
                 isDescendingPhase = false
                 playDirectionRawValue = LessonDirection.ascending.rawValue
                 currentRound = 1
+                answeredNotesByStringAtCurrentFret = [:]
             }
         }
 
@@ -2989,6 +2995,7 @@ struct BeginnerGameplayView: View {
                     } else {
                         if currentRound < beginnerUpperFretBoundary {
                             currentRound += 1
+                            answeredNotesByStringAtCurrentFret = [:]
                             prepareCurrentQuestion()
                         } else {
                             startGameFromBeginning()
@@ -3014,6 +3021,7 @@ struct BeginnerGameplayView: View {
             if !isDescendingPhase {
                 if currentRound < beginnerUpperFretBoundary {
                     currentRound += 1
+                    answeredNotesByStringAtCurrentFret = [:]
                 } else {
                     startGameFromBeginning()
                     return
@@ -3021,6 +3029,7 @@ struct BeginnerGameplayView: View {
             } else {
                 if currentRound > beginnerLowerFretBoundary {
                     currentRound -= 1
+                    answeredNotesByStringAtCurrentFret = [:]
                 } else {
                     startGameFromBeginning()
                     return
@@ -3258,9 +3267,16 @@ struct BeginnerGameplayView: View {
             && !beginnerRuntime.pendingRewardStageAdvance
             && !beginnerRuntime.roundOneIntroActive
 
-        activePickedStringNumbers = [selectedString]
+        if lessonStyle == .sequential {
+            let answeredStrings = Array(answeredNotesByStringAtCurrentFret.keys)
+            activePickedStringNumbers = answeredStrings + [selectedString]
+        } else {
+            activePickedStringNumbers = [selectedString]
+        }
         beginnerRuntime.rewardNoteTextByString = nil
         beginnerRuntime.lastPickedNote = selectedNote
+        // Track correct notes per string at current fret
+        answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
         beginnerRuntime.answerBoxReady = true
         activeAnswerFeedback = nil
         questionBoxAssistActive = false

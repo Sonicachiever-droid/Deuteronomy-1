@@ -285,6 +285,7 @@ private struct WhiteNoteBoxOverlay: View {
     let blinkingActive: Bool
     let blinkOrange: Bool
     let revealedNote: String?
+    let revealedNoteTextByString: [Int: String]?
 
     private let totalStrings: Int = 6
     private let stratNutWidthInches: CGFloat = 1.650
@@ -326,13 +327,15 @@ private struct WhiteNoteBoxOverlay: View {
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
                 let isActive = activeSet.contains(stringNumber)
+                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNote
+                let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
                 let fillColor: Color = {
                     guard isActive else { return Color.clear }
                     switch answerFeedback {
                     case .red:
                         return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
                     default:
-                        return currentQuestionIsAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
+                        return noteIsAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     }
                 }()
                 let strokeColor: Color = {
@@ -340,7 +343,7 @@ private struct WhiteNoteBoxOverlay: View {
                     switch answerFeedback {
                     case .red: return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
                     default:
-                        return currentQuestionIsAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
+                        return noteIsAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     }
                 }()
                 ZStack {
@@ -350,10 +353,10 @@ private struct WhiteNoteBoxOverlay: View {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .stroke(strokeColor, lineWidth: 2)
                         )
-                    if isActive, let revealedNote {
-                        Text(guitarNoteDisplayText(revealedNote))
+                    if isActive, let noteText = revealedNoteTextByString?[stringNumber] ?? revealedNote {
+                        Text(guitarNoteDisplayText(noteText))
                             .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
-                            .foregroundColor(currentQuestionIsAccidental ? .white : .black)
+                            .foregroundColor(noteIsAccidental ? .white : .black)
                             .minimumScaleFactor(0.32)
                             .lineLimit(1)
                     }
@@ -570,6 +573,7 @@ struct MaestroGameplayView: View {
     @State private var leftChoiceNote: String = ""
     @State private var rightChoiceNote: String = ""
     @State private var activePickedStringNumbers: [Int] = [1]
+    @State private var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
     @State private var activeAnswerFeedback: ThumbGlowState? = nil
     @State private var currentQuestionIsAccidental: Bool = false
     @State private var introWindowBlack: Bool = true
@@ -1282,7 +1286,8 @@ struct MaestroGameplayView: View {
                         currentQuestionIsAccidental: currentQuestionIsAccidental,
                         blinkingActive: false,
                         blinkOrange: false,
-                        revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil
+                        revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                        revealedNoteTextByString: answeredNotesByStringAtCurrentFret
                     )
                     .allowsHitTesting(false)
                     .offset(y: questionBoxOffsetY)
@@ -1650,7 +1655,8 @@ struct MaestroGameplayView: View {
                     currentQuestionIsAccidental: currentQuestionIsAccidental,
                     blinkingActive: false,
                     blinkOrange: false,
-                    revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil
+                    revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                    revealedNoteTextByString: answeredNotesByStringAtCurrentFret
                 )
                 .allowsHitTesting(false)
                 .opacity(initialGameplayDimOpacity)
@@ -1806,6 +1812,7 @@ struct MaestroGameplayView: View {
         walletDollars = 0
         currentPromptStrings = [1]
         activePickedStringNumbers = [1]
+        answeredNotesByStringAtCurrentFret = [:]
         beatCountInRemaining = 4
         nextBeatTickDate = nil
         leftThumbState = .neutral
@@ -1876,6 +1883,10 @@ struct MaestroGameplayView: View {
             }
             lastResolvedCorrectNote = currentCorrectNote
             lastResolvedCorrectString = currentPromptStrings.first
+            // Track correctly answered notes per string at current fret
+            for stringNumber in currentPromptStrings {
+                answeredNotesByStringAtCurrentFret[stringNumber] = currentCorrectNote
+            }
             for (index, stringNumber) in currentPromptStrings.enumerated() {
                 let delay = Double(index) * 0.035
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
@@ -2048,6 +2059,8 @@ struct MaestroGameplayView: View {
                 repetitionsRemainingAtFret -= 1
                 if repetitionsRemainingAtFret <= 0 {
                     repetitionsRemainingAtFret = max(playRepetitions, 1)
+                    // Clear answered notes when neck shifts to new fret
+                    answeredNotesByStringAtCurrentFret = [:]
                     if !isPhaseDescending {
                         if currentRound < 12 {
                             currentRound += 1
@@ -2103,7 +2116,9 @@ struct MaestroGameplayView: View {
         correctAnswerSide = correctOnLeft ? .left : .right
         currentCorrectNote = correctNote
 
-        activePickedStringNumbers = currentPromptStrings
+        // Include both current prompt string and previously answered strings at current fret
+        let answeredStrings = Array(answeredNotesByStringAtCurrentFret.keys)
+        activePickedStringNumbers = answeredStrings + currentPromptStrings
         currentQuestionIsAccidental = guitarNoteContainsAccidental(correctNote)
         activeAnswerFeedback = nil
 
