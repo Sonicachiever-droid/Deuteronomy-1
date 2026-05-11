@@ -2094,6 +2094,7 @@ struct MaestroGameplayView: View {
     }
 
     private func prepareCurrentQuestion() {
+        if roundStringIndex == 0 { answeredNotesByStringAtCurrentFret = [:] }
         let targetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
         currentPromptStrings = [targetString]
 
