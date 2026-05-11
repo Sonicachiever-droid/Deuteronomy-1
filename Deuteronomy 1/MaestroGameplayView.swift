@@ -2032,9 +2032,7 @@ struct MaestroGameplayView: View {
 
     private func advanceGame(afterCorrectAnswer isCorrect: Bool, fromAutoPlay: Bool = false) {
         if !isCorrect {
-            animateBankResetToZero {
-                startGameFromBeginning()
-            }
+            restartAtCurrentFret()
             return
         }
 
@@ -2141,32 +2139,18 @@ struct MaestroGameplayView: View {
     }
 
     private func payoutForRound(_ round: Int) -> Int {
-        return 1
+        return 2
     }
 
-    private func animateBankResetToZero(completion: @escaping () -> Void) {
-        let startValue = displayedBankDollars
-        guard startValue > 0 else {
-            bankDollars = 0
-            displayedBankDollars = 0
-            completion()
-            return
-        }
-
-        let steps = 24
-        let interval: Double = 0.018
-        for step in 1...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * interval)) {
-                let remainingRatio = max(0, 1.0 - (Double(step) / Double(steps)))
-                displayedBankDollars = Int((Double(startValue) * remainingRatio).rounded())
-                if step == steps {
-                    bankDollars = 0
-                    displayedBankDollars = 0
-                    walletDollars = 0
-                    completion()
-                }
-            }
-        }
+    private func restartAtCurrentFret() {
+        roundStringIndex = 0
+        repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
+        answeredNotesByStringAtCurrentFret = [:]
+        activePickedStringNumbers = [1]
+        currentPromptStrings = [1]
+        activeAnswerFeedback = nil
+        isResolvingAnswer = false
+        prepareCurrentQuestion()
     }
 
     private func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {

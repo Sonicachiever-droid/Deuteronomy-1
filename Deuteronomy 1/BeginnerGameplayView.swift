@@ -3095,30 +3095,6 @@ struct BeginnerGameplayView: View {
         return 1
     }
 
-    private func animateBankResetToZero(completion: @escaping () -> Void) {
-        let startValue = displayedBankDollars
-        guard startValue > 0 else {
-            bankDollars = 0
-            displayedBankDollars = 0
-            walletDollars = 0
-            completion()
-            return
-        }
-        let steps = 24
-        let interval: Double = 0.018
-        for step in 1...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * interval)) {
-                let remainingRatio = max(0, 1.0 - (Double(step) / Double(steps)))
-                displayedBankDollars = Int((Double(startValue) * remainingRatio).rounded())
-                if step == steps {
-                    bankDollars = 0
-                    displayedBankDollars = 0
-                    walletDollars = 0
-                    completion()
-                }
-            }
-        }
-    }
 
     private func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
         guard let openNote = openNoteByString[string],
@@ -3313,6 +3289,13 @@ struct BeginnerGameplayView: View {
             beginnerPressedButtonIndex = nil
             beginnerPressedButtonCorrect = false
         }
+        if !beginnerRuntime.isAutoPlayTriggered {
+            let payout = payoutForRound(currentRound)
+            bankDollars += payout
+            displayedBankDollars = bankDollars
+            walletDollars = bankDollars
+            balanceDollars += payout
+        }
         sequentialNoteGenerator.advanceSequence()
 
         if sequentialNoteGenerator.isSequenceComplete() {
@@ -3352,6 +3335,13 @@ struct BeginnerGameplayView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                 beginnerPressedButtonIndex = nil
                 beginnerPressedButtonCorrect = false
+            }
+            if !beginnerRuntime.isAutoPlayTriggered {
+                let payout = payoutForRound(currentRound)
+                bankDollars += payout
+                displayedBankDollars = bankDollars
+                walletDollars = bankDollars
+                balanceDollars += payout
             }
             if safeSequenceIndex == currentScaleNotes.count - 1 {
                 if let rewardPolicy = beginnerRewardPolicyForCurrentStage() {
