@@ -1347,7 +1347,7 @@ struct BeginnerGameplayView: View {
             let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
             let leftFretIndicatorX = (proxy.size.width / 2) - (highlightWidth / 2) - sideWindowGap
             let rightFretIndicatorX = (proxy.size.width / 2) + (highlightWidth / 2) + sideWindowGap
-            let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
+            let fretIndicatorText = "\(max(currentRound, 0))"
 
             let unsignedN = abs(currentFretStart)
             let activeMidpointIndex: Int = {
@@ -2279,7 +2279,7 @@ struct BeginnerGameplayView: View {
 
         // Initialize Sequential style state if needed
         if lessonStyle == .sequential {
-            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: playDirection == .ascending)
+            sequentialNoteGenerator.generateNoteSequence(for: currentRound, useFlats: beginnerUsesFlats, lowToHigh: isProgressionLowToHigh)
             beginnerRuntime.sequentialRevealCount = 0
             beginnerRuntime.sequentialRevealStartBeatBucket = nil
             beginnerRuntime.roundOneIntroActive = true
@@ -2472,7 +2472,7 @@ struct BeginnerGameplayView: View {
         sequentialNoteGenerator.generateNoteSequence(
             for: max(currentRound, 0),
             useFlats: useFlats,
-            lowToHigh: playDirection == .ascending
+            lowToHigh: isProgressionLowToHigh
         )
         prepareCurrentQuestion()
 
@@ -2528,7 +2528,7 @@ struct BeginnerGameplayView: View {
 
         // Generate new sequence for new fret and apply bass transpose
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
-        sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: playDirection == .ascending)
+        sequentialNoteGenerator.generateNoteSequence(for: max(currentRound, 0), useFlats: useFlats, lowToHigh: isProgressionLowToHigh)
         applyBeginnerBassTransposeForCurrentStage()
         prepareCurrentQuestion()
     }
@@ -2640,7 +2640,7 @@ struct BeginnerGameplayView: View {
 
         if !isDescendingPhase {
             if lessonStyle == .sequential {
-                let transposeSemitones = max(currentRound, 0)
+                let transposeSemitones = playEnableHighFrets ? max(currentRound, 0) % 12 : max(currentRound, 0)
                 midiEngine.setBassTransposeSemitones(transposeSemitones)
             } else {
                 midiEngine.setBassTransposeSemitones(beginnerCurrentBassSemitoneTarget)

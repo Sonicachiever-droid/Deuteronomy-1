@@ -1171,7 +1171,7 @@ struct MaestroGameplayView: View {
             let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
             let leftFretIndicatorX = (proxy.size.width / 2) - (highlightWidth / 2) - sideWindowGap
             let rightFretIndicatorX = (proxy.size.width / 2) + (highlightWidth / 2) + sideWindowGap
-            let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
+            let fretIndicatorText = "\(max(currentRound, 0))"
 
 #if DEBUG
             let _ = { () -> Void in
@@ -1565,7 +1565,7 @@ struct MaestroGameplayView: View {
         let fretOffsetFromWindow: CGFloat = 6
         let leftFretIndicatorX = (windowLeftEdge + leftThumbInnerEdge) / 2 - fretOffsetFromWindow
         let rightFretIndicatorX = (windowRightEdge + rightThumbInnerEdge) / 2 + fretOffsetFromWindow
-        let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
+        let fretIndicatorText = "\(max(currentRound, 0))"
 
         let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
 
@@ -2062,13 +2062,13 @@ struct MaestroGameplayView: View {
                     // Clear answered notes when neck shifts to new fret
                     answeredNotesByStringAtCurrentFret = [:]
                     if !isPhaseDescending {
-                        if currentRound < 12 {
+                        if currentRound < (playEnableHighFrets ? 19 : 12) {
                             currentRound += 1
                         } else {
                             // At upper boundary - reverse direction
                             isDescendingPhase = true
                             playDirectionRawValue = LessonDirection.descending.rawValue
-                            currentRound = 11
+                            currentRound = (playEnableHighFrets ? 19 : 12) - 1
                         }
                     } else {
                         if currentRound > 0 {
