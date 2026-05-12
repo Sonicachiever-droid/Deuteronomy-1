@@ -290,13 +290,13 @@ private struct WhiteNoteBoxOverlay: View {
     let revealedNote: String?
     let revealedNoteTextByString: [Int: String]?
 
-    private let totalStrings: Int = 6
-    private let stratNutWidthInches: CGFloat = 1.650
-    private let stratStringSpanInches: CGFloat = 1.362
+    private let totalStrings: Int = GameConstants.stringCount
+    private let stratNutWidthInches: CGFloat = GuitarConstants.stratNutWidth
+    private let stratStringSpanInches: CGFloat = GuitarConstants.stratStringSpan
 
     var body: some View {
         let clampedBoxHeight = min(boxHeight, availableSize.height)
-        let nutWidth = neckWidth * 0.99
+        let nutWidth = neckWidth * GuitarConstants.nutWidthRatio
         let overallWidth = availableSize.width
         let overallPadding = (overallWidth - nutWidth) / 2
 
@@ -310,7 +310,7 @@ private struct WhiteNoteBoxOverlay: View {
         let minCenterSpacing = grooveCenters.enumerated().dropFirst().map { idx, center in
             center - grooveCenters[idx - 1]
         }.min() ?? interStringSpacing
-        let spacingGap = max(minCenterSpacing * 0.12, 6)
+        let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
         let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
         let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
         let activeSet = Set(activeStringNumbers)
@@ -320,7 +320,7 @@ private struct WhiteNoteBoxOverlay: View {
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
                 let isActive = activeSet.contains(stringNumber)
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                     .fill(Color.black.opacity(0.42))
                     .frame(width: boxWidth, height: clampedBoxHeight)
                     .opacity(isActive ? 1 : 0.0001)
@@ -350,10 +350,10 @@ private struct WhiteNoteBoxOverlay: View {
                     }
                 }()
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                         .fill(fillColor)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                     if isActive, let noteText = revealedNoteTextByString?[stringNumber] ?? revealedNote {
@@ -908,7 +908,7 @@ struct MaestroGameplayView: View {
         let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
         let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
         let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
         let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
         let stringTopY = nutBottomY + stringStopInset
 
@@ -934,8 +934,8 @@ struct MaestroGameplayView: View {
                     }
                     .frame(width: neckWidth, height: neckHeight)
 
-                    NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
-                        .frame(width: neckWidth * 0.99, height: nutVisualHeight)
+                    NutLayer(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
+                        .frame(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
                         .offset(y: -nutVisualHeight * 0.85)
                 }
                 .frame(width: neckWidth, height: neckHeight)
@@ -1032,14 +1032,14 @@ struct MaestroGameplayView: View {
             let stringCenters = GuitarStringLayout.stringCenters(containerWidth: size.width, neckWidth: neckWidth)
             let centerSpacings = (1..<stringCenters.count).map { stringCenters[$0] - stringCenters[$0 - 1] }
             let minCenterSpacing = centerSpacings.min() ?? 60
-            let spacingGap = max(minCenterSpacing * 0.12, 6)
+            let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
             let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
             let boxWidth = min(guideBoxHeight * 1.8, maxBoxWidthFromSpacing)
             let fretboardStrings = (0..<GuitarStringLayout.totalStrings).map { GuitarStringLayout.highestStringNumber - $0 }
             ZStack {
                 // Six individual translucent backgrounds for each note box
                 ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                         .fill(Color.black.opacity(0.42))
                         .frame(width: boxWidth, height: guideBoxHeight)
                         .position(x: stringCenters[index], y: guideBoxCenterY)
@@ -1053,10 +1053,10 @@ struct MaestroGameplayView: View {
                     let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
                     let textSize = min(guideBoxHeight * 0.78, 28)
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                         .fill(fillColor)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                         .overlay(
@@ -1147,14 +1147,14 @@ struct MaestroGameplayView: View {
             let buttonBottomY = buttonCenterY + (thumbDiameter / 2)
             let whitePipingGap = max(gridRowHeight * 0.32, 14)
             let upperWhitePipingY = buttonTopY - whitePipingGap
-            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * 0.18)
+            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * GuitarConstants.gridRowHeightRatio)
             let whitePipingWidth = max(proxy.size.width - 7, 0)
             let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 14
             let developerOverlaysEnabled: Bool = false
             let windowTopY = holeCenterY - highlightHeight / 2
             let topStatusOuterWidth = highlightWidth
             let topStatusOuterHeight = max(min(gridRowHeight * 1.35, 120), 74)
-            let topStatusBottomGap = max(gridRowHeight * 0.18, 10)
+            let topStatusBottomGap = max(gridRowHeight * GuitarConstants.gridRowHeightRatio, 10)
             let topStatusCenterY = (windowTopY - topStatusBottomGap) - (topStatusOuterHeight / 2)
 
             let unsignedN = abs(currentFretStart)
@@ -1192,7 +1192,7 @@ struct MaestroGameplayView: View {
             let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
             let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
             let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
             let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
             let _ = nutBottomY + stringStopInset
             let calibratedAssetToNutDelta = assetToNutBottomDelta ?? 0
@@ -1521,7 +1521,7 @@ struct MaestroGameplayView: View {
         let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
         let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
         let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
         let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
         let _ = nutBottomY + stringStopInset
 
@@ -1741,29 +1741,29 @@ struct MaestroGameplayView: View {
             // Transport bar below neck window
             HStack(spacing: 6) {
                 Button("START") { handleMaestroStartButton() }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                             .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
                     )
                 Button(isRoundPaused ? "RESUME" : "PAUSE") {
                     if isRoundPaused { handleMaestroStartButton() }
                     else { handleMaestroStopButton() }
                 }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .disabled(isCodeScreensaverMode && !isRoundPaused)
                     .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                             .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
                     )
                 Button("RESET") { handleMaestroResetButton() }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                             .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
                     )
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))

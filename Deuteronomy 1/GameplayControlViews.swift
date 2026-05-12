@@ -27,11 +27,11 @@ struct GameplayControlPlateShell: View {
                                 endRadius: 16
                             )
                         )
-                        .frame(width: 28, height: 28)
+                        .frame(width: UIConstants.powerIndicatorDiameter, height: UIConstants.powerIndicatorDiameter)
                         .overlay(Circle().stroke(Color.black.opacity(0.35), lineWidth: 1.2))
                     Circle()
                         .fill(Color.black.opacity(0.9))
-                        .frame(width: 14, height: 14)
+                        .frame(width: UIConstants.powerIndicatorDotDiameter, height: UIConstants.powerIndicatorDotDiameter)
                 }
 
                 HStack(spacing: 8) {
@@ -56,10 +56,10 @@ struct GameplayControlPlateShell: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, UIConstants.controlPlatePaddingH)
+        .padding(.vertical, UIConstants.controlPlatePaddingV)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
@@ -79,11 +79,11 @@ struct GameplayControlPlateShell: View {
                     )
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                         .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [Color.white.opacity(0.5), .clear],
@@ -100,7 +100,7 @@ struct GameplayControlPlateShell: View {
     private func plateButton(title: String, action: @escaping () -> Void, isActive: Bool = false) -> some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: consoleSkin == .tweed ? [
@@ -119,13 +119,13 @@ struct GameplayControlPlateShell: View {
                         )
                     )
                 if isActive {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(Color.green.opacity(0.9))
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34)
+            .frame(maxWidth: .infinity, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                     .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
             )
             .overlay(

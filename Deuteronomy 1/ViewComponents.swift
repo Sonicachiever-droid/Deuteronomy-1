@@ -68,11 +68,11 @@ struct MiniTVFrame: View {
     }
 
     var body: some View {
-        let bezelWidth = width + 24
-        let bezelHeight = height + 18
+        let bezelWidth = width + UIConstants.miniTVBezelInsetW
+        let bezelHeight = height + UIConstants.miniTVBezelInsetH
 
         return ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed
@@ -84,17 +84,17 @@ struct MiniTVFrame: View {
                 )
                 .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
                         .stroke(consoleSkin == .tweed ? Color.white.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
                 )
 
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.consoleInnerBorderRadius, style: .continuous)
                 .stroke(consoleSkin == .tweed ? Color.white.opacity(0.55) : Color.black.opacity(0.65), lineWidth: 3)
-                .padding(3)
+                .padding(UIConstants.consoleFramePadding)
 
             Group {
                 if isDarkScreen {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleContentRadius, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: [Color.black.opacity(0.95), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.95)],
@@ -104,7 +104,7 @@ struct MiniTVFrame: View {
                         )
                         .padding(8)
                 } else {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.consoleContentRadius, style: .continuous)
                         .fill(
                             RadialGradient(
                                 gradient: Gradient(stops: [
@@ -124,9 +124,9 @@ struct MiniTVFrame: View {
             }
 
 
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.consoleInnerFrameRadius, style: .continuous)
                 .fill(Color.clear)
-                .padding(12)
+                .padding(UIConstants.consoleContentPadding)
 
             Text(text.prefix(1).uppercased() + text.dropFirst())
                 .font(.system(size: max(height * 0.78 * fontScale, 14), weight: .black, design: .default))
@@ -135,14 +135,14 @@ struct MiniTVFrame: View {
                 .allowsTightening(true)
                 .foregroundColor(isDarkScreen ? .white : .black)
                 .minimumScaleFactor(0.45)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, UIConstants.consoleContentPadding)
         }
         .frame(width: bezelWidth, height: bezelHeight)
         .overlay {
             if let glowTint {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.consoleFrameRadius, style: .continuous)
                     .stroke(glowTint.opacity(0.78), lineWidth: 1.2)
-                    .padding(3)
+                    .padding(UIConstants.consoleFramePadding)
                     .shadow(color: glowTint.opacity(0.42), radius: 10)
             }
         }

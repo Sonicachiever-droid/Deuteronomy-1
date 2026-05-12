@@ -21,10 +21,10 @@ private struct WhiteNoteBoxOverlay: View {
 
     var body: some View {
         let totalStrings = GuitarStringLayout.totalStrings
-        let stratNutWidthInches: CGFloat = 1.650
-        let stratStringSpanInches: CGFloat = 1.362
+        let stratNutWidthInches: CGFloat = GuitarConstants.stratNutWidth
+        let stratStringSpanInches: CGFloat = GuitarConstants.stratStringSpan
         let clampedBoxHeight = min(boxHeight, availableSize.height)
-        let nutWidth = neckWidth * 0.99
+        let nutWidth = neckWidth * GuitarConstants.nutWidthRatio
         let overallWidth = availableSize.width
         let overallPadding = (overallWidth - nutWidth) / 2
         let widthPerInch = nutWidth / stratNutWidthInches
@@ -36,7 +36,7 @@ private struct WhiteNoteBoxOverlay: View {
         let minCenterSpacing = grooveCenters.enumerated().dropFirst().map { idx, center in
             center - grooveCenters[idx - 1]
         }.min() ?? interStringSpacing
-        let spacingGap = max(minCenterSpacing * 0.12, 6)
+        let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
         let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
         let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
         let activeSet = Set(activeStringNumbers)
@@ -45,7 +45,7 @@ private struct WhiteNoteBoxOverlay: View {
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
                 let isActive = activeSet.contains(stringNumber)
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                     .fill(Color.black.opacity(0.42))
                     .frame(width: boxWidth, height: clampedBoxHeight)
                     .opacity(isActive ? 1 : 0.0001)
@@ -88,10 +88,10 @@ private struct WhiteNoteBoxOverlay: View {
                     }
                 }()
 
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                     .fill(fillColor)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                             .stroke(strokeColor, lineWidth: 2)
                     )
                     .frame(width: boxWidth, height: clampedBoxHeight)
@@ -1358,7 +1358,7 @@ struct BeginnerGameplayView: View {
             let buttonBottomY = buttonCenterY + (thumbDiameter / 2)
             let whitePipingGap = max(gridRowHeight * 0.32, 14)
             let upperWhitePipingY = buttonTopY - whitePipingGap
-            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * 0.18)
+            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * GuitarConstants.gridRowHeightRatio)
             let transportCenterY = min(
                 windowBottomY + max(gridRowHeight * 1.15, 24),
                 upperWhitePipingY - max(gridRowHeight * 0.95, 20)
@@ -1368,7 +1368,7 @@ struct BeginnerGameplayView: View {
             let windowTopY = holeCenterY - highlightHeight / 2
             let topStatusOuterWidth = highlightWidth
             let topStatusOuterHeight = max(min(gridRowHeight * 1.35, 120), 74)
-            let topStatusBottomGap = max(gridRowHeight * 0.18, 10)
+            let topStatusBottomGap = max(gridRowHeight * GuitarConstants.gridRowHeightRatio, 10)
             let topStatusCenterY = (windowTopY - topStatusBottomGap) - (topStatusOuterHeight / 2)
             let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
             let leftFretIndicatorX = (proxy.size.width / 2) - (highlightWidth / 2) - sideWindowGap
@@ -1410,7 +1410,7 @@ struct BeginnerGameplayView: View {
             let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
             let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
             let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
             let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
             let stringTopY = nutBottomY + stringStopInset
             let calibratedAssetToNutDelta = assetToNutBottomDelta ?? 0
@@ -1485,8 +1485,8 @@ struct BeginnerGameplayView: View {
                             }
                             .frame(width: neckWidth, height: neckHeight)
 
-                            NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
-                                .frame(width: neckWidth * 0.99, height: nutVisualHeight)
+                            NutLayer(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
+                                .frame(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
                                 .offset(y: -nutVisualHeight * 0.85)
                         }
                         .frame(width: neckWidth, height: neckHeight)
@@ -1592,7 +1592,7 @@ struct BeginnerGameplayView: View {
                     ZStack {
                         // Six individual translucent backgrounds matching each note box
                         ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                                 .fill(Color.black.opacity(0.42))
                                 .frame(width: guideTileWidth, height: guideTileHeight)
                                 .position(x: stringCenters[index], y: guideBoxCenterY)
@@ -3175,12 +3175,12 @@ struct BeginnerGameplayView: View {
         let startButtonShouldHighlight: Bool = startupStartButtonAttentionActive && (!startupSequenceActivated ? startupStartButtonBlinkOn : startupState.isVisible)
         HStack(spacing: 6) {
             Button("START") { handleStartButtonPress() }
-                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(startButtonShouldHighlight ? Color.green.opacity(0.9) : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
@@ -3188,23 +3188,23 @@ struct BeginnerGameplayView: View {
                 if isRoundPaused { resumeRoundFromTransportStop(forceIfPaused: true) }
                 else { handleRoundStopButton() }
             }
-                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
                 .disabled(!canPressStopButton && !isRoundPaused)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
             Button("RESET") { handleRoundResetButton() }
-                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
