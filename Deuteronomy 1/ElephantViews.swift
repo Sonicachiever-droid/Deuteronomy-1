@@ -148,3 +148,126 @@ struct DarkMatteOverlay: View {
         .allowsHitTesting(false)
     }
 }
+
+// MARK: - Full Screen Tweed Background
+
+struct FullScreenTweedBackground: View {
+    var body: some View {
+        GeometryReader { geo in
+            let bleed: CGFloat = 48
+
+            Image("tweed set two")
+                .resizable()
+                .frame(width: geo.size.width + bleed * 2, height: geo.size.height + bleed * 2)
+                .scaleEffect(x: 1.15, y: -1.15, anchor: .center)
+                .brightness(0.08)
+                .saturation(1.05)
+                .overlay(Color.black.opacity(0.18))
+                .offset(x: -bleed, y: -bleed)
+        }
+    }
+}
+
+// MARK: - Tweed Overlay (with hole cutout)
+
+struct TweedOverlay: View {
+    let canvasSize: CGSize
+    let highlightWidth: CGFloat
+    let highlightHeight: CGFloat
+    let highlightCenter: CGPoint
+    let highlightCornerRadius: CGFloat
+    var textureBrightness: Double = 0.12
+    var textureOverlayOpacity: Double = 0.2
+    var textureBleed: CGFloat = 36
+
+    var body: some View {
+        let bleed = textureBleed
+
+        Image("tweed set two")
+            .resizable()
+            .frame(width: canvasSize.width + (bleed * 2), height: canvasSize.height + (bleed * 2))
+            .scaleEffect(x: 1.15, y: -1.15, anchor: .center)
+            .brightness(textureBrightness)
+            .saturation(1.05)
+            .overlay(Color.black.opacity(textureOverlayOpacity))
+            .offset(x: -bleed, y: -bleed)
+        .frame(width: canvasSize.width, height: canvasSize.height)
+        .clipped()
+        .mask(maskShape)
+        .frame(width: canvasSize.width, height: canvasSize.height)
+    }
+
+    private var maskShape: some View {
+        Rectangle()
+            .frame(width: canvasSize.width, height: canvasSize.height)
+            .overlay {
+                HighlightWindowShape(cornerRadius: highlightCornerRadius)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .position(x: highlightCenter.x, y: highlightCenter.y)
+                    .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+    }
+}
+
+// MARK: - Tweed Window View (tweed + chrome border combined)
+
+struct TweedWindowView: View {
+    let canvasSize: CGSize
+    let highlightWidth: CGFloat
+    let highlightHeight: CGFloat
+    let highlightCenter: CGPoint
+    let highlightCornerRadius: CGFloat
+    var textureBrightness: Double = 0.12
+    var textureOverlayOpacity: Double = 0.2
+    var textureBleed: CGFloat = 36
+
+    var body: some View {
+        ZStack {
+            // Tweed with the hole cut out
+            TweedOverlay(
+                canvasSize: canvasSize,
+                highlightWidth: highlightWidth,
+                highlightHeight: highlightHeight,
+                highlightCenter: highlightCenter,
+                highlightCornerRadius: highlightCornerRadius,
+                textureBrightness: textureBrightness,
+                textureOverlayOpacity: textureOverlayOpacity,
+                textureBleed: textureBleed
+            )
+
+            // Chrome border drawn in the exact same position as the hole
+            HighlightWindowChromeBorder(
+                width: highlightWidth,
+                height: highlightHeight,
+                cornerRadius: highlightCornerRadius
+            )
+            .position(x: highlightCenter.x, y: highlightCenter.y)
+        }
+    }
+}
+
+// MARK: - Highlight Window Chrome Border
+
+struct HighlightWindowChromeBorder: View {
+    let width: CGFloat
+    let height: CGFloat
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        HighlightWindowShape(cornerRadius: cornerRadius)
+            .strokeBorder(
+                LinearGradient(
+                    colors: [
+                        Color(red: 1.0, green: 1.0, blue: 1.0),
+                        Color(red: 0.65, green: 0.65, blue: 0.65),
+                        Color(red: 0.90, green: 0.90, blue: 0.90)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 4
+            )
+            .frame(width: width, height: height)
+    }
+}

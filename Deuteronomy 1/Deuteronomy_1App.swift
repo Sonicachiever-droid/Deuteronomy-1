@@ -26,9 +26,16 @@ struct Deuteronomy_1App: App {
     @AppStorage("numbers3.setup.selectedMode") private var selectedModeRawValue: String = "beginner"
     @AppStorage("numbers3.setup.progression") private var progressionRawValue: String = "highToLow"
     @AppStorage("numbers3.setup.orientation") private var orientationRawValue: String = Orientation.portrait.rawValue
+    @AppStorage("numbers3.setup.consoleSkin") private var consoleSkinRawValue: String = ConsoleSkin.classic.rawValue
+    @AppStorage("numbers3.setup.premiumUnlocked") private var premiumUnlocked: Bool = false
 
     private var orientation: Orientation {
         Orientation(rawValue: orientationRawValue) ?? .portrait
+    }
+
+    private var consoleSkin: ConsoleSkin {
+        get { ConsoleSkin(rawValue: consoleSkinRawValue) ?? .classic }
+        set { consoleSkinRawValue = newValue.rawValue }
     }
 
     init() {
@@ -73,7 +80,8 @@ struct Deuteronomy_1App: App {
                             playLessonStyle: $lessonStyleRawValue,
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
-                            balanceDollars: $balancePoints
+                            balanceDollars: $balancePoints,
+                            consoleSkin: consoleSkin
                         )
                     case .maestro:
                         MaestroGameplayView(
@@ -89,7 +97,8 @@ struct Deuteronomy_1App: App {
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints,
-                            orientation: orientation
+                            orientation: orientation,
+                            consoleSkin: consoleSkin
                         )
                     }
                 } else {
@@ -135,7 +144,8 @@ struct Deuteronomy_1App: App {
                     lessonStyleRawValue: $lessonStyleRawValue,
                     progressionRawValue: $progressionRawValue,
                     layoutMode: $layoutMode,
-                    orientationRawValue: $orientationRawValue
+                    orientationRawValue: $orientationRawValue,
+                    consoleSkinRawValue: $consoleSkinRawValue
                 )
             }
             .onChange(of: orientationRawValue) { _, newValue in
@@ -277,9 +287,16 @@ private struct Deuteronomy1MenuSheet: View {
     @Binding var progressionRawValue: String
     @Binding var layoutMode: LayoutMode?
     @Binding var orientationRawValue: String
+    @Binding var consoleSkinRawValue: String
+    @AppStorage("numbers3.purchased.tweed") private var tweedPurchased: Bool = false
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var isButtonPressed: Bool = false
+
+    private var consoleSkin: ConsoleSkin {
+        get { ConsoleSkin(rawValue: consoleSkinRawValue) ?? .classic }
+        set { consoleSkinRawValue = newValue.rawValue }
+    }
 
     private var repetitionDisplay: String {
         infiniteRepetitions ? "∞" : "\(repetitions)"
@@ -304,6 +321,55 @@ private struct Deuteronomy1MenuSheet: View {
                             MenuSection(title: "PROGRESS", gold: gold) {
                                 MenuRow(label: "Wallet", value: "$\(walletPoints)", gold: gold)
                                 MenuRow(label: "Balance", value: "$\(balancePoints)", gold: gold)
+                            }
+                            MenuSection(title: "SKINS", gold: gold) {
+                                // Classic row
+                                Button(action: { consoleSkinRawValue = ConsoleSkin.classic.rawValue }) {
+                                    HStack {
+                                        Text("Classic")
+                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .foregroundColor(.white.opacity(0.7))
+                                        Spacer()
+                                        if consoleSkin == .classic {
+                                            Text("ACTIVE")
+                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .foregroundColor(Color.green)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                // Tweed row
+                                Button(action: {
+                                    if tweedPurchased {
+                                        consoleSkinRawValue = ConsoleSkin.tweed.rawValue
+                                    } else if balancePoints >= 500 {
+                                        balancePoints -= 500
+                                        ConsoleSkin.purchaseTweed()
+                                        tweedPurchased = true
+                                    }
+                                }) {
+                                    HStack {
+                                        Text("Tweed")
+                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .foregroundColor(tweedPurchased ? .white.opacity(0.7) : (balancePoints >= 500 ? gold : .white.opacity(0.3)))
+                                        Spacer()
+                                        if consoleSkin == .tweed {
+                                            Text("ACTIVE")
+                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .foregroundColor(Color.green)
+                                        } else if tweedPurchased {
+                                            Text("owned")
+                                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                                .foregroundColor(.white.opacity(0.4))
+                                        } else {
+                                            Text("$500")
+                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!tweedPurchased && balancePoints < 500)
                             }
                             if layoutMode == .maestro {
                                 MenuSection(title: "ORIENTATION", gold: gold) {
@@ -455,7 +521,7 @@ private struct Deuteronomy1MenuSheet: View {
                                 MenuTextRow("REV — Reverses the play direction between ascending and descending frets mid-round.")
                             }
                             MenuSection(title: "SCORING", gold: gold) {
-                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Wallet total carries forward between rounds.")
+                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between rounds.")
                             }
 
                         case .audio:

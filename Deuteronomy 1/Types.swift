@@ -88,6 +88,38 @@ enum Orientation: String, CaseIterable {
     case landscape
 }
 
+// MARK: - Console Skin System
+
+enum ConsoleSkin: String, CaseIterable {
+    case classic
+    case tweed
+
+    var rawValue: String {
+        switch self {
+        case .classic: return "classic"
+        case .tweed: return "tweed"
+        }
+    }
+
+    var price: Int {
+        switch self {
+        case .classic: return 0
+        case .tweed: return 500
+        }
+    }
+
+    var isPurchased: Bool {
+        switch self {
+        case .classic: return true
+        case .tweed: return UserDefaults.standard.bool(forKey: "numbers3.purchased.tweed")
+        }
+    }
+
+    static func purchaseTweed() {
+        UserDefaults.standard.set(true, forKey: "numbers3.purchased.tweed")
+    }
+}
+
 // MARK: - Core Types
 
 struct HighlightWindowShape: InsettableShape {

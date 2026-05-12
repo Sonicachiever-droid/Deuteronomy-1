@@ -515,6 +515,7 @@ struct MaestroGameplayView: View {
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
     let orientation: Orientation
+    let consoleSkin: ConsoleSkin
 
     @Environment(\.displayScale) private var displayScale
     private let totalFrets: Int = 20
@@ -648,7 +649,8 @@ struct MaestroGameplayView: View {
         playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
         balanceDollars: Binding<Int> = .constant(0),
-        orientation: Orientation = .portrait
+        orientation: Orientation = .portrait,
+        consoleSkin: ConsoleSkin = .classic
     ) {
         self.orientation = orientation
         self.onMenuSelection = onMenuSelection
@@ -665,6 +667,7 @@ struct MaestroGameplayView: View {
         self._playProgression = playProgression
         self._walletDollars = walletDollars
         self._balanceDollars = balanceDollars
+        self.consoleSkin = consoleSkin
     }
 
     var body: some View {
@@ -910,10 +913,17 @@ struct MaestroGameplayView: View {
             ZStack {
                 ZStack(alignment: .top) {
                     ZStack {
-                        RosewoodSegmentedBackground(
-                            fretRatios: fretRatios,
-                            cornerRadius: 18
-                        )
+                        if consoleSkin == .tweed {
+                            MapleSegmentedBackground(
+                                fretRatios: fretRatios,
+                                cornerRadius: 18
+                            )
+                        } else {
+                            RosewoodSegmentedBackground(
+                                fretRatios: fretRatios,
+                                cornerRadius: 18
+                            )
+                        }
                         BindingLayer()
                         FretWireLayer(fretRatios: fretRatios)
                         FretMarkerLayer(fretRatios: fretRatios)
@@ -946,33 +956,63 @@ struct MaestroGameplayView: View {
             .allowsHitTesting(false)
             .opacity(introWindowBlack ? 1 : 0)
 
-        ElephantWindowView(
-            canvasSize: size,
-            highlightWidth: highlightWidth,
-            highlightHeight: highlightHeight,
-            highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
-            highlightCornerRadius: highlightCornerRadius,
-            textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
-            textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
-            textureBleed: matchBackgroundTexture ? 48 : 36
-        )
-        .allowsHitTesting(false)
+        if consoleSkin == .tweed {
+            TweedWindowView(
+                canvasSize: size,
+                highlightWidth: highlightWidth,
+                highlightHeight: highlightHeight,
+                highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                highlightCornerRadius: highlightCornerRadius,
+                textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                textureBleed: matchBackgroundTexture ? 48 : 36
+            )
+            .allowsHitTesting(false)
+        } else {
+            ElephantWindowView(
+                canvasSize: size,
+                highlightWidth: highlightWidth,
+                highlightHeight: highlightHeight,
+                highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                highlightCornerRadius: highlightCornerRadius,
+                textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                textureBleed: matchBackgroundTexture ? 48 : 36
+            )
+            .allowsHitTesting(false)
+        }
 
         if isCodeScreensaverMode {
             ZStack {
-                Image("REFRETLOGOSET")
-                    .resizable()
-                    .scaledToFill()
-                    .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
-                    .frame(width: highlightWidth, height: highlightHeight)
-                    .clipped()
-                    .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+                if consoleSkin == .tweed {
+                    Image("Refret tweed logo")
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .clipped()
+                        .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
 
-                HighlightWindowGoldBorder(
-                    width: highlightWidth,
-                    height: highlightHeight,
-                    cornerRadius: highlightCornerRadius
-                )
+                    HighlightWindowChromeBorder(
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    )
+                } else {
+                    Image("REFRETLOGOSET")
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .clipped()
+                        .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+
+                    HighlightWindowGoldBorder(
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    )
+                }
             }
             .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
             .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
@@ -1186,8 +1226,13 @@ struct MaestroGameplayView: View {
 #endif
 
             ZStack {
-                FullScreenElephantBackground()
-                    .ignoresSafeArea()
+                if consoleSkin == .tweed {
+                    FullScreenTweedBackground()
+                        .ignoresSafeArea()
+                } else {
+                    FullScreenElephantBackground()
+                        .ignoresSafeArea()
+                }
 
                 portraitNeckLayer(size: proxy.size)
 
@@ -1294,20 +1339,39 @@ struct MaestroGameplayView: View {
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
                 }
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: upperWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : 1)
+                if consoleSkin == .tweed {
+                    WhiteHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : 1)
+                    WhiteHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
+                } else {
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
 
-                GoldPipingBorder(bottomInset: 0)
-                    .allowsHitTesting(false)
-                    .offset(y: -globalContentShiftY)
-                    .zIndex(100)
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
+                }
+
+                if consoleSkin == .tweed {
+                    WhitePipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                } else {
+                    GoldPipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                }
 
             }
             .overlay {
@@ -1316,69 +1380,12 @@ struct MaestroGameplayView: View {
                     .opacity(developerOverlaysEnabled ? 0.8 : 0)
             }
             .overlay {
-                let maestroTransportCenterY = lowerWhitePipingY + (proxy.size.height - lowerWhitePipingY) * 0.28
-                HStack(spacing: 6) {
-                    Button("START") { handleMaestroStartButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button(isRoundPaused ? "RESUME" : "PAUSE") {
-                        if isRoundPaused { handleMaestroStartButton() }
-                        else { handleMaestroStopButton() }
-                    }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(isCodeScreensaverMode && !isRoundPaused)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button("RESET") { handleMaestroResetButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                }
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.black.opacity(0.92))
-                .buttonStyle(.plain)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.94, green: 0.82, blue: 0.53),
-                                    Color(red: 0.78, green: 0.6, blue: 0.22),
-                                    Color(red: 0.94, green: 0.82, blue: 0.53)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
-                        )
+                maestroTransportButtonOverlay(
+                    proxyWidth: proxy.size.width,
+                    proxyHeight: proxy.size.height,
+                    lowerWhitePipingY: lowerWhitePipingY,
+                    startButtonBlinkOn: startButtonBlinkOn
                 )
-                .frame(width: min((proxy.size.width - 24) * 0.88, 370) * 0.72, height: 50)
-                .position(x: proxy.size.width / 2, y: maestroTransportCenterY)
-                .opacity(codenameNemoEnabled ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 GameplayControlPlateShell(
@@ -1410,7 +1417,8 @@ struct MaestroGameplayView: View {
                         ThumbButtonView(
                             diameter: thumbDiameter,
                             label: "",
-                            state: effectiveLeftThumbState
+                            state: effectiveLeftThumbState,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .buttonStyle(.plain)
@@ -1419,7 +1427,8 @@ struct MaestroGameplayView: View {
                         ThumbButtonView(
                             diameter: thumbDiameter,
                             label: "",
-                            state: effectiveRightThumbState
+                            state: effectiveRightThumbState,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .buttonStyle(.plain)
@@ -1570,8 +1579,13 @@ struct MaestroGameplayView: View {
         let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
 
         ZStack {
-            FullScreenElephantBackground()
-                .ignoresSafeArea()
+            if consoleSkin == .tweed {
+                FullScreenTweedBackground()
+                    .ignoresSafeArea()
+            } else {
+                FullScreenElephantBackground()
+                    .ignoresSafeArea()
+            }
 
             // Stage 2a: rotate the portrait neck/window/screensaver/fretboard-guide layer
             // 90° to align with landscape orientation. Inherits portrait F1–F5 unchanged.
@@ -1664,22 +1678,27 @@ struct MaestroGameplayView: View {
 
             // Thumb buttons
             Button(action: { submitAnswer(.left) }) {
-                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveLeftThumbState)
+                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveLeftThumbState, consoleSkin: consoleSkin)
             }
             .buttonStyle(.plain)
             .position(x: leftGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
 
             Button(action: { submitAnswer(.right) }) {
-                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveRightThumbState)
+                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveRightThumbState, consoleSkin: consoleSkin)
             }
             .buttonStyle(.plain)
             .position(x: rightGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
 
             // Gold perimeter
-            GoldPipingBorder(bottomInset: 0)
-                .allowsHitTesting(false)
+            if consoleSkin == .tweed {
+                WhitePipingBorder(bottomInset: 0)
+                    .allowsHitTesting(false)
+            } else {
+                GoldPipingBorder(bottomInset: 0)
+                    .allowsHitTesting(false)
+            }
         }
         .overlay {
             // Transport bar below neck window
@@ -2151,6 +2170,78 @@ struct MaestroGameplayView: View {
         activeAnswerFeedback = nil
         isResolvingAnswer = false
         prepareCurrentQuestion()
+    }
+
+    @ViewBuilder
+    private func maestroTransportButtonOverlay(
+        proxyWidth: CGFloat,
+        proxyHeight: CGFloat,
+        lowerWhitePipingY: CGFloat,
+        startButtonBlinkOn: Bool
+    ) -> some View {
+        let maestroTransportCenterY: CGFloat = lowerWhitePipingY + (proxyHeight - lowerWhitePipingY) * 0.28
+        HStack(spacing: 6) {
+            Button("START") { handleMaestroStartButton() }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+            Button(isRoundPaused ? "RESUME" : "PAUSE") {
+                if isRoundPaused { handleMaestroStartButton() }
+                else { handleMaestroStopButton() }
+            }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .disabled(isCodeScreensaverMode && !isRoundPaused)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+            Button("RESET") { handleMaestroResetButton() }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+        }
+        .font(.system(size: 12, weight: .bold, design: .monospaced))
+        .foregroundStyle(Color.black.opacity(0.92))
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.94, green: 0.82, blue: 0.53),
+                            Color(red: 0.78, green: 0.6, blue: 0.22),
+                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
+                )
+        )
+        .frame(width: min((proxyWidth - 24) * 0.88, 370) * 0.72, height: 50)
+        .position(x: proxyWidth / 2, y: maestroTransportCenterY)
+        .opacity(codenameNemoEnabled ? 0 : 1)
     }
 
     private func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {

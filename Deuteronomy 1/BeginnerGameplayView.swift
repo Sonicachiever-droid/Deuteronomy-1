@@ -469,7 +469,6 @@ private struct DeveloperConsoleFrame: View {
                                             let titleLine: String = statusLines.count >= 2 ? statusLines[0] : ""
                                             let notesLine: String = statusLines.count >= 2 ? statusLines[1] : statusLines[0]
                                             let titleFontSize: CGFloat = 50
-                                            let notesFontSize: CGFloat = 37
 
                                             if !titleLine.isEmpty || !notesLine.isEmpty {
                                                 VStack(spacing: 0) {
@@ -507,14 +506,16 @@ private struct DeveloperConsoleFrame: View {
                                                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                                                             .allowsHitTesting(false)
                                                         } else {
+                                                            let labelMaxWidth = hideRoundLabel ? width * 2 / 3 : .infinity
+                                                            let labelAlignment: Alignment = hideRoundLabel ? .top : .bottom
                                                             Text(notesLine)
                                                                 .font(.system(size: 50, weight: .black, design: .default))
                                                                 .foregroundStyle(Color.green.opacity(0.98))
                                                                 .minimumScaleFactor(0.1)
                                                                 .lineLimit(1)
                                                                 .multilineTextAlignment(.center)
-                                                                .frame(maxWidth: hideRoundLabel ? width * 2 / 3 : .infinity, maxHeight: height * 2 / 3, alignment: hideRoundLabel ? .top : .bottom)
-                                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: hideRoundLabel ? .top : .bottom)
+                                                                .frame(maxWidth: labelMaxWidth, maxHeight: height * 2 / 3, alignment: labelAlignment)
+                                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: labelAlignment)
                                                                 .allowsHitTesting(false)
                                                         }
                                                     } else {
@@ -528,11 +529,30 @@ private struct DeveloperConsoleFrame: View {
                                                                         let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
                                                                         let isRevealed = idx < chordRevealCount
                                                                         let isAnswered = idx < chordAnsweredCount
+                                                                        let isRewardNote = rewardNoteTextByString != nil
+                                                                        let noteColor: Color = {
+                                                                            if isRewardNote {
+                                                                                return Color.yellow.opacity(0.98)
+                                                                            } else if idx == chordAnsweredCount {
+                                                                                return Color.orange
+                                                                            } else {
+                                                                                return Color.green.opacity(0.98)
+                                                                            }
+                                                                        }()
+                                                                        let noteOpacity: Double = {
+                                                                            if isRewardNote {
+                                                                                return 1.0
+                                                                            } else if isRevealed && !isAnswered {
+                                                                                return 1.0
+                                                                            } else {
+                                                                                return 0.0
+                                                                            }
+                                                                        }()
                                                                         Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
                                                                             .font(.system(size: 37, weight: .black, design: .default))
-                                                                            .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : (idx == chordAnsweredCount ? Color.orange : Color.green.opacity(0.98)))
+                                                                            .foregroundStyle(noteColor)
                                                                             .position(x: xPos, y: chordGeo.size.height * 0.86 - 15)
-                                                                            .opacity(rewardNoteTextByString != nil ? 1 : (isRevealed && !isAnswered ? 1 : 0))
+                                                                            .opacity(noteOpacity)
                                                                     }
                                                                 }
                                                             }
@@ -605,15 +625,15 @@ private struct DeveloperConsoleFrame: View {
                 .foregroundStyle(Color.green.opacity(0.98))
         }
 
-        var line = Text("")
-        for (index, token) in tokens.enumerated() {
+        let attributedString = tokens.enumerated().reduce(AttributedString()) { result, pair in
+            let (index, token) = pair
             let suffix = index < tokens.count - 1 ? " " : ""
-            let segment = Text(token + suffix)
-                .foregroundStyle(index == highlightIndex ? Color.orange : Color.green.opacity(0.98))
-            line = line + segment
+            var attributedToken = AttributedString("\(token)\(suffix)")
+            attributedToken.foregroundColor = index == highlightIndex ? .orange : Color.green.opacity(0.98)
+            return result + attributedToken
         }
 
-        return line
+        return Text(attributedString)
             .font(.system(size: fontSize, weight: .black, design: .default))
     }
 }
@@ -713,6 +733,7 @@ struct BeginnerGameplayView: View {
     @Binding var playProgression: String
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
+    let consoleSkin: ConsoleSkin
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
 
     @State private var audioSettings = AudioSettings()
@@ -1233,7 +1254,8 @@ struct BeginnerGameplayView: View {
         playLessonStyle: Binding<String> = .constant("chord"),
         playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
-        balanceDollars: Binding<Int> = .constant(0)
+        balanceDollars: Binding<Int> = .constant(0),
+        consoleSkin: ConsoleSkin = .classic
     ) {
         self.onMenuSelection = onMenuSelection
         self.selectedMode = selectedMode
@@ -1249,6 +1271,7 @@ struct BeginnerGameplayView: View {
         self._playProgression = playProgression
         self._walletDollars = walletDollars
         self._balanceDollars = balanceDollars
+        self.consoleSkin = consoleSkin
     }
 
     var body: some View {
@@ -1423,18 +1446,30 @@ struct BeginnerGameplayView: View {
 #endif
 
             ZStack {
-                FullScreenElephantBackground()
-                    .ignoresSafeArea()
+                if consoleSkin == .tweed {
+                    FullScreenTweedBackground()
+                        .ignoresSafeArea()
+                } else {
+                    FullScreenElephantBackground()
+                        .ignoresSafeArea()
+                }
 
                 HStack {
                     Spacer()
                     ZStack {
                         ZStack(alignment: .top) {
                             ZStack {
-                                RosewoodSegmentedBackground(
-                                    fretRatios: fretRatios,
-                                    cornerRadius: 18
-                                )
+                                if consoleSkin == .tweed {
+                                    MapleSegmentedBackground(
+                                        fretRatios: fretRatios,
+                                        cornerRadius: 18
+                                    )
+                                } else {
+                                    RosewoodSegmentedBackground(
+                                        fretRatios: fretRatios,
+                                        cornerRadius: 18
+                                    )
+                                }
                                 BindingLayer()
                                 FretWireLayer(fretRatios: fretRatios)
                                 FretMarkerLayer(fretRatios: fretRatios)
@@ -1469,30 +1504,57 @@ struct BeginnerGameplayView: View {
                     .allowsHitTesting(false)
                     .opacity(introWindowBlack ? 1 : 0)
 
-                ElephantWindowView(
-                    canvasSize: proxy.size,
-                    highlightWidth: highlightWidth,
-                    highlightHeight: highlightHeight,
-                    highlightCenter: CGPoint(x: proxy.size.width / 2, y: orangeGreenUnitCenterY),
-                    highlightCornerRadius: highlightCornerRadius
-                )
-                .allowsHitTesting(false)
+                if consoleSkin == .tweed {
+                    TweedWindowView(
+                        canvasSize: proxy.size,
+                        highlightWidth: highlightWidth,
+                        highlightHeight: highlightHeight,
+                        highlightCenter: CGPoint(x: proxy.size.width / 2, y: orangeGreenUnitCenterY),
+                        highlightCornerRadius: highlightCornerRadius
+                    )
+                    .allowsHitTesting(false)
+                } else {
+                    ElephantWindowView(
+                        canvasSize: proxy.size,
+                        highlightWidth: highlightWidth,
+                        highlightHeight: highlightHeight,
+                        highlightCenter: CGPoint(x: proxy.size.width / 2, y: orangeGreenUnitCenterY),
+                        highlightCornerRadius: highlightCornerRadius
+                    )
+                    .allowsHitTesting(false)
+                }
 
                 if isCodeScreensaverMode {
                     ZStack {
-                        Image("REFRETLOGOSET")
-                            .resizable()
-                            .scaledToFill()
-                            .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
-                            .frame(width: highlightWidth, height: highlightHeight)
-                            .clipped()
-                            .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+                        if consoleSkin == .tweed {
+                            Image("Refret tweed logo")
+                                .resizable()
+                                .scaledToFill()
+                                .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                                .frame(width: highlightWidth, height: highlightHeight)
+                                .clipped()
+                                .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
 
-                        HighlightWindowGoldBorder(
-                            width: highlightWidth,
-                            height: highlightHeight,
-                            cornerRadius: highlightCornerRadius
-                        )
+                            HighlightWindowChromeBorder(
+                                width: highlightWidth,
+                                height: highlightHeight,
+                                cornerRadius: highlightCornerRadius
+                            )
+                        } else {
+                            Image("REFRETLOGOSET")
+                                .resizable()
+                                .scaledToFill()
+                                .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                                .frame(width: highlightWidth, height: highlightHeight)
+                                .clipped()
+                                .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+
+                            HighlightWindowGoldBorder(
+                                width: highlightWidth,
+                                height: highlightHeight,
+                                cornerRadius: highlightCornerRadius
+                            )
+                        }
                     }
                     .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
                     .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
@@ -1655,20 +1717,39 @@ struct BeginnerGameplayView: View {
                     }
                 }
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: upperWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
+                if consoleSkin == .tweed {
+                    WhiteHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
+                    WhiteHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
+                } else {
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
 
-                GoldPipingBorder(bottomInset: 0)
-                    .allowsHitTesting(false)
-                    .offset(y: -globalContentShiftY)
-                    .zIndex(100)
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
+                }
+
+                if consoleSkin == .tweed {
+                    WhitePipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                } else {
+                    GoldPipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                }
             }
             .overlay(alignment: .bottom) {
                 GameplayControlPlateShell(
@@ -1698,217 +1779,33 @@ struct BeginnerGameplayView: View {
                 // No AUTO button overlay
             }
             .overlay(alignment: .topLeading) {
-                HStack(spacing: 28) {
-                    Button(action: { submitAnswer(.left) }) {
-                        ThumbButtonView(
-                            diameter: thumbDiameter,
-                            label: "",
-                            state: effectiveLeftThumbState
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isResolvingAnswer)
-
-                    Button(action: { submitAnswer(.right) }) {
-                        ThumbButtonView(
-                            diameter: thumbDiameter,
-                            label: "",
-                            state: effectiveRightThumbState
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isResolvingAnswer)
-                }
-                .frame(maxWidth: .infinity)
-                .position(x: proxy.size.width / 2, y: buttonCenterY)
-                .allowsHitTesting(showMaestroOverlays)
-                .accessibilityHidden(!showMaestroOverlays)
-                .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? initialGameplayDimOpacity : 0))
+                maestroThumbOverlay(
+                    proxyWidth: proxy.size.width,
+                    buttonCenterY: buttonCenterY,
+                    thumbDiameter: thumbDiameter,
+                    leftThumbState: effectiveLeftThumbState,
+                    rightThumbState: effectiveRightThumbState,
+                    dimOpacity: initialGameplayDimOpacity
+                )
             }
             .overlay(alignment: .topLeading) {
                 if layoutMode == .beginner {
-                    let beginnerButtonDiameter = min(max(proxy.size.width * 0.18, 66), 84) * 0.85
-                    let beginnerButtonSpacing = beginnerButtonDiameter * 1.62
-                    let rowYs = [buttonCenterY - beginnerButtonSpacing, buttonCenterY, buttonCenterY + beginnerButtonSpacing]
-                    let leftButtonX = proxy.size.width * 0.2335
-                    let rightButtonX = proxy.size.width * 0.7665
-                    let beginnerScreenHeight = lowerScreenHeight * 0.76 * 1.2
-                    let beginnerScreenWidth = beginnerScreenHeight * 1.6
-                    let noteScreenCenterYOffset = -beginnerButtonDiameter * 0.13
-                    let screenInset = beginnerButtonDiameter * 0.88
-                    let leftScreenX = leftButtonX + screenInset
-                    let rightScreenX = rightButtonX - screenInset
-                    let leftStrings = [4, 5, 6]
-                    let rightStrings = [3, 2, 1]
-                    let dThumbButtonY = rowYs[0]
-                    let transportPanelCenterY = transportCenterY + 6
-                    let beginnerBlueLightY = dThumbButtonY + ((transportPanelCenterY - dThumbButtonY) * 0.62)
-
-                    ZStack {
-                        ForEach(0..<3, id: \.self) { idx in
-                            let selectedString = leftStrings[idx]
-                            let buttonNote = noteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
-                            let displayButtonNote = guitarNoteDisplayText(buttonNote)
-                            let buttonIndex = idx
-                            MiniTVFrame(
-                                text: displayButtonNote,
-                                width: beginnerScreenWidth,
-                                height: beginnerScreenHeight,
-                                fontScale: 1.0,
-                                isDarkScreen: guitarNoteContainsAccidental(buttonNote)
-                            )
-                            .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
-
-                            Button(action: {
-                                handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
-                            }) {
-                                ThumbButtonView(
-                                    diameter: beginnerButtonDiameter,
-                                    label: "",
-                                    state: {
-                                        if let pressedIndex = beginnerPressedButtonIndex, pressedIndex == buttonIndex {
-                                            return beginnerPressedButtonCorrect ? .green : .red
-                                        }
-                                        if isCodeScreensaverMode && startupState.phase == .armed && startupState.isVisible {
-                                            return .green
-                                        }
-                                        return .neutral
-                                    }()
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .position(x: leftButtonX, y: rowYs[idx])
-                        }
-
-                        ForEach(0..<3, id: \.self) { idx in
-                            let selectedString = rightStrings[idx]
-                            let buttonNote = noteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
-                            let displayButtonNote = guitarNoteDisplayText(buttonNote)
-                            let buttonIndex = idx + 3
-                            MiniTVFrame(
-                                text: displayButtonNote,
-                                width: beginnerScreenWidth,
-                                height: beginnerScreenHeight,
-                                fontScale: 1.0,
-                                isDarkScreen: guitarNoteContainsAccidental(buttonNote)
-                            )
-                            .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
-
-                            Button(action: {
-                                handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
-                            }) {
-                                ThumbButtonView(
-                                    diameter: beginnerButtonDiameter,
-                                    label: "",
-                                    state: {
-                                        if let pressedIndex = beginnerPressedButtonIndex, pressedIndex == buttonIndex {
-                                            return beginnerPressedButtonCorrect ? .green : .red
-                                        }
-                                        if isCodeScreensaverMode && startupState.phase == .armed && startupState.isVisible {
-                                            return .green
-                                        }
-                                        return .neutral
-                                    }()
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .position(x: rightButtonX, y: rowYs[idx])
-                        }
-
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color(red: 0.62, green: 0.86, blue: 1.0),
-                                        Color(red: 0.09, green: 0.45, blue: 1.0)
-                                    ],
-                                    center: .center,
-                                    startRadius: 0.5,
-                                    endRadius: 10
-                                )
-                            )
-                            .frame(width: 18, height: 18)
-                            .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
-                            .shadow(color: Color.white.opacity(0.45), radius: 5)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.75), lineWidth: 1)
-                            )
-                            .position(x: leftButtonX, y: beginnerBlueLightY)
-                            .opacity(beginnerRuntime.beatLightFlashOn ? 1 : 0)
-                            .animation(.easeOut(duration: 0.08), value: beginnerRuntime.beatLightFlashOn)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .allowsHitTesting(true)
-                    .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
-                    .accessibilityHidden(false)
+                    beginnerButtonPanelOverlay(
+                        proxyWidth: proxy.size.width,
+                        buttonCenterY: buttonCenterY,
+                        lowerScreenHeight: lowerScreenHeight,
+                        transportCenterY: transportCenterY,
+                        dimOpacity: initialGameplayDimOpacity,
+                        startupState: startupState
+                    )
                 }
             }
             .overlay {
-                HStack(spacing: 6) {
-                    Button("START") { handleStartButtonPress() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill((startupStartButtonAttentionActive && (!startupSequenceActivated ? startupStartButtonBlinkOn : startupState.isVisible))
-                                    ? Color.green.opacity(0.9)
-                                    : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button(isRoundPaused ? "RESUME" : "PAUSE") {
-                        if isRoundPaused { resumeRoundFromTransportStop(forceIfPaused: true) }
-                        else { handleRoundStopButton() }
-                    }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(!canPressStopButton && !isRoundPaused)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button("RESET") { handleRoundResetButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                }
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.black.opacity(0.92))
-                .buttonStyle(.plain)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.94, green: 0.82, blue: 0.53),
-                                    Color(red: 0.78, green: 0.6, blue: 0.22),
-                                    Color(red: 0.94, green: 0.82, blue: 0.53)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
-                        )
+                transportButtonPanelOverlay(
+                    proxyWidth: proxy.size.width,
+                    transportCenterY: transportCenterY,
+                    startupState: startupState
                 )
-                .frame(width: min((proxy.size.width - 24) * 0.88, 370) * 0.72, height: 50)
-                .position(x: proxy.size.width / 2, y: transportCenterY - 22)
-                .opacity(codenameNemoEnabled ? 0 : 1)
             }
             .overlay {
                 EmptyView()
@@ -3227,6 +3124,236 @@ struct BeginnerGameplayView: View {
                 startupSpeechPhase = .idle
             }
         }
+    }
+
+    @ViewBuilder
+    private func maestroThumbOverlay(
+        proxyWidth: CGFloat,
+        buttonCenterY: CGFloat,
+        thumbDiameter: CGFloat,
+        leftThumbState: ThumbGlowState,
+        rightThumbState: ThumbGlowState,
+        dimOpacity: CGFloat
+    ) -> some View {
+        HStack(spacing: 28) {
+            Button(action: { submitAnswer(.left) }) {
+                ThumbButtonView(
+                    diameter: thumbDiameter,
+                    label: "",
+                    state: leftThumbState
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isResolvingAnswer)
+
+            Button(action: { submitAnswer(.right) }) {
+                ThumbButtonView(
+                    diameter: thumbDiameter,
+                    label: "",
+                    state: rightThumbState
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isResolvingAnswer)
+        }
+        .frame(maxWidth: .infinity)
+        .position(x: proxyWidth / 2, y: buttonCenterY)
+        .allowsHitTesting(showMaestroOverlays)
+        .accessibilityHidden(!showMaestroOverlays)
+        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? dimOpacity : 0))
+    }
+
+    @ViewBuilder
+    private func transportButtonPanelOverlay(
+        proxyWidth: CGFloat,
+        transportCenterY: CGFloat,
+        startupState: (text: String, color: Color, isVisible: Bool, phase: StartupSequenceView.Phase)
+    ) -> some View {
+        let startButtonShouldHighlight: Bool = startupStartButtonAttentionActive && (!startupSequenceActivated ? startupStartButtonBlinkOn : startupState.isVisible)
+        HStack(spacing: 6) {
+            Button("START") { handleStartButtonPress() }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(startButtonShouldHighlight ? Color.green.opacity(0.9) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+            Button(isRoundPaused ? "RESUME" : "PAUSE") {
+                if isRoundPaused { resumeRoundFromTransportStop(forceIfPaused: true) }
+                else { handleRoundStopButton() }
+            }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .disabled(!canPressStopButton && !isRoundPaused)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+            Button("RESET") { handleRoundResetButton() }
+                .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+                        )
+                )
+        }
+        .font(.system(size: 12, weight: .bold, design: .monospaced))
+        .foregroundStyle(Color.black.opacity(0.92))
+        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.94, green: 0.82, blue: 0.53),
+                            Color(red: 0.78, green: 0.6, blue: 0.22),
+                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
+                )
+        )
+        .frame(width: min((proxyWidth - 24) * 0.88, 370) * 0.72, height: 50)
+        .position(x: proxyWidth / 2, y: transportCenterY - 22)
+        .opacity(codenameNemoEnabled ? 0 : 1)
+    }
+
+    @ViewBuilder
+    private func beginnerButtonPanelOverlay(
+        proxyWidth: CGFloat,
+        buttonCenterY: CGFloat,
+        lowerScreenHeight: CGFloat,
+        transportCenterY: CGFloat,
+        dimOpacity: Double,
+        startupState: (text: String, color: Color, isVisible: Bool, phase: StartupSequenceView.Phase)
+    ) -> some View {
+        let beginnerButtonDiameter: CGFloat = min(max(proxyWidth * 0.18, 66), 84) * 0.85
+        let beginnerButtonSpacing: CGFloat = beginnerButtonDiameter * 1.62
+        let row0Y: CGFloat = buttonCenterY - beginnerButtonSpacing
+        let row1Y: CGFloat = buttonCenterY
+        let row2Y: CGFloat = buttonCenterY + beginnerButtonSpacing
+        let rowYs: [CGFloat] = [row0Y, row1Y, row2Y]
+        let leftButtonX: CGFloat = proxyWidth * 0.2335
+        let rightButtonX: CGFloat = proxyWidth * 0.7665
+        let beginnerScreenHeight: CGFloat = lowerScreenHeight * 0.76 * 1.2
+        let beginnerScreenWidth: CGFloat = beginnerScreenHeight * 1.6
+        let noteScreenCenterYOffset: CGFloat = -beginnerButtonDiameter * 0.13
+        let screenInset: CGFloat = beginnerButtonDiameter * 0.88
+        let leftScreenX: CGFloat = leftButtonX + screenInset
+        let rightScreenX: CGFloat = rightButtonX - screenInset
+        let leftStrings: [Int] = [4, 5, 6]
+        let rightStrings: [Int] = [3, 2, 1]
+        let transportPanelCenterY: CGFloat = transportCenterY + 6
+        let beginnerBlueLightY: CGFloat = row0Y + ((transportPanelCenterY - row0Y) * 0.62)
+
+        ZStack {
+            ForEach(Array(0..<3), id: \.self) { idx in
+                let selectedString: Int = leftStrings[idx]
+                let buttonNote: String = noteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
+                let buttonIndex: Int = idx
+                MiniTVFrame(
+                    text: displayButtonNote,
+                    width: beginnerScreenWidth,
+                    height: beginnerScreenHeight,
+                    fontScale: 1.0,
+                    isDarkScreen: guitarNoteContainsAccidental(buttonNote)
+                )
+                .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
+
+                Button(action: {
+                    handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
+                }) {
+                    ThumbButtonView(
+                        diameter: beginnerButtonDiameter,
+                        label: "",
+                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible)
+                    )
+                }
+                .buttonStyle(.plain)
+                .position(x: leftButtonX, y: rowYs[idx])
+            }
+
+            ForEach(Array(0..<3), id: \.self) { idx in
+                let selectedString: Int = rightStrings[idx]
+                let buttonNote: String = noteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
+                let buttonIndex: Int = idx + 3
+                MiniTVFrame(
+                    text: displayButtonNote,
+                    width: beginnerScreenWidth,
+                    height: beginnerScreenHeight,
+                    fontScale: 1.0,
+                    isDarkScreen: guitarNoteContainsAccidental(buttonNote)
+                )
+                .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
+
+                Button(action: {
+                    handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
+                }) {
+                    ThumbButtonView(
+                        diameter: beginnerButtonDiameter,
+                        label: "",
+                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible)
+                    )
+                }
+                .buttonStyle(.plain)
+                .position(x: rightButtonX, y: rowYs[idx])
+            }
+
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.62, green: 0.86, blue: 1.0),
+                            Color(red: 0.09, green: 0.45, blue: 1.0)
+                        ],
+                        center: .center,
+                        startRadius: 0.5,
+                        endRadius: 10
+                    )
+                )
+                .frame(width: 18, height: 18)
+                .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                .shadow(color: Color.white.opacity(0.45), radius: 5)
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.75), lineWidth: 1)
+                )
+                .position(x: leftButtonX, y: beginnerBlueLightY)
+                .opacity(beginnerRuntime.beatLightFlashOn ? 1 : 0)
+                .animation(.easeOut(duration: 0.08), value: beginnerRuntime.beatLightFlashOn)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .allowsHitTesting(true)
+        .opacity(codenameNemoEnabled ? 0 : dimOpacity)
+        .accessibilityHidden(false)
+    }
+
+    private func beginnerButtonState(for buttonIndex: Int, startupPhase: StartupSequenceView.Phase, startupIsVisible: Bool) -> ThumbGlowState {
+        if let pressedIndex = beginnerPressedButtonIndex, pressedIndex == buttonIndex {
+            return beginnerPressedButtonCorrect ? .green : .red
+        }
+        if isCodeScreensaverMode && startupPhase == .armed && startupIsVisible {
+            return .green
+        }
+        return .neutral
     }
 
     private func handleBeginnerConsoleButtonPress(selectedNote: String, selectedString: Int, buttonIndex: Int) {
