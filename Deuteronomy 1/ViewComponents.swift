@@ -54,8 +54,9 @@ struct MiniTVFrame: View {
     var isDarkScreen: Bool = false
     var glowTint: Color? = nil
     var hitTestingEnabled: Bool = false
+    var consoleSkin: ConsoleSkin = .classic
 
-    init(text: String, width: CGFloat, height: CGFloat, fontScale: CGFloat, isDarkScreen: Bool = false, glowTint: Color? = nil, hitTestingEnabled: Bool = false) {
+    init(text: String, width: CGFloat, height: CGFloat, fontScale: CGFloat, isDarkScreen: Bool = false, glowTint: Color? = nil, hitTestingEnabled: Bool = false, consoleSkin: ConsoleSkin = .classic) {
         self.text = text
         self.width = width
         self.height = height
@@ -63,6 +64,7 @@ struct MiniTVFrame: View {
         self.isDarkScreen = isDarkScreen
         self.glowTint = glowTint
         self.hitTestingEnabled = hitTestingEnabled
+        self.consoleSkin = consoleSkin
     }
 
     var body: some View {
@@ -73,7 +75,9 @@ struct MiniTVFrame: View {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                        colors: consoleSkin == .tweed
+                            ? [Color(red: 0.96, green: 0.96, blue: 0.96), Color(red: 0.88, green: 0.88, blue: 0.88)]
+                            : [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -81,11 +85,11 @@ struct MiniTVFrame: View {
                 .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(consoleSkin == .tweed ? Color.white.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
                 )
 
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.65), lineWidth: 3)
+                .stroke(consoleSkin == .tweed ? Color.white.opacity(0.55) : Color.black.opacity(0.65), lineWidth: 3)
                 .padding(3)
 
             Group {
@@ -157,8 +161,8 @@ struct ScrewHeadView: View {
                 .fill(
                     RadialGradient(
                         colors: [
-                            Color(red: 0.72, green: 0.63, blue: 0.44),
-                            Color(red: 0.38, green: 0.31, blue: 0.18)
+                            Color(red: 0.95, green: 0.95, blue: 0.95),
+                            Color(red: 0.55, green: 0.55, blue: 0.55)
                         ],
                         center: UnitPoint(x: 0.3, y: 0.25),
                         startRadius: size * 0.05,

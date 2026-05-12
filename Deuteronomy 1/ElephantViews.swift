@@ -152,11 +152,19 @@ struct DarkMatteOverlay: View {
 // MARK: - Full Screen Tweed Background
 
 struct FullScreenTweedBackground: View {
+    /// Optional window cutout. When provided, a hole is punched at the given
+    /// safe-area-relative center so the single image render covers everything
+    /// outside the window without a second overlapping tweed layer.
+    var windowCutout: (center: CGPoint, width: CGFloat, height: CGFloat, cornerRadius: CGFloat)? = nil
+    /// Extra safe-area inset to add to windowCutout.center when the GeometryReader
+    /// measures the full screen (ignoresSafeArea) but the center is in safe-area coords.
+    var safeAreaInsets: EdgeInsets = .init()
+
     var body: some View {
         GeometryReader { geo in
             let bleed: CGFloat = 48
 
-            Image("tweed set two")
+            let tweedImage = Image("tweed set two")
                 .resizable()
                 .frame(width: geo.size.width + bleed * 2, height: geo.size.height + bleed * 2)
                 .scaleEffect(x: 1.15, y: -1.15, anchor: .center)
@@ -164,6 +172,27 @@ struct FullScreenTweedBackground: View {
                 .saturation(1.05)
                 .overlay(Color.black.opacity(0.18))
                 .offset(x: -bleed, y: -bleed)
+
+            if let cutout = windowCutout {
+                let holeCenterX = safeAreaInsets.leading + cutout.center.x
+                let holeCenterY = safeAreaInsets.top + cutout.center.y
+                tweedImage
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+                    .mask(
+                        Rectangle()
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .overlay {
+                                HighlightWindowShape(cornerRadius: cutout.cornerRadius)
+                                    .frame(width: cutout.width, height: cutout.height)
+                                    .position(x: holeCenterX, y: holeCenterY)
+                                    .blendMode(.destinationOut)
+                            }
+                            .compositingGroup()
+                    )
+            } else {
+                tweedImage
+            }
         }
     }
 }
@@ -256,18 +285,7 @@ struct HighlightWindowChromeBorder: View {
 
     var body: some View {
         HighlightWindowShape(cornerRadius: cornerRadius)
-            .strokeBorder(
-                LinearGradient(
-                    colors: [
-                        Color(red: 1.0, green: 1.0, blue: 1.0),
-                        Color(red: 0.65, green: 0.65, blue: 0.65),
-                        Color(red: 0.90, green: 0.90, blue: 0.90)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 4
-            )
+            .strokeBorder(Color.white, lineWidth: 4)
             .frame(width: width, height: height)
     }
 }

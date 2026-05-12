@@ -369,18 +369,7 @@ private struct DeveloperConsoleFrame: View {
                 .padding(3)
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 2.5
-                )
+                .strokeBorder(Color.white, lineWidth: 2.5)
                 .padding(1.5)
 
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -1449,6 +1438,12 @@ struct BeginnerGameplayView: View {
                 if consoleSkin == .tweed {
                     FullScreenTweedBackground()
                         .ignoresSafeArea()
+                    // Black fill so the window hole reveals a dark background, not more tweed
+                    RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                        .fill(Color.black)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .position(x: proxy.size.width / 2, y: orangeGreenUnitCenterY)
+                        .allowsHitTesting(false)
                 } else {
                     FullScreenElephantBackground()
                         .ignoresSafeArea()
@@ -1663,7 +1658,8 @@ struct BeginnerGameplayView: View {
                             height: screenBannerHeight,
                             fontScale: 0.82,
                             glowTint: questionBoxAssistActive ? .orange : nil,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                         MiniTVFrame(
                             text: displayedFretStatusLabel,
@@ -1671,7 +1667,8 @@ struct BeginnerGameplayView: View {
                             height: screenBannerHeight,
                             fontScale: 0.82,
                             glowTint: questionBoxAssistActive ? .orange : nil,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .scaleEffect(introScale)
@@ -1683,13 +1680,13 @@ struct BeginnerGameplayView: View {
                     .accessibilityHidden(!showMaestroOverlays)
                     .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? initialGameplayDimOpacity * introScale : 0))
 
-                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
                         .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? introScale : 0))
 
-                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(!showMaestroOverlays)
@@ -1717,17 +1714,7 @@ struct BeginnerGameplayView: View {
                     }
                 }
 
-                if consoleSkin == .tweed {
-                    WhiteHorizontalPipingLine(width: whitePipingWidth)
-                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
-                        .allowsHitTesting(false)
-                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
-
-                    WhiteHorizontalPipingLine(width: whitePipingWidth)
-                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
-                        .allowsHitTesting(false)
-                        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? 1 : 0))
-                } else {
+                if consoleSkin != .tweed {
                     GoldHorizontalPipingLine(width: whitePipingWidth)
                         .position(x: proxy.size.width / 2, y: upperWhitePipingY)
                         .allowsHitTesting(false)
@@ -3216,9 +3203,10 @@ struct BeginnerGameplayView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.94, green: 0.82, blue: 0.53),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            Color(red: 1.0, green: 1.0, blue: 1.0),
+                            Color(red: 0.90, green: 0.90, blue: 0.90),
+                            Color(red: 0.45, green: 0.45, blue: 0.45),
+                            Color(red: 0.65, green: 0.65, blue: 0.65)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -3273,7 +3261,8 @@ struct BeginnerGameplayView: View {
                     width: beginnerScreenWidth,
                     height: beginnerScreenHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(buttonNote)
+                    isDarkScreen: guitarNoteContainsAccidental(buttonNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 
@@ -3283,7 +3272,8 @@ struct BeginnerGameplayView: View {
                     ThumbButtonView(
                         diameter: beginnerButtonDiameter,
                         label: "",
-                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible)
+                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible),
+                        consoleSkin: consoleSkin
                     )
                 }
                 .buttonStyle(.plain)
@@ -3300,7 +3290,8 @@ struct BeginnerGameplayView: View {
                     width: beginnerScreenWidth,
                     height: beginnerScreenHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(buttonNote)
+                    isDarkScreen: guitarNoteContainsAccidental(buttonNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
 
@@ -3310,7 +3301,8 @@ struct BeginnerGameplayView: View {
                     ThumbButtonView(
                         diameter: beginnerButtonDiameter,
                         label: "",
-                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible)
+                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible),
+                        consoleSkin: consoleSkin
                     )
                 }
                 .buttonStyle(.plain)

@@ -201,18 +201,7 @@ private struct DeveloperConsoleFrame: View {
                 .padding(3)
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 2.5
-                )
+                .strokeBorder(Color.white, lineWidth: 2.5)
                 .padding(1.5)
 
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -376,6 +365,7 @@ private struct RowOneIdentifierOverlay: View {
     let rightLabel: String
     let size: CGSize
     let rowHeight: CGFloat
+    var consoleSkin: ConsoleSkin = .classic
 
     var body: some View {
         let bannerFont = UIFont.systemFont(ofSize: 18, weight: .semibold)
@@ -388,8 +378,8 @@ private struct RowOneIdentifierOverlay: View {
         let bannerHeight = max(min(rowHeight * 0.66, 50), 40)
 
         return HStack(spacing: 16) {
-            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82)
-            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82)
+            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
+            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
         }
         .frame(width: size.width, height: rowHeight)
         .position(x: size.width / 2, y: rowHeight / 2)
@@ -1231,6 +1221,12 @@ struct MaestroGameplayView: View {
                 if consoleSkin == .tweed {
                     FullScreenTweedBackground()
                         .ignoresSafeArea()
+                    // Black fill so the window hole reveals a dark background, not more tweed
+                    RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                        .fill(Color.black)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .position(x: proxy.size.width / 2, y: orangeGreenUnitCenterY)
+                        .allowsHitTesting(false)
                 } else {
                     FullScreenElephantBackground()
                         .ignoresSafeArea()
@@ -1282,14 +1278,16 @@ struct MaestroGameplayView: View {
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                         MiniTVFrame(
                             text: displayedFretStatusLabel,
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .scaleEffect(introScale)
@@ -1311,13 +1309,13 @@ struct MaestroGameplayView: View {
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)
@@ -1341,17 +1339,7 @@ struct MaestroGameplayView: View {
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
                 }
 
-                if consoleSkin == .tweed {
-                    WhiteHorizontalPipingLine(width: whitePipingWidth)
-                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
-                        .allowsHitTesting(false)
-                        .opacity(codenameNemoEnabled ? 0 : 1)
-
-                    WhiteHorizontalPipingLine(width: whitePipingWidth)
-                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
-                        .allowsHitTesting(false)
-                        .opacity(codenameNemoEnabled ? 0 : 1)
-                } else {
+                if consoleSkin != .tweed {
                     GoldHorizontalPipingLine(width: whitePipingWidth)
                         .position(x: proxy.size.width / 2, y: upperWhitePipingY)
                         .allowsHitTesting(false)
@@ -1582,19 +1570,23 @@ struct MaestroGameplayView: View {
 
         ZStack {
             if consoleSkin == .tweed {
+                // Layer 1: plain tweed background (no cutout) — behind the neck
                 FullScreenTweedBackground()
                     .ignoresSafeArea()
+
+                // Layer 2: black fill at the window position — behind the neck,
+                // provides the dark interior when the neck doesn't fill the window.
+                RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                    .fill(Color.black)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .position(x: screenCenterX, y: screenCenterY)
+                    .allowsHitTesting(false)
             } else {
                 FullScreenElephantBackground()
                     .ignoresSafeArea()
             }
 
-            // Stage 2a: rotate the portrait neck/window/screensaver/fretboard-guide layer
-            // 90° to align with landscape orientation. Inherits portrait F1–F5 unchanged.
-            // Render the helper at full portrait proportions; elephant texture is gone so the
-            // layout box no longer needs to be clipped to the console-to-transport band.
-            // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
-            // lands on screenCenterY, aligning with the chrome white note boxes.
+            // Layer 3: neck/fretboard layer (no TweedWindowView for tweed in landscape)
             ZStack {
                 portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true, showWindowOverlay: consoleSkin != .tweed)
             }
@@ -1602,21 +1594,20 @@ struct MaestroGameplayView: View {
             .offset(y: proxy.size.width * 0.1875 + gridRowHeight * 0.5)
             .frame(width: proxy.size.width, height: proxy.size.height)
 
-            // For tweed in landscape: cut the neck window hole from the full-screen background
-            // using native landscape coordinates, avoiding the seam caused by the rotated
-            // portrait TweedOverlay clashing with the full-screen tweed layer.
+            // Layer 4 (tweed only): tweed-with-hole sits ABOVE the neck, covering any
+            // neck content that bleeds outside the window. Uses the same ignoresSafeArea
+            // GeometryReader as Layer 1 so the texture is pixel-identical — no seam.
             if consoleSkin == .tweed {
-                TweedOverlay(
-                    canvasSize: proxy.size,
-                    highlightWidth: highlightWidth,
-                    highlightHeight: highlightHeight,
-                    highlightCenter: CGPoint(x: screenCenterX, y: screenCenterY),
-                    highlightCornerRadius: highlightCornerRadius,
-                    textureBrightness: 0.08,
-                    textureOverlayOpacity: 0.18,
-                    textureBleed: 48
+                FullScreenTweedBackground(
+                    windowCutout: (
+                        center: CGPoint(x: screenCenterX, y: screenCenterY),
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    ),
+                    safeAreaInsets: proxy.safeAreaInsets
                 )
-                .allowsHitTesting(false)
+                .ignoresSafeArea()
 
                 HighlightWindowChromeBorder(
                     width: highlightWidth,
@@ -1658,7 +1649,8 @@ struct MaestroGameplayView: View {
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote)
+                    isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: leftGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
@@ -1668,7 +1660,8 @@ struct MaestroGameplayView: View {
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote)
+                    isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: rightGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
@@ -1764,7 +1757,7 @@ struct MaestroGameplayView: View {
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(LinearGradient(
-                        colors: [Color(red: 0.94, green: 0.82, blue: 0.53), Color(red: 0.78, green: 0.6, blue: 0.22), Color(red: 0.94, green: 0.82, blue: 0.53)],
+                        colors: [Color(red: 1.0, green: 1.0, blue: 1.0), Color(red: 0.90, green: 0.90, blue: 0.90), Color(red: 0.45, green: 0.45, blue: 0.45), Color(red: 0.65, green: 0.65, blue: 0.65)],
                         startPoint: .top, endPoint: .bottom
                     ))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.black.opacity(0.26), lineWidth: 1.2))
@@ -2253,9 +2246,10 @@ struct MaestroGameplayView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.94, green: 0.82, blue: 0.53),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            Color(red: 1.0, green: 1.0, blue: 1.0),
+                            Color(red: 0.90, green: 0.90, blue: 0.90),
+                            Color(red: 0.45, green: 0.45, blue: 0.45),
+                            Color(red: 0.65, green: 0.65, blue: 0.65)
                         ],
                         startPoint: .top,
                         endPoint: .bottom

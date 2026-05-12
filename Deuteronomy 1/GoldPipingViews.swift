@@ -123,28 +123,11 @@ struct WhitePipingBorder: View {
     let bottomInset: CGFloat
 
     var body: some View {
-        ZStack {
-            ContainerRelativeShape()
-                .inset(by: 1.75)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.95, blue: 0.95),
-                            Color(red: 0.78, green: 0.78, blue: 0.78),
-                            Color(red: 0.97, green: 0.97, blue: 0.97)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 3.5
-                )
-                .shadow(color: Color.black.opacity(0.45), radius: 12, x: 0, y: 8)
-
-            ContainerRelativeShape()
-                .inset(by: 3.5)
-                .stroke(Color.black.opacity(0.6), lineWidth: 1.5)
-        }
-        .padding(.bottom, bottomInset)
-        .ignoresSafeArea()
+        ContainerRelativeShape()
+            .inset(by: 1.75)
+            .strokeBorder(Color.white, lineWidth: 3.5)
+            .shadow(color: Color.black.opacity(0.45), radius: 12, x: 0, y: 8)
+            .padding(.bottom, bottomInset)
+            .ignoresSafeArea()
     }
 }
