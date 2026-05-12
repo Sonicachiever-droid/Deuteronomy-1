@@ -21,7 +21,7 @@ struct GameplayControlPlateShell: View {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [Color(red: 0.95, green: 0.95, blue: 0.95), Color(red: 0.58, green: 0.58, blue: 0.58)],
+                                colors: [.chromeLight, Color(red: 0.58, green: 0.58, blue: 0.58)],
                                 center: UnitPoint(x: 0.35, y: 0.3),
                                 startRadius: 1,
                                 endRadius: 16
@@ -63,16 +63,9 @@ struct GameplayControlPlateShell: View {
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
-                            Color(red: 1.0, green: 1.0, blue: 1.0),
-                            Color(red: 0.95, green: 0.95, blue: 0.95),
-                            Color(red: 0.55, green: 0.55, blue: 0.55),
-                            Color(red: 0.25, green: 0.25, blue: 0.25),
-                            Color(red: 0.65, green: 0.65, blue: 0.65)
+                            .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
                         ] : [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.90, green: 0.74, blue: 0.40),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -104,15 +97,9 @@ struct GameplayControlPlateShell: View {
                     .fill(
                         LinearGradient(
                             colors: consoleSkin == .tweed ? [
-                                Color(red: 1.0, green: 1.0, blue: 1.0),
-                                Color(red: 0.90, green: 0.90, blue: 0.90),
-                                Color(red: 0.45, green: 0.45, blue: 0.45),
-                                Color(red: 0.60, green: 0.60, blue: 0.60)
+                                .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, .chromeMid
                             ] : [
-                                Color(red: 0.98, green: 0.9, blue: 0.66),
-                                Color(red: 0.90, green: 0.74, blue: 0.40),
-                                Color(red: 0.73, green: 0.55, blue: 0.26),
-                                Color(red: 0.94, green: 0.82, blue: 0.53)
+                                .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],
                             startPoint: .top,
                             endPoint: .bottom

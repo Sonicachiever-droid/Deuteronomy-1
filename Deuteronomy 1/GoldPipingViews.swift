@@ -10,12 +10,7 @@ struct GoldHorizontalPipingLine: View {
             RoundedRectangle(cornerRadius: 1.3, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.90, green: 0.74, blue: 0.40),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
-                        ],
+                        colors: [.goldLight, .goldMid, .goldDark, .goldMidtone],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -54,11 +49,7 @@ struct GoldPipingBorder: View {
                 .inset(by: 1.75)
                 .strokeBorder(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
+                        colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),

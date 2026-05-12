@@ -186,7 +186,7 @@ private struct DeveloperConsoleFrame: View {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                        colors: [.screenDark, .screenDarkAlt],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -221,7 +221,7 @@ private struct DeveloperConsoleFrame: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.black.opacity(0.96), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.96)],
+                        colors: [Color.black.opacity(0.96), .screenInner, Color.black.opacity(0.96)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -336,7 +336,7 @@ private struct WhiteNoteBoxOverlay: View {
                     guard isActive else { return Color.clear }
                     switch answerFeedback {
                     case .red:
-                        return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
+                        return Color.feedbackRedStroke.opacity(0.9)
                     default:
                         return noteIsAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     }
@@ -344,7 +344,7 @@ private struct WhiteNoteBoxOverlay: View {
                 let strokeColor: Color = {
                     guard isActive else { return .clear }
                     switch answerFeedback {
-                    case .red: return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
+                    case .red: return Color.feedbackRedStroke.opacity(0.9)
                     default:
                         return noteIsAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     }
@@ -1316,7 +1316,7 @@ struct MaestroGameplayView: View {
                     Circle()
                         .fill(Color.blue)
                         .frame(width: 12, height: 12)
-                        .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                        .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                         .shadow(color: Color.white.opacity(0.45), radius: 5)
                         .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
                         .position(x: leftAnswerCenterX - lowerScreenWidth/2 - 16, y: noteChoiceY)
@@ -1687,7 +1687,7 @@ struct MaestroGameplayView: View {
                 Circle()
                     .fill(Color.blue)
                     .frame(width: 12, height: 12)
-                    .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                    .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                     .shadow(color: Color.white.opacity(0.45), radius: 5)
                     .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
                     .position(x: leftGapCenter - miniTVWidth / 2 - 16, y: miniTVCenterY)
@@ -1775,8 +1775,8 @@ struct MaestroGameplayView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(LinearGradient(
                         colors: consoleSkin == .tweed
-                            ? [Color(red: 1.0, green: 1.0, blue: 1.0), Color(red: 0.90, green: 0.90, blue: 0.90), Color(red: 0.45, green: 0.45, blue: 0.45), Color(red: 0.65, green: 0.65, blue: 0.65)]
-                            : [Color(red: 0.98, green: 0.9, blue: 0.66), Color(red: 0.90, green: 0.74, blue: 0.40), Color(red: 0.73, green: 0.55, blue: 0.26), Color(red: 0.94, green: 0.82, blue: 0.53)],
+                            ? [.white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)]
+                            : [.goldLight, .goldMid, .goldDark, .goldMidtone],
                         startPoint: .top, endPoint: .bottom
                     ))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.black.opacity(0.26), lineWidth: 1.2))
@@ -2266,15 +2266,9 @@ struct MaestroGameplayView: View {
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
-                            Color(red: 1.0, green: 1.0, blue: 1.0),
-                            Color(red: 0.90, green: 0.90, blue: 0.90),
-                            Color(red: 0.45, green: 0.45, blue: 0.45),
-                            Color(red: 0.65, green: 0.65, blue: 0.65)
+                            .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
                         ] : [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.90, green: 0.74, blue: 0.40),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],
                         startPoint: .top,
                         endPoint: .bottom

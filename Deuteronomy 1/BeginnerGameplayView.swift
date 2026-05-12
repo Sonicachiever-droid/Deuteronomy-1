@@ -63,12 +63,12 @@ private struct WhiteNoteBoxOverlay: View {
                     guard isActive else { return Color.clear }
                     switch answerFeedback {
                     case .green:
-                        return Color(red: 0.64, green: 0.98, blue: 0.70).opacity(0.95)
+                        return Color.feedbackGreenFill.opacity(0.95)
                     case .red:
-                        return Color(red: 1.0, green: 0.62, blue: 0.58).opacity(0.95)
+                        return Color.feedbackRedFill.opacity(0.95)
                     default:
                         if blinkingActive {
-                            return blinkOrange ? Color(red: 1.0, green: 0.56, blue: 0.00).opacity(0.95) : Color.white.opacity(0.95)
+                            return blinkOrange ? Color.glowDeep.opacity(0.95) : Color.white.opacity(0.95)
                         }
                         return shouldUseAccidentalStyle ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     }
@@ -77,9 +77,9 @@ private struct WhiteNoteBoxOverlay: View {
                     guard isActive else { return .clear }
                     switch answerFeedback {
                     case .green:
-                        return Color(red: 0.04, green: 0.42, blue: 0.12).opacity(0.9)
+                        return Color.feedbackGreenStroke.opacity(0.9)
                     case .red:
-                        return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
+                        return Color.feedbackRedStroke.opacity(0.9)
                     default:
                         if blinkingActive {
                             return Color.black.opacity(0.8)
@@ -354,7 +354,7 @@ private struct DeveloperConsoleFrame: View {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                        colors: [.screenDark, .screenDarkAlt],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -389,7 +389,7 @@ private struct DeveloperConsoleFrame: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.black.opacity(0.96), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.96)],
+                        colors: [Color.black.opacity(0.96), .screenInner, Color.black.opacity(0.96)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
@@ -3219,15 +3219,9 @@ struct BeginnerGameplayView: View {
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
-                            Color(red: 1.0, green: 1.0, blue: 1.0),
-                            Color(red: 0.90, green: 0.90, blue: 0.90),
-                            Color(red: 0.45, green: 0.45, blue: 0.45),
-                            Color(red: 0.65, green: 0.65, blue: 0.65)
+                            .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
                         ] : [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.90, green: 0.74, blue: 0.40),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                            .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -3343,7 +3337,7 @@ struct BeginnerGameplayView: View {
                     )
                 )
                 .frame(width: 18, height: 18)
-                .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                 .shadow(color: Color.white.opacity(0.45), radius: 5)
                 .overlay(
                     Circle()

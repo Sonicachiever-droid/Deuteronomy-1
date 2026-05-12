@@ -77,7 +77,7 @@ struct MiniTVFrame: View {
                     LinearGradient(
                         colors: consoleSkin == .tweed
                             ? [Color(red: 0.96, green: 0.96, blue: 0.96), Color(red: 0.88, green: 0.88, blue: 0.88)]
-                            : [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
+                            : [.screenDark, .screenDarkAlt],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -97,7 +97,7 @@ struct MiniTVFrame: View {
                     RoundedRectangle(cornerRadius: UIConstants.consoleContentRadius, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [Color.black.opacity(0.95), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.95)],
+                                colors: [Color.black.opacity(0.95), .screenInner, Color.black.opacity(0.95)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
@@ -109,10 +109,10 @@ struct MiniTVFrame: View {
                             RadialGradient(
                                 gradient: Gradient(stops: [
                                     .init(color: Color(white: 1.0, opacity: 0.85), location: 0.0),
-                                    .init(color: Color(red: 1.0, green: 0.96, blue: 0.70), location: 0.08),
-                                    .init(color: Color(red: 1.0, green: 0.78, blue: 0.12), location: 0.28),
-                                    .init(color: Color(red: 1.0, green: 0.56, blue: 0.00), location: 0.40),
-                                    .init(color: Color(red: 0.28, green: 0.12, blue: 0.00), location: 1.0)
+                                    .init(color: .glowWarm, location: 0.08),
+                                    .init(color: .glowOrange, location: 0.28),
+                                    .init(color: .glowDeep, location: 0.40),
+                                    .init(color: .glowBrown, location: 1.0)
                                 ]),
                                 center: .center,
                                 startRadius: 2,
@@ -162,11 +162,9 @@ struct ScrewHeadView: View {
                 .fill(
                     RadialGradient(
                         colors: consoleSkin == .tweed ? [
-                            Color(red: 0.95, green: 0.95, blue: 0.95),
-                            Color(red: 0.55, green: 0.55, blue: 0.55)
+                            .chromeLight, .chromeBase
                         ] : [
-                            Color(red: 0.98, green: 0.90, blue: 0.66),
-                            Color(red: 0.73, green: 0.55, blue: 0.26)
+                            .goldLight, .goldDark
                         ],
                         center: UnitPoint(x: 0.3, y: 0.25),
                         startRadius: size * 0.05,
@@ -199,17 +197,17 @@ struct ThumbButtonView: View {
                 return [
                     .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
                     .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
-                    .init(color: Color(red: 0.95, green: 0.95, blue: 0.95), location: 0.34),
-                    .init(color: Color(red: 0.60, green: 0.60, blue: 0.60), location: 0.54),
-                    .init(color: Color(red: 0.25, green: 0.25, blue: 0.25), location: 1.0)
+                    .init(color: .chromeLight, location: 0.34),
+                    .init(color: .chromeMid, location: 0.54),
+                    .init(color: .chromeShadow, location: 1.0)
                 ]
             } else {
                 return [
                     .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
                     .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
-                    .init(color: Color(red: 1.0, green: 0.96, blue: 0.70), location: 0.34),
-                    .init(color: Color(red: 1.0, green: 0.78, blue: 0.12), location: 0.54),
-                    .init(color: Color(red: 0.28, green: 0.12, blue: 0.00), location: 1.0)
+                    .init(color: .glowWarm, location: 0.34),
+                    .init(color: .glowOrange, location: 0.54),
+                    .init(color: .glowBrown, location: 1.0)
                 ]
             }
         case .orange:
@@ -253,16 +251,9 @@ struct ThumbButtonView: View {
                     .fill(
                         LinearGradient(
                             colors: consoleSkin == .tweed ? [
-                                Color(red: 1.0, green: 1.0, blue: 1.0),
-                                Color(red: 0.95, green: 0.95, blue: 0.95),
-                                Color(red: 0.55, green: 0.55, blue: 0.55),
-                                Color(red: 0.25, green: 0.25, blue: 0.25),
-                                Color(red: 0.65, green: 0.65, blue: 0.65)
+                                .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
                             ] : [
-                                Color(red: 0.98, green: 0.9, blue: 0.66),
-                                Color(red: 0.90, green: 0.74, blue: 0.40),
-                                Color(red: 0.73, green: 0.55, blue: 0.26),
-                                Color(red: 0.94, green: 0.82, blue: 0.53)
+                                .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -317,13 +308,9 @@ struct ThumbButtonView: View {
                     .fill(
                         RadialGradient(
                             colors: consoleSkin == .tweed ? [
-                                Color(red: 1.0, green: 1.0, blue: 1.0),
-                                Color(red: 0.75, green: 0.75, blue: 0.75),
-                                Color(red: 0.30, green: 0.30, blue: 0.30)
+                                .white, Color(red: 0.75, green: 0.75, blue: 0.75), Color(red: 0.30, green: 0.30, blue: 0.30)
                             ] : [
-                                Color(red: 0.98, green: 0.9, blue: 0.66),
-                                Color(red: 0.90, green: 0.74, blue: 0.40),
-                                Color(red: 0.73, green: 0.55, blue: 0.26)
+                                .goldLight, .goldMid, .goldDark
                             ],
                             center: UnitPoint(x: 0.35, y: 0.3),
                             startRadius: plunger * 0.03,

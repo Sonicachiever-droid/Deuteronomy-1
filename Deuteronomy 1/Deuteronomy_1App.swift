@@ -194,7 +194,7 @@ private struct GoldPickerRow<T: Hashable>: View {
     @Binding var selection: T
     var disabled: Bool = false
 
-    private let gold = Color(red: 0.95, green: 0.82, blue: 0.47)
+    private let gold = Color.goldBorderMid
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -315,8 +315,8 @@ private struct Deuteronomy1MenuSheet: View {
         infiniteRepetitions ? "∞" : "\(repetitions)"
     }
 
-    private let gold = Color(red: 0.95, green: 0.82, blue: 0.47)
-    private let goldDim = Color(red: 0.95, green: 0.82, blue: 0.47).opacity(0.55)
+    private let gold = Color.goldBorderMid
+    private let goldDim = Color.goldBorderMid.opacity(0.55)
 
     var body: some View {
         NavigationStack {
@@ -544,11 +544,7 @@ private struct Deuteronomy1MenuSheet: View {
                                             RoundedRectangle(cornerRadius: 10)
                                                 .strokeBorder(
                                                     LinearGradient(
-                                                        colors: [
-                                                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                                                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                                                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                                                        ],
+                                                        colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
                                                         startPoint: .topLeading,
                                                         endPoint: .bottomTrailing
                                                     ),

@@ -109,11 +109,7 @@ struct HighlightWindowGoldBorder: View {
         HighlightWindowShape(cornerRadius: cornerRadius)
             .strokeBorder(
                 LinearGradient(
-                    colors: [
-                        Color(red: 0.95, green: 0.82, blue: 0.47),
-                        Color(red: 0.78, green: 0.6, blue: 0.22),
-                        Color(red: 0.97, green: 0.85, blue: 0.5)
-                    ],
+                    colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),
