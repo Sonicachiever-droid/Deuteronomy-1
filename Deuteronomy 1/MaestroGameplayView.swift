@@ -1053,6 +1053,7 @@ struct MaestroGameplayView: View {
                         neckWidth: neckWidth,
                         activeStringNumbers: activePickedStringNumbers,
                         answerFeedback: activeAnswerFeedback,
+                        showFeedbackColors: false,
                         revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
                         revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
                         revealedNoteTextColor: Color.black.opacity(0.96)
@@ -1432,6 +1433,7 @@ struct MaestroGameplayView: View {
                     neckWidth: neckWidth,
                     activeStringNumbers: activePickedStringNumbers,
                     answerFeedback: activeAnswerFeedback,
+                    showFeedbackColors: false,
                     revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
                     revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
                     revealedNoteTextColor: Color.black.opacity(0.96)

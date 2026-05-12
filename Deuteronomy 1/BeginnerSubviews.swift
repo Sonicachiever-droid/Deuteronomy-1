@@ -10,6 +10,7 @@ struct WhiteNoteBoxOverlay: View {
     let neckWidth: CGFloat
     let activeStringNumbers: [Int]
     let answerFeedback: ThumbGlowState?
+    var showFeedbackColors: Bool = true   // false in Maestro — boxes stay neutral on correct answers
     let revealedNoteText: String?
     let revealedNoteTextByString: [Int: String]?
     let revealedNoteTextColor: Color
@@ -56,25 +57,29 @@ struct WhiteNoteBoxOverlay: View {
                 let shouldUseAccidentalStyle = noteIsAccidental
                 let fillColor: Color = {
                     guard isActive else { return Color.clear }
-                    switch answerFeedback {
-                    case .green:
-                        return Color.feedbackGreenFill.opacity(0.95)
-                    case .red:
+                    if showFeedbackColors {
+                        switch answerFeedback {
+                        case .green: return Color.feedbackGreenFill.opacity(0.95)
+                        case .red:   return Color.feedbackRedFill.opacity(0.95)
+                        default: break
+                        }
+                    } else if answerFeedback == .red {
                         return Color.feedbackRedFill.opacity(0.95)
-                    default:
-                        return shouldUseAccidentalStyle ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     }
+                    return shouldUseAccidentalStyle ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                 }()
                 let strokeColor: Color = {
                     guard isActive else { return .clear }
-                    switch answerFeedback {
-                    case .green:
-                        return Color.feedbackGreenStroke.opacity(0.9)
-                    case .red:
+                    if showFeedbackColors {
+                        switch answerFeedback {
+                        case .green: return Color.feedbackGreenStroke.opacity(0.9)
+                        case .red:   return Color.feedbackRedStroke.opacity(0.9)
+                        default: break
+                        }
+                    } else if answerFeedback == .red {
                         return Color.feedbackRedStroke.opacity(0.9)
-                    default:
-                        return shouldUseAccidentalStyle ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     }
+                    return shouldUseAccidentalStyle ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                 }()
 
                 RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
