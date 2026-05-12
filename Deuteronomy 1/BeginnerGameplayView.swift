@@ -13,8 +13,6 @@ private struct WhiteNoteBoxOverlay: View {
     let neckWidth: CGFloat
     let activeStringNumbers: [Int]
     let answerFeedback: ThumbGlowState?
-    let blinkingActive: Bool
-    let blinkOrange: Bool
     let revealedNoteText: String?
     let revealedNoteTextByString: [Int: String]?
     let revealedNoteTextColor: Color
@@ -67,9 +65,6 @@ private struct WhiteNoteBoxOverlay: View {
                     case .red:
                         return Color.feedbackRedFill.opacity(0.95)
                     default:
-                        if blinkingActive {
-                            return blinkOrange ? Color.glowDeep.opacity(0.95) : Color.white.opacity(0.95)
-                        }
                         return shouldUseAccidentalStyle ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
                     }
                 }()
@@ -81,9 +76,6 @@ private struct WhiteNoteBoxOverlay: View {
                     case .red:
                         return Color.feedbackRedStroke.opacity(0.9)
                     default:
-                        if blinkingActive {
-                            return Color.black.opacity(0.8)
-                        }
                         return shouldUseAccidentalStyle ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     }
                 }()
@@ -885,8 +877,6 @@ struct BeginnerGameplayView: View {
     @State private var beatPulseActive: Bool = false
     @State private var beatCountInRemaining: Int = 0
     @State private var nextBeatTickDate: Date? = nil
-    @State private var questionBoxPulsePhase: Bool = false
-    @State private var nextQuestionBoxPulseDate: Date? = nil
     @State private var questionBoxIntroProgress: CGFloat = 0
     @State private var streakMeterLitColumns: Int = 0
     @State private var streakMeterFailureActive: Bool = false
@@ -1648,7 +1638,6 @@ struct BeginnerGameplayView: View {
                 let introScale = max(questionBoxIntroProgress, 0.001)
                 let introOffsetY = (1 - questionBoxIntroProgress) * ((proxy.size.height / 2) - topScreenY)
                 let questionBoxOffsetY = (1 - questionBoxIntroProgress) * ((proxy.size.height / 2) - orangeGreenUnitCenterY)
-                let shouldBlinkQuestionBox = false
                 let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
                 let hasBeginnerSelectedNote = !(beginnerRuntime.lastPickedNote?.isEmpty ?? true)
                     || !(beginnerRuntime.rewardNoteTextByString?.isEmpty ?? true)
@@ -1714,8 +1703,6 @@ struct BeginnerGameplayView: View {
                             neckWidth: neckWidth,
                             activeStringNumbers: activePickedStringNumbers,
                             answerFeedback: activeAnswerFeedback,
-                            blinkingActive: shouldBlinkQuestionBox,
-                            blinkOrange: questionBoxPulsePhase,
                             revealedNoteText: layoutMode == .beginner
                                 ? (hasBeginnerSelectedNote ? beginnerRuntime.lastPickedNote : nil)
                                 : (activeAnswerFeedback == .green ? currentCorrectNote : nil),
@@ -3379,15 +3366,19 @@ struct BeginnerGameplayView: View {
             && !beginnerRuntime.roundOneIntroActive
 
         if lessonStyle == .sequential {
-            let answeredStrings = Array(answeredNotesByStringAtCurrentFret.keys)
-            activePickedStringNumbers = answeredStrings + [selectedString]
+            // In sequential mode, only commit the string to the visible answered set
+            // after correctness is confirmed — handled inside handleBeginnerRoundOneProgressionIfNeeded.
+            // Keep activePickedStringNumbers to already-answered strings only.
+            activePickedStringNumbers = Array(answeredNotesByStringAtCurrentFret.keys)
         } else {
             activePickedStringNumbers = [selectedString]
         }
         beginnerRuntime.rewardNoteTextByString = nil
-        beginnerRuntime.lastPickedNote = selectedNote
-        // Track correct notes per string at current fret
-        answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
+        beginnerRuntime.lastPickedNote = lessonStyle == .sequential ? nil : selectedNote
+        // Non-sequential: track immediately. Sequential: deferred to success path below.
+        if lessonStyle != .sequential {
+            answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
+        }
         beginnerRuntime.answerBoxReady = true
         activeAnswerFeedback = nil
         questionBoxAssistActive = false
@@ -3414,9 +3405,30 @@ struct BeginnerGameplayView: View {
         guard !sequentialNoteGenerator.isSequenceComplete() else { return }
 
         // Validate: note must match AND must not reuse an already-played string for that note
-        guard sequentialNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else { return }
+        guard sequentialNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else {
+            // Wrong answer — restart the sequence so all notes light up again from the top
+            let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
+            sequentialNoteGenerator.resetForNewFret()
+            sequentialNoteGenerator.generateNoteSequence(
+                for: max(currentRound, 0),
+                useFlats: useFlats,
+                lowToHigh: isProgressionLowToHigh
+            )
+            beginnerRuntime.sequentialRevealCount = 0
+            beginnerRuntime.sequentialRevealStartBeatBucket = nil
+            answeredNotesByStringAtCurrentFret = [:]
+            activePickedStringNumbers = []
+            beginnerRuntime.lastPickedNote = nil
+            beginnerRuntime.answerBoxReady = false
+            return
+        }
 
-        // Correct answer - light up the button
+        // Correct answer — commit to answered set and show the box
+        answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
+        activePickedStringNumbers = Array(answeredNotesByStringAtCurrentFret.keys)
+        beginnerRuntime.lastPickedNote = selectedNote
+
+        // Light up the button
         beginnerPressedButtonIndex = buttonIndex
         beginnerPressedButtonCorrect = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
