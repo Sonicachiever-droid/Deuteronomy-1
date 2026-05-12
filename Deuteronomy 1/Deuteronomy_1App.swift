@@ -58,6 +58,15 @@ struct Deuteronomy_1App: App {
         if LessonDirection(rawValue: directionRawValue) == nil {
             directionRawValue = LessonDirection.ascending.rawValue
         }
+        // Clamp persisted values to what the user has actually purchased
+        let landscapePurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.landscape")
+        if !landscapePurchased {
+            UserDefaults.standard.set(Orientation.portrait.rawValue, forKey: "numbers3.setup.orientation")
+        }
+        let highFretsPurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.highFrets")
+        if !highFretsPurchased {
+            UserDefaults.standard.set(false, forKey: "numbers3.setup.enableHighFrets")
+        }
         // Always show welcome screen on cold launch
         layoutMode = nil
     }
@@ -149,8 +158,10 @@ struct Deuteronomy_1App: App {
                 )
             }
             .onChange(of: orientationRawValue) { _, newValue in
-                // Only allow landscape if in maestro mode
-                guard layoutMode == .maestro else {
+                let landscapePurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.landscape")
+                // Only allow landscape if in maestro mode AND purchase has been made
+                guard layoutMode == .maestro, landscapePurchased else {
+                    orientationRawValue = Orientation.portrait.rawValue
                     AppDelegate.orientationLock = .portrait
                     return
                 }
@@ -289,6 +300,8 @@ private struct Deuteronomy1MenuSheet: View {
     @Binding var orientationRawValue: String
     @Binding var consoleSkinRawValue: String
     @AppStorage("numbers3.purchased.tweed") private var tweedPurchased: Bool = false
+    @AppStorage("numbers3.purchased.highFrets") private var highFretsPurchased: Bool = false
+    @AppStorage("numbers3.purchased.landscape") private var landscapePurchased: Bool = false
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var isButtonPressed: Bool = false
@@ -321,6 +334,71 @@ private struct Deuteronomy1MenuSheet: View {
                             MenuSection(title: "PROGRESS", gold: gold) {
                                 MenuRow(label: "Wallet", value: "$\(walletPoints)", gold: gold)
                                 MenuRow(label: "Balance", value: "$\(balancePoints)", gold: gold)
+                            }
+                            MenuSection(title: "UNLOCKS", gold: gold) {
+                                // High Frets row
+                                if highFretsPurchased {
+                                    Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                        .tint(gold)
+                                        .onChange(of: enableHighFrets) { _, isEnabled in
+                                            if !isEnabled {
+                                                startingFret = min(startingFret, 12)
+                                            }
+                                        }
+                                } else {
+                                    Button(action: {
+                                        if balancePoints >= 500 {
+                                            balancePoints -= 500
+                                            highFretsPurchased = true
+                                        }
+                                    }) {
+                                        HStack {
+                                            Text("Enable High Frets (12+)")
+                                                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
+                                            Spacer()
+                                            Text("$500")
+                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(balancePoints < 500)
+                                }
+                                // Landscape row (Maestro only)
+                                if layoutMode == .maestro {
+                                    if landscapePurchased {
+                                        GoldPickerRow(
+                                            label: "Layout",
+                                            options: [
+                                                (label: "Portrait", value: Orientation.portrait.rawValue),
+                                                (label: "Landscape", value: Orientation.landscape.rawValue)
+                                            ],
+                                            selection: $orientationRawValue
+                                        )
+                                    } else {
+                                        Button(action: {
+                                            if balancePoints >= 500 {
+                                                balancePoints -= 500
+                                                landscapePurchased = true
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text("Landscape Mode")
+                                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
+                                                Spacer()
+                                                Text("$500")
+                                                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(balancePoints < 500)
+                                    }
+                                }
                             }
                             MenuSection(title: "SKINS", gold: gold) {
                                 // Classic row
@@ -371,18 +449,6 @@ private struct Deuteronomy1MenuSheet: View {
                                 .buttonStyle(.plain)
                                 .disabled(!tweedPurchased && balancePoints < 500)
                             }
-                            if layoutMode == .maestro {
-                                MenuSection(title: "ORIENTATION", gold: gold) {
-                                    GoldPickerRow(
-                                        label: "Layout",
-                                        options: [
-                                            (label: "Portrait", value: Orientation.portrait.rawValue),
-                                            (label: "Landscape", value: Orientation.landscape.rawValue)
-                                        ],
-                                        selection: $orientationRawValue
-                                    )
-                                }
-                            }
 
                         case .learn:
                             MenuSection(title: "LESSON SETUP", gold: gold) {
@@ -408,19 +474,19 @@ private struct Deuteronomy1MenuSheet: View {
                                     .font(.system(size: 15, weight: .regular, design: .monospaced))
                                     .tint(gold)
 
-                                Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
+                                Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(highFretsPurchased && enableHighFrets ? 19 : 12))
                                     .foregroundColor(.white)
                                     .font(.system(size: 15, weight: .regular, design: .monospaced))
                                     .tint(gold)
                                     .onChange(of: startingFret) { _, newValue in
                                         if newValue == 0 {
                                             directionRawValue = LessonDirection.ascending.rawValue
-                                        } else if newValue >= (enableHighFrets ? 19 : 12) {
+                                        } else if newValue >= (highFretsPurchased && enableHighFrets ? 19 : 12) {
                                             directionRawValue = LessonDirection.descending.rawValue
                                         }
                                     }
 
-                                let upperBound = enableHighFrets ? 19 : 12
+                                let upperBound = highFretsPurchased && enableHighFrets ? 19 : 12
                                 let descendingLocked = startingFret == 0
                                 let ascendingLocked = startingFret >= upperBound
                                 GoldPickerRow(
@@ -451,15 +517,6 @@ private struct Deuteronomy1MenuSheet: View {
                                     disabled: progressionLocked
                                 )
 
-                                Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
-                                    .tint(gold)
-                                    .onChange(of: enableHighFrets) { _, isEnabled in
-                                        if !isEnabled {
-                                            startingFret = min(startingFret, 12)
-                                        }
-                                    }
                             }
 
                             MenuSection(title: "CONSOLE", gold: gold) {
