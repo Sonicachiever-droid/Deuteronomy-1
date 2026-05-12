@@ -34,6 +34,7 @@ private typealias MaestroStartupState = MaestroStartupSequenceView.Phase// Thumb
 // LED-style thumb button matching the exhibit styling
 
 
+#if DEBUG
 private func logNutBaselineDelta(_ delta: CGFloat) {
     if abs(delta) > 0.5 {
         print("[Project Genesis] Nut baseline delta: \(delta)")
@@ -59,319 +60,7 @@ private func logAlignmentDiagnostics(
     logAlignmentDelta(blueMidpointY - greenBisectorY)
     logNutBaselineDelta(neckTopY - nutBottomRowY)
 }
-
-private struct DeveloperCodeRunnerView: View {
-    @State private var startDate: Date = .now
-
-    private struct RenderState {
-        let renderedLines: [String]
-        let lineHeight: CGFloat
-        let offsetY: CGFloat
-    }
-
-    private static let sourceText: String = {
-        if let url = Bundle.main.url(forResource: "ContentViewSource", withExtension: "txt"),
-           let text = try? String(contentsOf: url, encoding: .utf8),
-           !text.isEmpty {
-            return text
-        }
-        if let text = try? String(contentsOfFile: #filePath, encoding: .utf8), !text.isEmpty {
-            return text
-        }
-        return "import SwiftUI\nstruct MaestroGameplayView: View {\n    var body: some View {\n        Text(\"Loading Source\")\n    }\n}"
-    }()
-
-    private static let lines: [String] = {
-        let split = sourceText.components(separatedBy: .newlines)
-        return split.isEmpty ? ["// source unavailable"] : split
-    }()
-
-    private static let charsPerSecond: Double = 42
-    private static let postLineHold: Double = 0.12
-    private static let lineHeight: CGFloat = 14
-    private static let loopPause: Double = 0.9
-    private static let lineDurations: [Double] = lines.map { max(Double($0.count) / charsPerSecond, 0.02) + postLineHold }
-    private static let cumulativeDurations: [Double] = lineDurations.reduce(into: []) { partial, duration in
-        partial.append((partial.last ?? 0) + duration)
-    }
-    private static let typingDuration: Double = lineDurations.reduce(0, +)
-    private static let cycleDuration: Double = max(typingDuration + loopPause, 0.1)
-
-    var body: some View {
-        GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 0.03)) { context in
-                let elapsed = context.date.timeIntervalSince(startDate)
-                let state = makeRenderState(elapsed: elapsed, viewportHeight: geo.size.height)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(state.renderedLines.enumerated()), id: \.offset) { index, line in
-                        Text(line)
-                            .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(color(for: index))
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, minHeight: state.lineHeight, maxHeight: state.lineHeight, alignment: .leading)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .offset(y: state.offsetY)
-                .clipped()
-            }
-        }
-    }
-
-    private func makeRenderState(elapsed: TimeInterval, viewportHeight: CGFloat) -> RenderState {
-        let cycleElapsed = elapsed.truncatingRemainder(dividingBy: Self.cycleDuration)
-
-        let activeLine: Int = {
-            if cycleElapsed >= Self.typingDuration {
-                return max(Self.lines.count - 1, 0)
-            }
-            return Self.cumulativeDurations.firstIndex(where: { cycleElapsed <= $0 }) ?? max(Self.lines.count - 1, 0)
-        }()
-
-        let elapsedIntoLine: Double = {
-            if cycleElapsed >= Self.typingDuration {
-                return Self.lineDurations.last ?? 0
-            }
-            let previousTotal = activeLine > 0 ? Self.cumulativeDurations[activeLine - 1] : 0
-            return max(cycleElapsed - previousTotal, 0)
-        }()
-
-        let currentLineDuration = Self.lineDurations.isEmpty ? 1 : Self.lineDurations[activeLine]
-        let typingWindow = max(currentLineDuration - Self.postLineHold, 0.02)
-        let typedChars = min(
-            Int(max(elapsedIntoLine, 0) * Self.charsPerSecond),
-            Self.lines[activeLine].count
-        )
-
-        var renderedLines: [String] = []
-        if activeLine > 0 {
-            renderedLines.append(contentsOf: Self.lines.prefix(activeLine))
-        }
-        let activeText = String(Self.lines[activeLine].prefix(max(typedChars, 0)))
-        let showCursor = cycleElapsed < Self.typingDuration && elapsedIntoLine <= typingWindow
-        renderedLines.append(activeText + (showCursor ? "▋" : ""))
-
-        let typedProgress = min(max((elapsedIntoLine / currentLineDuration), 0), 1)
-        let contentOffset = (CGFloat(activeLine) + CGFloat(typedProgress)) * Self.lineHeight
-        let baselineY = viewportHeight - Self.lineHeight
-
-        return RenderState(
-            renderedLines: renderedLines,
-            lineHeight: Self.lineHeight,
-            offsetY: baselineY - contentOffset
-        )
-    }
-
-    private func color(for index: Int) -> Color {
-        let palette: [Color] = [.orange, .cyan, .mint, .pink, .yellow, .green]
-        return palette[index % palette.count].opacity(0.95)
-    }
-}
-
-private struct DeveloperConsoleFrame: View {
-    let width: CGFloat
-    let height: CGFloat
-    let isScreensaverMode: Bool
-    let scaleRepetitionText: String
-    let currentRound: Int
-    let bankText: String
-    let repetitionCountColor: Color
-    let startupElapsed: TimeInterval
-    let showStartupSequence: Bool
-    var consoleSkin: ConsoleSkin = .classic
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.screenDark, .screenDarkAlt],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.65), lineWidth: 3)
-                .padding(3)
-
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    consoleSkin == .tweed
-                        ? AnyShapeStyle(Color.white)
-                        : AnyShapeStyle(LinearGradient(
-                            colors: [
-                                Color(red: 0.95, green: 0.82, blue: 0.47),
-                                Color(red: 0.78, green: 0.6, blue: 0.22),
-                                Color(red: 0.97, green: 0.85, blue: 0.5)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )),
-                    lineWidth: 2.5
-                )
-                .padding(1.5)
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.96), .screenInner, Color.black.opacity(0.96)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .padding(2)
-                .overlay {
-                    Group {
-                        if isScreensaverMode {
-                            ZStack {
-                                if !showStartupSequence {
-                                    DeveloperCodeRunnerView()
-                                        .padding(.horizontal, 8)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 6)
-                                }
-
-                                if showStartupSequence {
-                                    MaestroStartupSequenceView(elapsed: startupElapsed)
-                                        .padding(.horizontal, 6)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 4)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                }
-                            }
-                        } else {
-                            HStack {
-                                Text(scaleRepetitionText)
-                                    .font(.system(size: 20, weight: .black, design: .monospaced))
-                                    .foregroundStyle(repetitionCountColor)
-                                Spacer()
-                                Text("FRET \(currentRound)")
-                                    .font(.system(size: 20, weight: .black, design: .monospaced))
-                                    .foregroundStyle(Color.white)
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("WALLET")
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(Color.white.opacity(0.9))
-                                    Text(bankText)
-                                        .font(.system(size: 16, weight: .black, design: .monospaced))
-                                        .foregroundStyle(Color.green.opacity(0.96))
-                                }
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                            .padding(.horizontal, 8)
-                            .padding(.top, 8)
-                        }
-                    }
-                }
-                .padding(2)
-        }
-        .frame(width: width, height: height)
-    }
-}
-
-private struct WhiteNoteBoxOverlay: View {
-    let centerY: CGFloat
-    let availableSize: CGSize
-    let boxHeight: CGFloat
-    let neckWidth: CGFloat
-    let activeStringNumbers: [Int]
-    let answerFeedback: ThumbGlowState?
-    let currentQuestionIsAccidental: Bool
-    let blinkingActive: Bool
-    let blinkOrange: Bool
-    let revealedNote: String?
-    let revealedNoteTextByString: [Int: String]?
-
-    private let totalStrings: Int = GameConstants.stringCount
-    private let stratNutWidthInches: CGFloat = GuitarConstants.stratNutWidth
-    private let stratStringSpanInches: CGFloat = GuitarConstants.stratStringSpan
-
-    var body: some View {
-        let clampedBoxHeight = min(boxHeight, availableSize.height)
-        let nutWidth = neckWidth * GuitarConstants.nutWidthRatio
-        let overallWidth = availableSize.width
-        let overallPadding = (overallWidth - nutWidth) / 2
-
-        let widthPerInch = nutWidth / stratNutWidthInches
-        let interStringSpacing = (stratStringSpanInches / CGFloat(totalStrings - 1)) * widthPerInch
-        let edgeMargin = ((stratNutWidthInches - stratStringSpanInches) / 2) * widthPerInch
-        let grooveCenters = (0..<totalStrings).map { index in
-            overallPadding + edgeMargin + CGFloat(index) * interStringSpacing
-        }
-
-        let minCenterSpacing = grooveCenters.enumerated().dropFirst().map { idx, center in
-            center - grooveCenters[idx - 1]
-        }.min() ?? interStringSpacing
-        let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
-        let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
-        let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
-        let activeSet = Set(activeStringNumbers)
-
-        return ZStack {
-            // Six individual translucent backgrounds for each answer box
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                    .fill(Color.black.opacity(0.42))
-                    .frame(width: boxWidth, height: clampedBoxHeight)
-                    .opacity(isActive ? 1 : 0.0001)
-                    .position(x: grooveCenters[index], y: centerY)
-            }
-
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNote
-                let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
-                let fillColor: Color = {
-                    guard isActive else { return Color.clear }
-                    switch answerFeedback {
-                    case .red:
-                        return Color.feedbackRedStroke.opacity(0.9)
-                    default:
-                        return noteIsAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
-                    }
-                }()
-                let strokeColor: Color = {
-                    guard isActive else { return .clear }
-                    switch answerFeedback {
-                    case .red: return Color.feedbackRedStroke.opacity(0.9)
-                    default:
-                        return noteIsAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
-                    }
-                }()
-                ZStack {
-                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                        .fill(fillColor)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                                .stroke(strokeColor, lineWidth: 2)
-                        )
-                    if isActive, let noteText = revealedNoteTextByString?[stringNumber] ?? revealedNote {
-                        Text(guitarNoteDisplayText(noteText))
-                            .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
-                            .foregroundColor(noteIsAccidental ? .white : .black)
-                            .minimumScaleFactor(0.32)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(width: boxWidth, height: clampedBoxHeight)
-                .position(x: grooveCenters[index], y: centerY)
-            }
-        }
-        .animation(.easeInOut(duration: 0.18), value: activeStringNumbers)
-        .animation(.easeInOut(duration: 0.18), value: answerFeedback)
-    }
-}
+#endif
 
 
 private struct RowOneIdentifierOverlay: View {
@@ -1269,12 +958,33 @@ struct MaestroGameplayView: View {
                     width: topStatusOuterWidth,
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
-                    scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                    currentRound: currentRound,
+                    layoutMode: .maestro,
+                    roundTitle: "",
+                    fretTitle: "",
+                    stringTitle: "",
                     bankText: "$\(displayedBankDollars)",
-                    repetitionCountColor: .white,
+                    scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
+                    promptText: "",
                     startupElapsed: startupSequenceElapsed,
                     showStartupSequence: startupSequenceActivated,
+                    startupShowFullSequence: true,
+                    startupArmedText: "Memorization Sequence Armed",
+                    beginnerRoundStatusText: nil,
+                    centeredStatusMessage: nil,
+                    centeredStatusColor: .clear,
+                    currentRound: currentRound,
+                    repetitionCountColor: .white,
+                    walletColor: .green,
+                    hideRoundLabel: false,
+                    pentatonicRevealComplete: false,
+                    noteHighlightIndex: nil,
+                    sequentialSlots: nil,
+                    sequentialRevealCount: 0,
+                    sequentialAnsweredCount: 0,
+                    chordSlots: nil,
+                    chordRevealCount: 0,
+                    chordAnsweredCount: 0,
+                    rewardNoteTextByString: nil,
                     consoleSkin: consoleSkin
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
@@ -1343,11 +1053,9 @@ struct MaestroGameplayView: View {
                         neckWidth: neckWidth,
                         activeStringNumbers: activePickedStringNumbers,
                         answerFeedback: activeAnswerFeedback,
-                        currentQuestionIsAccidental: currentQuestionIsAccidental,
-                        blinkingActive: false,
-                        blinkOrange: false,
-                        revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
-                        revealedNoteTextByString: answeredNotesByStringAtCurrentFret
+                        revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                        revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
+                        revealedNoteTextColor: Color.black.opacity(0.96)
                     )
                     .allowsHitTesting(false)
                     .offset(y: questionBoxOffsetY)
@@ -1648,12 +1356,33 @@ struct MaestroGameplayView: View {
                 width: highlightWidth,
                 height: consoleHeight,
                 isScreensaverMode: isCodeScreensaverMode,
-                scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                currentRound: currentRound,
+                layoutMode: .maestro,
+                roundTitle: "",
+                fretTitle: "",
+                stringTitle: "",
                 bankText: "$\(displayedBankDollars)",
-                repetitionCountColor: .white,
+                scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
+                promptText: "",
                 startupElapsed: startupSequenceElapsed,
                 showStartupSequence: startupSequenceActivated,
+                startupShowFullSequence: true,
+                startupArmedText: "Memorization Sequence Armed",
+                beginnerRoundStatusText: nil,
+                centeredStatusMessage: nil,
+                centeredStatusColor: .clear,
+                currentRound: currentRound,
+                repetitionCountColor: .white,
+                walletColor: .green,
+                hideRoundLabel: false,
+                pentatonicRevealComplete: false,
+                noteHighlightIndex: nil,
+                sequentialSlots: nil,
+                sequentialRevealCount: 0,
+                sequentialAnsweredCount: 0,
+                chordSlots: nil,
+                chordRevealCount: 0,
+                chordAnsweredCount: 0,
+                rewardNoteTextByString: nil,
                 consoleSkin: consoleSkin
             )
             .position(x: screenCenterX, y: consoleCenterY)
@@ -1703,11 +1432,9 @@ struct MaestroGameplayView: View {
                     neckWidth: neckWidth,
                     activeStringNumbers: activePickedStringNumbers,
                     answerFeedback: activeAnswerFeedback,
-                    currentQuestionIsAccidental: currentQuestionIsAccidental,
-                    blinkingActive: false,
-                    blinkOrange: false,
-                    revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
-                    revealedNoteTextByString: answeredNotesByStringAtCurrentFret
+                    revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                    revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
+                    revealedNoteTextColor: Color.black.opacity(0.96)
                 )
                 .allowsHitTesting(false)
                 .opacity(initialGameplayDimOpacity)
@@ -1742,29 +1469,17 @@ struct MaestroGameplayView: View {
             HStack(spacing: 6) {
                 Button("START") { handleMaestroStartButton() }
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
-                    .background(
-                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                            .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .background(transportButtonBackground(fill: startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear))
                 Button(isRoundPaused ? "RESUME" : "PAUSE") {
                     if isRoundPaused { handleMaestroStartButton() }
                     else { handleMaestroStopButton() }
                 }
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .disabled(isCodeScreensaverMode && !isRoundPaused)
-                    .background(
-                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                            .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .background(transportButtonBackground(fill: isRoundPaused ? Color.orange.opacity(0.85) : Color.clear))
                 Button("RESET") { handleMaestroResetButton() }
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
-                    .background(
-                        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                            .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .background(transportButtonBackground(fill: resetButtonPressed ? Color.green.opacity(0.8) : Color.clear))
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))
             .foregroundStyle(Color.black.opacity(0.92))
@@ -1803,6 +1518,15 @@ struct MaestroGameplayView: View {
             .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
             .padding(.bottom, 0)
         }
+    }
+
+    @ViewBuilder private func transportButtonBackground(fill: Color) -> some View {
+        RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
+            .fill(fill)
+            .overlay(
+                RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
+                    .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
+            )
     }
 
     private func shiftFretSpan(by delta: Int) {

@@ -5,712 +5,9 @@ import AVFoundation
 // MARK: - Types and components from extracted files
 // Types.swift contains: GameplayMenuOption, RefretMode, GameplayModeVariant, AnswerSide, LayoutMode, BeginnerCoursePhase, BeginnerRoundZeroIntroDisplayPhase, HighlightWindowShape, FretMath, GuitarStringLayout, baselineNutTargetY, resolvedNeckTopY
 // ViewComponents.swift contains: StringLineOverlay, MiniTVFrame, ThumbButtonView
+// BeginnerSubviews.swift contains: WhiteNoteBoxOverlay, StartupSequenceView
+// DeveloperViews.swift contains: DeveloperCodeRunnerView, DeveloperConsoleFrame, DeveloperTVStreakMeterView
 
-private struct WhiteNoteBoxOverlay: View {
-    let centerY: CGFloat
-    let availableSize: CGSize
-    let boxHeight: CGFloat
-    let neckWidth: CGFloat
-    let activeStringNumbers: [Int]
-    let answerFeedback: ThumbGlowState?
-    let revealedNoteText: String?
-    let revealedNoteTextByString: [Int: String]?
-    let revealedNoteTextColor: Color
-
-    var body: some View {
-        let totalStrings = GuitarStringLayout.totalStrings
-        let stratNutWidthInches: CGFloat = GuitarConstants.stratNutWidth
-        let stratStringSpanInches: CGFloat = GuitarConstants.stratStringSpan
-        let clampedBoxHeight = min(boxHeight, availableSize.height)
-        let nutWidth = neckWidth * GuitarConstants.nutWidthRatio
-        let overallWidth = availableSize.width
-        let overallPadding = (overallWidth - nutWidth) / 2
-        let widthPerInch = nutWidth / stratNutWidthInches
-        let interStringSpacing = (stratStringSpanInches / CGFloat(totalStrings - 1)) * widthPerInch
-        let edgeMargin = ((stratNutWidthInches - stratStringSpanInches) / 2) * widthPerInch
-        let grooveCenters = (0..<totalStrings).map { index in
-            overallPadding + edgeMargin + CGFloat(index) * interStringSpacing
-        }
-        let minCenterSpacing = grooveCenters.enumerated().dropFirst().map { idx, center in
-            center - grooveCenters[idx - 1]
-        }.min() ?? interStringSpacing
-        let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
-        let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
-        let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
-        let activeSet = Set(activeStringNumbers)
-        return ZStack {
-            // Six individual translucent backgrounds for each answer box
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                    .fill(Color.black.opacity(0.42))
-                    .frame(width: boxWidth, height: clampedBoxHeight)
-                    .opacity(isActive ? 1 : 0.0001)
-                    .position(x: grooveCenters[index], y: centerY)
-            }
-
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
-                let displayText = displayedNoteText.map(guitarNoteDisplayText)
-                let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
-                let shouldUseAccidentalStyle = noteIsAccidental
-                let fillColor: Color = {
-                    guard isActive else { return Color.clear }
-                    switch answerFeedback {
-                    case .green:
-                        return Color.feedbackGreenFill.opacity(0.95)
-                    case .red:
-                        return Color.feedbackRedFill.opacity(0.95)
-                    default:
-                        return shouldUseAccidentalStyle ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
-                    }
-                }()
-                let strokeColor: Color = {
-                    guard isActive else { return .clear }
-                    switch answerFeedback {
-                    case .green:
-                        return Color.feedbackGreenStroke.opacity(0.9)
-                    case .red:
-                        return Color.feedbackRedStroke.opacity(0.9)
-                    default:
-                        return shouldUseAccidentalStyle ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
-                    }
-                }()
-
-                RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                    .fill(fillColor)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
-                            .stroke(strokeColor, lineWidth: 2)
-                    )
-                    .frame(width: boxWidth, height: clampedBoxHeight)
-                    .overlay {
-                        if isActive, let displayText, !displayText.isEmpty {
-                            Text(displayText)
-                                .font(.system(size: min(clampedBoxHeight * 0.72, 26), weight: .black, design: .monospaced))
-                                .minimumScaleFactor(0.32)
-                                .lineLimit(1)
-                                .foregroundStyle(shouldUseAccidentalStyle ? Color.white.opacity(0.96) : revealedNoteTextColor)
-                                .padding(.horizontal, 1)
-                        }
-                    }
-                    .opacity(isActive ? 1 : 0.0001)
-                    .position(x: grooveCenters[index], y: centerY)
-            }
-        }
-        .animation(.easeInOut(duration: 0.18), value: activeStringNumbers)
-        .animation(.easeInOut(duration: 0.18), value: answerFeedback)
-    }
-}
-
-private struct StartupSequenceView: View {
-    enum Phase {
-        case systemOnline
-        case phaseOne
-        case armed
-    }
-
-    let elapsed: TimeInterval
-    let showFullSequence: Bool
-    let armedText: String
-
-    init(elapsed: TimeInterval, showFullSequence: Bool = true, armedText: String = "Memorization Sequence Armed") {
-        self.elapsed = elapsed
-        self.showFullSequence = showFullSequence
-        self.armedText = armedText
-    }
-
-    var body: some View {
-        let state = Self.state(for: elapsed, showFullSequence: showFullSequence, armedText: armedText)
-        let fontSize: CGFloat = state.phase == .armed ? 29.6 : 34
-        let fontWeight: Font.Weight = .black
-
-        Text(state.text)
-            .font(.system(size: fontSize, weight: fontWeight, design: .monospaced))
-            .foregroundStyle(state.color)
-            .minimumScaleFactor(0.3)
-            .lineLimit(2)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .shadow(color: state.color.opacity(0.95), radius: 14, x: 0, y: 0)
-            .shadow(color: state.color.opacity(0.6), radius: 26, x: 0, y: 0)
-            .opacity(state.isVisible ? 1 : 0)
-    }
-
-    static func state(for elapsed: TimeInterval, showFullSequence: Bool = true, armedText: String = "Memorization Sequence Armed") -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
-        let firstFlashPeriod: TimeInterval = 1.0
-        let secondFlashPeriod: TimeInterval = 1.0
-        let armedFlashPeriod: TimeInterval = 1.0
-        let firstBlockDuration = firstFlashPeriod * 4
-        let secondBlockDuration = firstBlockDuration + (secondFlashPeriod * 4)
-
-        if !showFullSequence {
-            let isVisible = Int(elapsed / armedFlashPeriod).isMultiple(of: 2)
-            return (armedText, Color.green.opacity(0.98), isVisible, .armed)
-        }
-
-        if elapsed < firstBlockDuration {
-            let isVisible = Int(elapsed / firstFlashPeriod).isMultiple(of: 2)
-            return ("SYSTEM ONLINE", Color.orange.opacity(0.98), isVisible, .systemOnline)
-        }
-
-        if elapsed < secondBlockDuration {
-            let localElapsed = elapsed - firstBlockDuration
-            let isVisible = Int(localElapsed / secondFlashPeriod).isMultiple(of: 2)
-            return ("PHASE 1", Color.red.opacity(0.98), isVisible, .phaseOne)
-        }
-
-        let localElapsed = elapsed - secondBlockDuration
-        let isVisible = Int(localElapsed / armedFlashPeriod).isMultiple(of: 2)
-        return (armedText, Color.green.opacity(0.98), isVisible, .armed)
-    }
-}
-
-private func logNutBaselineDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Nut baseline delta: \(delta)")
-    }
-}
-
-private func logAlignmentDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Midpoint/bisector delta: \(delta)")
-    }
-}
-
-private func logAlignmentDiagnostics(
-    neckTopY: CGFloat,
-    activeMidpoint: CGFloat,
-    highlightCenterY: CGFloat,
-    highlightTopGridLineY: CGFloat,
-    gridRowHeight: CGFloat
-) {
-    let blueMidpointY = neckTopY + activeMidpoint
-    let greenBisectorY = highlightCenterY
-    let nutBottomRowY = highlightTopGridLineY + 2 * gridRowHeight
-    logAlignmentDelta(blueMidpointY - greenBisectorY)
-    logNutBaselineDelta(neckTopY - nutBottomRowY)
-}
-
-private struct DeveloperCodeRunnerView: View {
-    @State private var startDate: Date = .now
-
-    private struct RenderState {
-        let renderedLines: [String]
-        let lineHeight: CGFloat
-        let offsetY: CGFloat
-    }
-
-    private static let sourceText: String = {
-        if let url = Bundle.main.url(forResource: "ContentViewSource", withExtension: "txt"),
-           let text = try? String(contentsOf: url, encoding: .utf8),
-           !text.isEmpty {
-            return text
-        }
-        if let text = try? String(contentsOfFile: #filePath, encoding: .utf8), !text.isEmpty {
-            return text
-        }
-        return "import SwiftUI\nstruct ContentView: View {\n    var body: some View {\n        Text(\"Loading Source\")\n    }\n}"
-    }()
-
-    private static let lines: [String] = {
-        let split = sourceText.components(separatedBy: .newlines)
-        return split.isEmpty ? ["// source unavailable"] : split
-    }()
-
-    private static let charsPerSecond: Double = 42
-    private static let postLineHold: Double = 0.12
-    private static let lineHeight: CGFloat = 14
-    private static let loopPause: Double = 0.9
-    private static let lineDurations: [Double] = lines.map { max(Double($0.count) / charsPerSecond, 0.02) + postLineHold }
-    private static let cumulativeDurations: [Double] = lineDurations.reduce(into: []) { partial, duration in
-        partial.append((partial.last ?? 0) + duration)
-    }
-    private static let typingDuration: Double = lineDurations.reduce(0, +)
-    private static let cycleDuration: Double = max(typingDuration + loopPause, 0.1)
-
-    var body: some View {
-        GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 0.03)) { context in
-                let elapsed = context.date.timeIntervalSince(startDate)
-                let state = makeRenderState(elapsed: elapsed, viewportHeight: geo.size.height)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(state.renderedLines.enumerated()), id: \.offset) { index, line in
-                        Text(line)
-                            .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(color(for: index))
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, minHeight: state.lineHeight, maxHeight: state.lineHeight, alignment: .leading)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .offset(y: state.offsetY)
-                .clipped()
-            }
-        }
-    }
-
-    private func makeRenderState(elapsed: TimeInterval, viewportHeight: CGFloat) -> RenderState {
-        let cycleElapsed = elapsed.truncatingRemainder(dividingBy: Self.cycleDuration)
-
-        let activeLine: Int = {
-            if cycleElapsed >= Self.typingDuration {
-                return max(Self.lines.count - 1, 0)
-            }
-            return Self.cumulativeDurations.firstIndex(where: { cycleElapsed <= $0 }) ?? max(Self.lines.count - 1, 0)
-        }()
-
-        let elapsedIntoLine: Double = {
-            if cycleElapsed >= Self.typingDuration {
-                return Self.lineDurations.last ?? 0
-            }
-            let previousTotal = activeLine > 0 ? Self.cumulativeDurations[activeLine - 1] : 0
-            return max(cycleElapsed - previousTotal, 0)
-        }()
-
-        let currentLineDuration = Self.lineDurations.isEmpty ? 1 : Self.lineDurations[activeLine]
-        let typingWindow = max(currentLineDuration - Self.postLineHold, 0.02)
-        let typedChars = min(
-            Int(max(elapsedIntoLine, 0) * Self.charsPerSecond),
-            Self.lines[activeLine].count
-        )
-
-        var renderedLines: [String] = []
-        if activeLine > 0 {
-            renderedLines.append(contentsOf: Self.lines.prefix(activeLine))
-        }
-        let activeText = String(Self.lines[activeLine].prefix(max(typedChars, 0)))
-        let showCursor = cycleElapsed < Self.typingDuration && elapsedIntoLine <= typingWindow
-        renderedLines.append(activeText + (showCursor ? "▋" : ""))
-
-        let typedProgress = min(max((elapsedIntoLine / currentLineDuration), 0), 1)
-        let contentOffset = (CGFloat(activeLine) + CGFloat(typedProgress)) * Self.lineHeight
-        let baselineY = viewportHeight - Self.lineHeight
-
-        return RenderState(
-            renderedLines: renderedLines,
-            lineHeight: Self.lineHeight,
-            offsetY: baselineY - contentOffset
-        )
-    }
-
-    private func color(for index: Int) -> Color {
-        let palette: [Color] = [.orange, .cyan, .mint, .pink, .yellow, .green]
-        return palette[index % palette.count].opacity(0.95)
-    }
-}
-
-private struct DeveloperConsoleFrame: View {
-    let width: CGFloat
-    let height: CGFloat
-    let isScreensaverMode: Bool
-    let layoutMode: LayoutMode
-    let roundTitle: String
-    let fretTitle: String
-    let stringTitle: String
-    let bankText: String
-    let scaleRepetitionText: String
-    let promptText: String
-    let startupElapsed: TimeInterval
-    let showStartupSequence: Bool
-    let startupShowFullSequence: Bool
-    let startupArmedText: String
-    let beginnerRoundStatusText: String?
-    let centeredStatusMessage: String?
-    let centeredStatusColor: Color
-    let currentRound: Int
-    let repetitionCountColor: Color
-    let walletColor: Color
-    let hideRoundLabel: Bool
-    let pentatonicRevealComplete: Bool
-    let noteHighlightIndex: Int?
-    let sequentialSlots: [(note: String, stringNumber: Int)]?
-    let sequentialRevealCount: Int
-    let sequentialAnsweredCount: Int
-    let chordSlots: [(note: String, stringNumber: Int)]?
-    let chordRevealCount: Int
-    let chordAnsweredCount: Int
-    let rewardNoteTextByString: [Int: String]?
-    var consoleSkin: ConsoleSkin = .classic
-
-    private var isHintVisible: Bool {
-        promptText.lowercased().hasPrefix("hint:")
-    }
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.screenDark, .screenDarkAlt],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.65), lineWidth: 3)
-                .padding(3)
-
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    consoleSkin == .tweed
-                        ? AnyShapeStyle(Color.white)
-                        : AnyShapeStyle(LinearGradient(
-                            colors: [
-                                Color(red: 0.95, green: 0.82, blue: 0.47),
-                                Color(red: 0.78, green: 0.6, blue: 0.22),
-                                Color(red: 0.97, green: 0.85, blue: 0.5)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )),
-                    lineWidth: 2.5
-                )
-                .padding(1.5)
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.96), .screenInner, Color.black.opacity(0.96)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .padding(4)
-            ZStack {
-                if isScreensaverMode {
-                            ZStack {
-                                if !showStartupSequence {
-                                    DeveloperCodeRunnerView()
-                                        .padding(.horizontal, 12)
-                                        .padding(.top, 4)
-                                        .padding(.bottom, 10)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                }
-
-                                if showStartupSequence {
-                                    StartupSequenceView(
-                                        elapsed: startupElapsed,
-                                        showFullSequence: startupShowFullSequence,
-                                        armedText: startupArmedText
-                                    )
-                                        .padding(.horizontal, 10)
-                                        .padding(.top, 24)
-                                        .padding(.bottom, 8)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                }
-                            }
-                        } else if let msg = centeredStatusMessage {
-                            Text(msg)
-                                .font(.system(size: min(width * 0.086, 26), weight: .black, design: .monospaced))
-                                .foregroundStyle(centeredStatusColor)
-                                .minimumScaleFactor(0.7)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(2)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        } else {
-                            ZStack {
-                                if isHintVisible {
-                                    Text(promptText.replacingOccurrences(of: "hint:", with: "", options: [.caseInsensitive], range: nil).trimmingCharacters(in: .whitespaces))
-                                        .font(.system(size: hintFontSize(for: promptText) * 1.15, weight: .black, design: .monospaced))
-                                        .foregroundStyle(Color(red: 0.2, green: 0.08, blue: 0.0).opacity(0.98))
-                                        .multilineTextAlignment(.center)
-                                        .lineLimit(nil)
-                                        .minimumScaleFactor(0.5)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                } else {
-                                    ZStack {
-                                        VStack(spacing: 0) {
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 0) {
-                                                    Text(scaleRepetitionText)
-                                                        .font(.system(size: 20, weight: .black, design: .monospaced))
-                                                        .foregroundStyle(repetitionCountColor)
-                                                    if hideRoundLabel {
-                                                        Text("FRET \(currentRound)")
-                                                            .font(.system(size: 20, weight: .black, design: .monospaced))
-                                                            .foregroundStyle(Color.white)
-                                                    }
-                                                }
-                                                Spacer()
-                                                VStack(alignment: .trailing, spacing: 2) {
-                                                    Text("WALLET")
-                                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                                        .foregroundStyle(Color.white.opacity(0.9))
-                                                    Text(bankText)
-                                                        .font(.system(size: 16, weight: .black, design: .monospaced))
-                                                        .foregroundStyle(Color.green.opacity(0.96))
-                                                }
-                                            }
-
-                                            Spacer(minLength: 0)
-
-                                            Spacer(minLength: 0)
-                                        }
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                                        if let beginnerRoundStatusText {
-                                            let statusLines = beginnerRoundStatusText.components(separatedBy: "\n")
-                                            let titleLine: String = statusLines.count >= 2 ? statusLines[0] : ""
-                                            let notesLine: String = statusLines.count >= 2 ? statusLines[1] : statusLines[0]
-                                            let titleFontSize: CGFloat = 50
-
-                                            if !titleLine.isEmpty || !notesLine.isEmpty {
-                                                VStack(spacing: 0) {
-                                                    Spacer(minLength: 0)
-                                                    if !titleLine.isEmpty {
-                                                        Text(titleLine)
-                                                            .font(.system(size: titleFontSize, weight: .black, design: .default))
-                                                            .foregroundStyle(Color.green.opacity(0.98))
-                                                            .minimumScaleFactor(0.2)
-                                                            .lineLimit(1)
-                                                            .multilineTextAlignment(.center)
-                                                            .frame(maxWidth: width * 0.72)
-                                                    }
-                                                    if titleLine.isEmpty {
-                                                        // Single-line: sequential notes or chord name only
-                                                        if let slots = sequentialSlots {
-                                                            // String-aligned slots: one per physical string
-                                                            GeometryReader { slotGeo in
-                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: slotGeo.size.width, neckWidth: slotGeo.size.width)
-                                                                ZStack {
-                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
-                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber
-                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : slotGeo.size.width / 2
-                                                                        let isRevealed = idx < sequentialRevealCount
-                                                                        let isAnswered = idx < sequentialAnsweredCount
-                                                                        Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
-                                                                            .font(.system(size: 37, weight: .black, design: .default))
-                                                                            .minimumScaleFactor(0.1)
-                                                                            .foregroundStyle(idx == sequentialAnsweredCount ? Color.orange : Color.green.opacity(0.98))
-                                                                            .position(x: xPos, y: slotGeo.size.height * 0.86 - 15)
-                                                                            .opacity(isRevealed && !isAnswered ? 1 : 0)
-                                                                    }
-                                                                }
-                                                            }
-                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                                            .allowsHitTesting(false)
-                                                        } else {
-                                                            let labelMaxWidth = hideRoundLabel ? width * 2 / 3 : .infinity
-                                                            let labelAlignment: Alignment = hideRoundLabel ? .top : .bottom
-                                                            Text(notesLine)
-                                                                .font(.system(size: 50, weight: .black, design: .default))
-                                                                .foregroundStyle(Color.green.opacity(0.98))
-                                                                .minimumScaleFactor(0.1)
-                                                                .lineLimit(1)
-                                                                .multilineTextAlignment(.center)
-                                                                .frame(maxWidth: labelMaxWidth, maxHeight: height * 2 / 3, alignment: labelAlignment)
-                                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: labelAlignment)
-                                                                .allowsHitTesting(false)
-                                                        }
-                                                    } else {
-                                                        // Chord style: string-aligned slots or two-line fallback
-                                                        if let slots = chordSlots {
-                                                            GeometryReader { chordGeo in
-                                                                let centers = GuitarStringLayout.stringCenters(containerWidth: chordGeo.size.width, neckWidth: chordGeo.size.width)
-                                                                ZStack {
-                                                                    ForEach(Array(slots.enumerated()), id: \.offset) { idx, slot in
-                                                                        let stringIndex = GuitarStringLayout.totalStrings - slot.stringNumber
-                                                                        let xPos = stringIndex < centers.count ? centers[stringIndex] : chordGeo.size.width / 2
-                                                                        let isRevealed = idx < chordRevealCount
-                                                                        let isAnswered = idx < chordAnsweredCount
-                                                                        let isRewardNote = rewardNoteTextByString != nil
-                                                                        let noteColor: Color = {
-                                                                            if isRewardNote {
-                                                                                return Color.yellow.opacity(0.98)
-                                                                            } else if idx == chordAnsweredCount {
-                                                                                return Color.orange
-                                                                            } else {
-                                                                                return Color.green.opacity(0.98)
-                                                                            }
-                                                                        }()
-                                                                        let noteOpacity: Double = {
-                                                                            if isRewardNote {
-                                                                                return 1.0
-                                                                            } else if isRevealed && !isAnswered {
-                                                                                return 1.0
-                                                                            } else {
-                                                                                return 0.0
-                                                                            }
-                                                                        }()
-                                                                        Text(slot.note.replacingOccurrences(of: "#", with: "♯").replacingOccurrences(of: "b", with: "♭"))
-                                                                            .font(.system(size: 37, weight: .black, design: .default))
-                                                                            .foregroundStyle(noteColor)
-                                                                            .position(x: xPos, y: chordGeo.size.height * 0.86 - 15)
-                                                                            .opacity(noteOpacity)
-                                                                    }
-                                                                }
-                                                            }
-                                                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                                        } else {
-                                                            // Two-line: pentatonic title + notes (fallback)
-                                                            VStack(spacing: 0) {
-                                                                Text(titleLine)
-                                                                    .font(.system(size: 50, weight: .black, design: .default))
-                                                                    .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : Color.green.opacity(0.98))
-                                                                    .minimumScaleFactor(0.2)
-                                                                    .lineLimit(1)
-                                                                    .multilineTextAlignment(.center)
-                                                                    .frame(maxWidth: width * 0.72)
-                                                                Text(notesLine)
-                                                                    .font(.system(size: 50, weight: .black, design: .default))
-                                                                    .foregroundStyle(rewardNoteTextByString != nil ? Color.yellow.opacity(0.98) : Color.green.opacity(0.98))
-                                                                    .minimumScaleFactor(0.2)
-                                                                    .lineLimit(1)
-                                                                    .multilineTextAlignment(.center)
-                                                                    .frame(maxWidth: width * 0.72)
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                                .padding(.bottom, 6)
-                                                .allowsHitTesting(false)
-                                            } else {
-                                                EmptyView()
-                                            }
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                }
-                            }
-                            .multilineTextAlignment(.leading)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 10)
-                            .padding(.bottom, 10)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    }
-            }
-        .scaleEffect(isHintVisible ? 1.02 : 1.0)
-        .frame(width: width, height: height)
-    }
-
-    private func hintFontSize(for text: String) -> CGFloat {
-        let clean = text.replacingOccurrences(of: "hint:", with: "", options: [.caseInsensitive], range: nil)
-        let trimmed = clean.trimmingCharacters(in: .whitespaces)
-        let base: CGFloat = 54
-        let reduction = CGFloat(max(trimmed.count - 12, 0)) * 1.2
-        return max(24, base - reduction)
-    }
-
-    private func adaptiveProgressFontSize(for progressLine: String) -> CGFloat {
-        let compact = progressLine.replacingOccurrences(of: " ", with: "")
-        let count = max(compact.count, 1)
-        let base = min(width * 0.205, 54)
-        let reduction = CGFloat(max(count - 4, 0)) * 2.9
-        return max(26, base - reduction)
-    }
-
-    private func consoleNotesLineText(_ text: String, fontSize: CGFloat, highlightIndex: Int? = nil) -> Text {
-        let tokens = text.split(separator: " ").map(String.init)
-        guard tokens.count > 1 else {
-            return Text(text)
-                .font(.system(size: fontSize, weight: .black, design: .default))
-                .foregroundStyle(Color.green.opacity(0.98))
-        }
-
-        let attributedString = tokens.enumerated().reduce(AttributedString()) { result, pair in
-            let (index, token) = pair
-            let suffix = index < tokens.count - 1 ? " " : ""
-            var attributedToken = AttributedString("\(token)\(suffix)")
-            attributedToken.foregroundColor = index == highlightIndex ? .orange : Color.green.opacity(0.98)
-            return result + attributedToken
-        }
-
-        return Text(attributedString)
-            .font(.system(size: fontSize, weight: .black, design: .default))
-    }
-}
-
-private struct DeveloperTVStreakMeterView: View {
-    let litColumns: Int
-    let failureActive: Bool
-    let failureVisibleColumns: Int
-
-    private let totalColumns: Int = 20
-
-    var body: some View {
-        let activeColumns = min(max(litColumns, 0), totalColumns)
-        let visibleFailureColumns = min(max(failureVisibleColumns, 0), totalColumns)
-
-        VStack(spacing: 4) {
-            ForEach(0..<2, id: \.self) { _ in
-                HStack(spacing: 3) {
-                    ForEach(0..<totalColumns, id: \.self) { index in
-                        let isLit: Bool = {
-                            if failureActive {
-                                return index < visibleFailureColumns
-                            }
-                            return index < activeColumns
-                        }()
-                        let isTwentiethColumn = index == totalColumns - 1
-                        let isWarningColumn = index >= 15
-                        let fillColor: Color = {
-                            guard isLit else { return Color(red: 0.12, green: 0.14, blue: 0.12).opacity(0.42) }
-                            if failureActive {
-                                return Color(red: 1.0, green: 0.22, blue: 0.18).opacity(0.96)
-                            }
-                            if isTwentiethColumn {
-                                return Color(red: 0.35, green: 0.66, blue: 1.0).opacity(0.96)
-                            }
-                            if isWarningColumn {
-                                return Color(red: 1.0, green: 0.82, blue: 0.16).opacity(0.96)
-                            }
-                            return Color(red: 0.58, green: 1.0, blue: 0.22).opacity(0.96)
-                        }()
-                        let strokeColor: Color = {
-                            guard isLit else { return Color.white.opacity(0.08) }
-                            if failureActive {
-                                return Color(red: 0.7, green: 0.05, blue: 0.04).opacity(0.95)
-                            }
-                            if isTwentiethColumn {
-                                return Color(red: 0.06, green: 0.22, blue: 0.62).opacity(0.94)
-                            }
-                            if isWarningColumn {
-                                return Color(red: 0.72, green: 0.46, blue: 0.0).opacity(0.9)
-                            }
-                            return Color(red: 0.12, green: 0.4, blue: 0.05).opacity(0.92)
-                        }()
-                        let shadowColor: Color = {
-                            guard isLit else { return .clear }
-                            if failureActive {
-                                return Color.red.opacity(0.75)
-                            }
-                            if isTwentiethColumn {
-                                return Color.blue.opacity(0.75)
-                            }
-                            if isWarningColumn {
-                                return Color.yellow.opacity(0.65)
-                            }
-                            return Color.green.opacity(0.75)
-                        }()
-
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                            .fill(fillColor)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                                    .stroke(strokeColor, lineWidth: 0.8)
-                            )
-                            .shadow(color: shadowColor, radius: isLit ? 3 : 0)
-                    }
-                }
-            }
-        }
-    }
-}
 
 struct BeginnerGameplayView: View {
     let onMenuSelection: ((GameplayMenuOption) -> Void)?
@@ -803,16 +100,7 @@ struct BeginnerGameplayView: View {
             return 1.15
         }
     }
-    private let chromaticSharps: [String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    private let chromaticFlats: [String] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    private let openNoteByString: [Int: String] = [
-        6: "E",
-        5: "A",
-        4: "D",
-        3: "G",
-        2: "B",
-        1: "E"
-    ]
+    // chromaticSharps, chromaticFlats, openNoteByString — use module-level globals from GuitarHelpers.swift
     private let codenameNemoEnabled: Bool = false
     private let scaleLengthInches: Double = 25.5
     private let debugGridRows: Int = 8
@@ -1007,7 +295,7 @@ struct BeginnerGameplayView: View {
             var foundString: Int?
             // Search strings in low-to-high order (6,5,4,3,2,1), skipping already-used strings
             for stringNumber in stride(from: 6, through: 1, by: -1) {
-                if !usedStrings.contains(stringNumber) && noteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
+                if !usedStrings.contains(stringNumber) && guitarNoteName(forString: stringNumber, fret: fret, useFlats: beginnerUsesFlats) == note {
                     foundString = stringNumber
                     usedStrings.insert(stringNumber)
                     break
@@ -1426,18 +714,6 @@ struct BeginnerGameplayView: View {
             let effectiveRightThumbState = isCodeScreensaverMode ? screensaverThumbState : rightThumbState
             let initialGameplayDimOpacity: CGFloat = (isCodeScreensaverMode && !startupSequenceActivated) ? 0.42 : 1.0
 
-#if DEBUG
-            let _ = { () -> Void in
-                logAlignmentDiagnostics(
-                    neckTopY: neckTopY,
-                    activeMidpoint: activeMidpoint,
-                    highlightCenterY: pipingCenterY,
-                    highlightTopGridLineY: highlightTopGridLineY,
-                    gridRowHeight: gridRowHeight
-                )
-            }()
-#endif
-
             ZStack {
                 if consoleSkin == .tweed {
                     FullScreenTweedBackground()
@@ -1589,7 +865,7 @@ struct BeginnerGameplayView: View {
                         }
 
                         ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, stringNumber in
-                            let note = noteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                            let note = guitarNoteName(forString: stringNumber, fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
                             let displayNote = guitarNoteDisplayText(note)
                             let noteIsAccidental = guitarNoteContainsAccidental(note)
                             let tileFill = noteIsAccidental ? Color.black.opacity(0.94) : Color.white.opacity(0.96)
@@ -2205,8 +1481,8 @@ struct BeginnerGameplayView: View {
 
         for chordNote in chordNotes {
             let matchingStrings = unusedStrings.filter {
-                noteName(forString: $0, fret: rewardDisplayFret, useFlats: false) == chordNote
-                    || noteName(forString: $0, fret: rewardDisplayFret, useFlats: beginnerUsesFlats) == chordNote
+                guitarNoteName(forString: $0, fret: rewardDisplayFret, useFlats: false) == chordNote
+                    || guitarNoteName(forString: $0, fret: rewardDisplayFret, useFlats: beginnerUsesFlats) == chordNote
             }
 
             guard let matchedString = strictStringPriority.first(where: { matchingStrings.contains($0) }) else {
@@ -2232,7 +1508,7 @@ struct BeginnerGameplayView: View {
         let rewardDisplayFret = max(currentRound, 0)
 
         for (stringNumber, _) in rewardPairs {
-            let displayedNote = noteName(forString: stringNumber, fret: rewardDisplayFret, useFlats: beginnerUsesFlats)
+            let displayedNote = guitarNoteName(forString: stringNumber, fret: rewardDisplayFret, useFlats: beginnerUsesFlats)
             guard let midiNote = beginnerRewardMIDINote(for: displayedNote, stringNumber: stringNumber) else { continue }
             strings.append(stringNumber)
             notesByString[stringNumber] = displayedNote
@@ -2700,9 +1976,9 @@ struct BeginnerGameplayView: View {
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
             let preferredStringOrder = beginnerAutoPlayPreferredStringOrder(for: expectedNote)
             let matchedString = preferredStringOrder.first {
-                noteName(forString: $0, fret: fret, useFlats: false) == expectedNote
+                guitarNoteName(forString: $0, fret: fret, useFlats: false) == expectedNote
             } ?? preferredStringOrder.first {
-                noteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
+                guitarNoteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
             }
             guard let selectedString = matchedString else {
                 beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
@@ -2956,7 +2232,7 @@ struct BeginnerGameplayView: View {
         let fret = max(currentRound, 0)
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
         let targetString = activeStringOrder.isEmpty ? 1 : activeStringOrder.randomElement() ?? 1
-        let correctNote = noteName(forString: targetString, fret: fret, useFlats: useFlats)
+        let correctNote = guitarNoteName(forString: targetString, fret: fret, useFlats: useFlats)
         let incorrectNote = randomIncorrectNote(excluding: correctNote, useFlats: useFlats)
         let correctOnLeft = Bool.random()
 
@@ -2981,16 +2257,6 @@ struct BeginnerGameplayView: View {
         return 1
     }
 
-
-    private func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
-        guard let openNote = openNoteByString[string],
-              let openIndex = chromaticSharps.firstIndex(of: openNote) else {
-            return "?"
-        }
-        let noteIndex = (openIndex + fret) % chromaticSharps.count
-        let scale = useFlats ? chromaticFlats : chromaticSharps
-        return scale[noteIndex]
-    }
 
     private func randomIncorrectNote(excluding correct: String, useFlats: Bool) -> String {
         let source = useFlats ? chromaticFlats : chromaticSharps
@@ -3255,7 +2521,7 @@ struct BeginnerGameplayView: View {
         ZStack {
             ForEach(Array(0..<3), id: \.self) { idx in
                 let selectedString: Int = leftStrings[idx]
-                let buttonNote: String = noteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let buttonNote: String = guitarNoteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
                 let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
                 let buttonIndex: Int = idx
                 MiniTVFrame(
@@ -3284,7 +2550,7 @@ struct BeginnerGameplayView: View {
 
             ForEach(Array(0..<3), id: \.self) { idx in
                 let selectedString: Int = rightStrings[idx]
-                let buttonNote: String = noteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let buttonNote: String = guitarNoteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
                 let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
                 let buttonIndex: Int = idx + 3
                 MiniTVFrame(
