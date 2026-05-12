@@ -343,6 +343,7 @@ private struct DeveloperConsoleFrame: View {
     let chordRevealCount: Int
     let chordAnsweredCount: Int
     let rewardNoteTextByString: [Int: String]?
+    var consoleSkin: ConsoleSkin = .classic
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -369,7 +370,20 @@ private struct DeveloperConsoleFrame: View {
                 .padding(3)
 
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color.white, lineWidth: 2.5)
+                .strokeBorder(
+                    consoleSkin == .tweed
+                        ? AnyShapeStyle(Color.white)
+                        : AnyShapeStyle(LinearGradient(
+                            colors: [
+                                Color(red: 0.95, green: 0.82, blue: 0.47),
+                                Color(red: 0.78, green: 0.6, blue: 0.22),
+                                Color(red: 0.97, green: 0.85, blue: 0.5)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )),
+                    lineWidth: 2.5
+                )
                 .padding(1.5)
 
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -1756,7 +1770,8 @@ struct BeginnerGameplayView: View {
                     },
                     onSelectMenuOption: { option in
                         handleGameplayMenuSelection(option)
-                    }
+                    },
+                    consoleSkin: consoleSkin
                 )
                     .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
                     .padding(.bottom, 12)
@@ -3085,7 +3100,8 @@ struct BeginnerGameplayView: View {
                 : nil,
             chordRevealCount: min(beginnerRuntime.pentatonicRevealCount, beginnerCurrentScaleNotes.count),
             chordAnsweredCount: beginnerRuntime.scaleSequenceIndex,
-            rewardNoteTextByString: beginnerRuntime.rewardNoteTextByString
+            rewardNoteTextByString: beginnerRuntime.rewardNoteTextByString,
+            consoleSkin: consoleSkin
         )
         .position(x: proxyWidth / 2, y: topStatusCenterY)
         .allowsHitTesting(false)
@@ -3202,11 +3218,16 @@ struct BeginnerGameplayView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
+                        colors: consoleSkin == .tweed ? [
                             Color(red: 1.0, green: 1.0, blue: 1.0),
                             Color(red: 0.90, green: 0.90, blue: 0.90),
                             Color(red: 0.45, green: 0.45, blue: 0.45),
                             Color(red: 0.65, green: 0.65, blue: 0.65)
+                        ] : [
+                            Color(red: 0.98, green: 0.9, blue: 0.66),
+                            Color(red: 0.90, green: 0.74, blue: 0.40),
+                            Color(red: 0.73, green: 0.55, blue: 0.26),
+                            Color(red: 0.94, green: 0.82, blue: 0.53)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
