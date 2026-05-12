@@ -1022,14 +1022,24 @@ struct MaestroGameplayView: View {
                     .position(x: proxy.size.width / 2, y: topScreenY)
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity * introScale)
 
-                    // Blue beat light (left side)
+                    // Blue beat light (center)
                     Circle()
-                        .fill(Color.blue)
-                        .frame(width: 12, height: 12)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(red: 0.62, green: 0.86, blue: 1.0),
+                                    Color(red: 0.09, green: 0.45, blue: 1.0)
+                                ],
+                                center: .center,
+                                startRadius: 0.5,
+                                endRadius: 10
+                            )
+                        )
+                        .frame(width: 18, height: 18)
                         .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                         .shadow(color: Color.white.opacity(0.45), radius: 5)
                         .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
-                        .position(x: leftAnswerCenterX - lowerScreenWidth/2 - 16, y: noteChoiceY)
+                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
                         .opacity(beatLightFlashOn ? 1 : 0)
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
@@ -1413,14 +1423,24 @@ struct MaestroGameplayView: View {
                 .position(x: rightGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
 
-                // Blue beat light
+                // Blue beat light (center)
                 Circle()
-                    .fill(Color.blue)
-                    .frame(width: 12, height: 12)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.62, green: 0.86, blue: 1.0),
+                                Color(red: 0.09, green: 0.45, blue: 1.0)
+                            ],
+                            center: .center,
+                            startRadius: 0.5,
+                            endRadius: 10
+                        )
+                    )
+                    .frame(width: 18, height: 18)
                     .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                     .shadow(color: Color.white.opacity(0.45), radius: 5)
                     .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
-                    .position(x: leftGapCenter - miniTVWidth / 2 - 16, y: miniTVCenterY)
+                    .position(x: screenCenterX, y: screenCenterY)
                     .opacity(beatLightFlashOn ? 1 : 0)
                     .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                     .allowsHitTesting(false)

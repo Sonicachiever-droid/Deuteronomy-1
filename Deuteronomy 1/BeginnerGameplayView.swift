@@ -1057,6 +1057,7 @@ struct BeginnerGameplayView: View {
                 if layoutMode == .beginner {
                     beginnerButtonPanelOverlay(
                         proxyWidth: proxy.size.width,
+                        proxyHeight: proxy.size.height,
                         buttonCenterY: buttonCenterY,
                         lowerScreenHeight: lowerScreenHeight,
                         transportCenterY: transportCenterY,
@@ -2493,6 +2494,7 @@ struct BeginnerGameplayView: View {
     @ViewBuilder
     private func beginnerButtonPanelOverlay(
         proxyWidth: CGFloat,
+        proxyHeight: CGFloat,
         buttonCenterY: CGFloat,
         lowerScreenHeight: CGFloat,
         transportCenterY: CGFloat,
@@ -2515,9 +2517,6 @@ struct BeginnerGameplayView: View {
         let rightScreenX: CGFloat = rightButtonX - screenInset
         let leftStrings: [Int] = [4, 5, 6]
         let rightStrings: [Int] = [3, 2, 1]
-        let transportPanelCenterY: CGFloat = transportCenterY + 6
-        let beginnerBlueLightY: CGFloat = row0Y + ((transportPanelCenterY - row0Y) * 0.62)
-
         ZStack {
             ForEach(Array(0..<3), id: \.self) { idx in
                 let selectedString: Int = leftStrings[idx]
@@ -2596,7 +2595,7 @@ struct BeginnerGameplayView: View {
                     Circle()
                         .stroke(Color.white.opacity(0.75), lineWidth: 1)
                 )
-                .position(x: leftButtonX, y: beginnerBlueLightY)
+                .position(x: proxyWidth / 2, y: proxyHeight / 2)
                 .opacity(beginnerRuntime.beatLightFlashOn ? 1 : 0)
                 .animation(.easeOut(duration: 0.08), value: beginnerRuntime.beatLightFlashOn)
         }
