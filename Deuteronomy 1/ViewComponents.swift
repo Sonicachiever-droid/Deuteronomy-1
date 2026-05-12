@@ -154,15 +154,19 @@ struct MiniTVFrame: View {
 
 struct ScrewHeadView: View {
     let size: CGFloat
+    var consoleSkin: ConsoleSkin = .classic
 
     var body: some View {
         ZStack {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [
+                        colors: consoleSkin == .tweed ? [
                             Color(red: 0.95, green: 0.95, blue: 0.95),
                             Color(red: 0.55, green: 0.55, blue: 0.55)
+                        ] : [
+                            Color(red: 0.98, green: 0.90, blue: 0.66),
+                            Color(red: 0.73, green: 0.55, blue: 0.26)
                         ],
                         center: UnitPoint(x: 0.3, y: 0.25),
                         startRadius: size * 0.05,
@@ -348,7 +352,7 @@ struct ThumbButtonView: View {
 
                 ForEach(0..<4, id: \.self) { index in
                     let angle = Angle.degrees(Double(index) * 90 + 45)
-                    ScrewHeadView(size: screwSize)
+                    ScrewHeadView(size: screwSize, consoleSkin: consoleSkin)
                         .offset(
                             x: cos(angle.radians) * screwOrbit,
                             y: sin(angle.radians) * screwOrbit
