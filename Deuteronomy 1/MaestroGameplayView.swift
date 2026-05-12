@@ -1117,7 +1117,7 @@ struct MaestroGameplayView: View {
             let isGameplayStarted = !isCodeScreensaverMode
             let displayedFretStatusLabel = isGameplayStarted ? cachedFretStatusLabel : ""
             let displayedStringStatusLabel = isGameplayStarted ? cachedStringStatusLabel : ""
-            let roundStatusLabel = "FRET \(currentRound)"
+            let _ = "FRET \(currentRound)"
             let screenBannerFont = UIFont.systemFont(ofSize: 20, weight: .semibold)
             let screenMeasuredWidth = max(
                 textWidth(for: cachedFretStatusLabel, font: screenBannerFont),
@@ -1149,7 +1149,7 @@ struct MaestroGameplayView: View {
             let upperWhitePipingY = buttonTopY - whitePipingGap
             let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * 0.18)
             let whitePipingWidth = max(proxy.size.width - 7, 0)
-            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 2
+            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 14
             let developerOverlaysEnabled: Bool = false
             let windowTopY = holeCenterY - highlightHeight / 2
             let topStatusOuterWidth = highlightWidth
@@ -1194,7 +1194,7 @@ struct MaestroGameplayView: View {
             let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
             let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
             let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
-            let stringTopY = nutBottomY + stringStopInset
+            let _ = nutBottomY + stringStopInset
             let calibratedAssetToNutDelta = assetToNutBottomDelta ?? 0
             let _ = (nutBottomY + calibratedAssetToNutDelta) - rowOneBottomLineY
             let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
@@ -1523,7 +1523,7 @@ struct MaestroGameplayView: View {
         let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
         let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
         let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
-        let stringTopY = nutBottomY + stringStopInset
+        let _ = nutBottomY + stringStopInset
 
         // Startup/screensaver state
         let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
