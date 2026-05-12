@@ -521,7 +521,7 @@ private struct Deuteronomy1MenuSheet: View {
                                 MenuTextRow("REV — Reverses the play direction between ascending and descending frets mid-round.")
                             }
                             MenuSection(title: "SCORING", gold: gold) {
-                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between rounds.")
+                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between sessions.")
                             }
 
                         case .audio:

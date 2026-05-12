@@ -833,7 +833,7 @@ struct MaestroGameplayView: View {
     // Identical to the inline block previously in portraitBody. Computes F1–F5 from `size` so the
     // same view tree can be reused (and, in a later stage, rotated) without duplicating geometry math.
     @ViewBuilder
-    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0, matchBackgroundTexture: Bool = false) -> some View {
+    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0, matchBackgroundTexture: Bool = false, showWindowOverlay: Bool = true) -> some View {
         let padding: CGFloat = 24
         let neckWidth = (size.width - padding * 2) * 0.8
         let fretRatios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: scaleLengthInches)
@@ -956,30 +956,32 @@ struct MaestroGameplayView: View {
             .allowsHitTesting(false)
             .opacity(introWindowBlack ? 1 : 0)
 
-        if consoleSkin == .tweed {
-            TweedWindowView(
-                canvasSize: size,
-                highlightWidth: highlightWidth,
-                highlightHeight: highlightHeight,
-                highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
-                highlightCornerRadius: highlightCornerRadius,
-                textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
-                textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
-                textureBleed: matchBackgroundTexture ? 48 : 36
-            )
-            .allowsHitTesting(false)
-        } else {
-            ElephantWindowView(
-                canvasSize: size,
-                highlightWidth: highlightWidth,
-                highlightHeight: highlightHeight,
-                highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
-                highlightCornerRadius: highlightCornerRadius,
-                textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
-                textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
-                textureBleed: matchBackgroundTexture ? 48 : 36
-            )
-            .allowsHitTesting(false)
+        if showWindowOverlay {
+            if consoleSkin == .tweed {
+                TweedWindowView(
+                    canvasSize: size,
+                    highlightWidth: highlightWidth,
+                    highlightHeight: highlightHeight,
+                    highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                    highlightCornerRadius: highlightCornerRadius,
+                    textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                    textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                    textureBleed: matchBackgroundTexture ? 48 : 36
+                )
+                .allowsHitTesting(false)
+            } else {
+                ElephantWindowView(
+                    canvasSize: size,
+                    highlightWidth: highlightWidth,
+                    highlightHeight: highlightHeight,
+                    highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                    highlightCornerRadius: highlightCornerRadius,
+                    textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                    textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                    textureBleed: matchBackgroundTexture ? 48 : 36
+                )
+                .allowsHitTesting(false)
+            }
         }
 
         if isCodeScreensaverMode {
@@ -1594,11 +1596,36 @@ struct MaestroGameplayView: View {
             // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
             // lands on screenCenterY, aligning with the chrome white note boxes.
             ZStack {
-                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true)
+                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true, showWindowOverlay: consoleSkin != .tweed)
             }
             .frame(width: proxy.size.height, height: proxy.size.width)
             .offset(y: proxy.size.width * 0.1875 + gridRowHeight * 0.5)
             .frame(width: proxy.size.width, height: proxy.size.height)
+
+            // For tweed in landscape: cut the neck window hole from the full-screen background
+            // using native landscape coordinates, avoiding the seam caused by the rotated
+            // portrait TweedOverlay clashing with the full-screen tweed layer.
+            if consoleSkin == .tweed {
+                TweedOverlay(
+                    canvasSize: proxy.size,
+                    highlightWidth: highlightWidth,
+                    highlightHeight: highlightHeight,
+                    highlightCenter: CGPoint(x: screenCenterX, y: screenCenterY),
+                    highlightCornerRadius: highlightCornerRadius,
+                    textureBrightness: 0.08,
+                    textureOverlayOpacity: 0.18,
+                    textureBleed: 48
+                )
+                .allowsHitTesting(false)
+
+                HighlightWindowChromeBorder(
+                    width: highlightWidth,
+                    height: highlightHeight,
+                    cornerRadius: highlightCornerRadius
+                )
+                .position(x: screenCenterX, y: screenCenterY)
+                .allowsHitTesting(false)
+            }
 
             // Fret indicators (left/right of window)
             fretIndicatorOverlay(
