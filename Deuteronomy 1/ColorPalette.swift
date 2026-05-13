@@ -41,4 +41,10 @@ extension Color {
 
     // MARK: - Highlight Accent
     static let highlightBlue = Color(red: 0.28, green: 0.70, blue: 1.00)
+
+    // MARK: - Wound (Brass) Guitar Strings — E / A / D
+    static let brassStringLight  = Color(red: 0.96, green: 0.94, blue: 0.88)  // cream highlight
+    static let brassStringMid    = Color(red: 0.82, green: 0.69, blue: 0.47)  // golden mid
+    static let brassStringDark   = Color(red: 0.65, green: 0.50, blue: 0.30)  // dark amber
+    static let brassStringWarm   = Color(red: 0.85, green: 0.75, blue: 0.60)  // warm wrap highlight
 }

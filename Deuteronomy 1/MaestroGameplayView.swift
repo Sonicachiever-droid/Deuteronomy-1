@@ -34,33 +34,7 @@ private typealias MaestroStartupState = MaestroStartupSequenceView.Phase// Thumb
 // LED-style thumb button matching the exhibit styling
 
 
-#if DEBUG
-private func logNutBaselineDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Nut baseline delta: \(delta)")
-    }
-}
 
-private func logAlignmentDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Midpoint/bisector delta: \(delta)")
-    }
-}
-
-private func logAlignmentDiagnostics(
-    neckTopY: CGFloat,
-    activeMidpoint: CGFloat,
-    highlightCenterY: CGFloat,
-    highlightTopGridLineY: CGFloat,
-    gridRowHeight: CGFloat
-) {
-    let blueMidpointY = neckTopY + activeMidpoint
-    let greenBisectorY = highlightCenterY
-    let nutBottomRowY = highlightTopGridLineY + 2 * gridRowHeight
-    logAlignmentDelta(blueMidpointY - greenBisectorY)
-    logNutBaselineDelta(neckTopY - nutBottomRowY)
-}
-#endif
 
 
 private struct RowOneIdentifierOverlay: View {
@@ -92,98 +66,6 @@ private struct RowOneIdentifierOverlay: View {
     private func textWidth(for text: String, font: UIFont) -> CGFloat {
         let attributes = [NSAttributedString.Key.font: font]
         return ceil(text.size(withAttributes: attributes).width)
-    }
-}
-
-
-
-private struct BrassStringView: View {
-    let stringX: CGFloat
-    let stringHeight: CGFloat
-    let stringTopY: CGFloat
-    let stringNumber: Int
-    
-    private var stringThickness: CGFloat {
-        switch stringNumber {
-        case 6: return 4.0
-        case 5: return 3.5
-        case 4: return 3.0
-        default: return 2.5
-        }
-    }
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: stringThickness / 2, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.96, green: 0.94, blue: 0.88),
-                        Color(red: 0.82, green: 0.69, blue: 0.47),
-                        Color(red: 0.65, green: 0.50, blue: 0.30),
-                        Color(red: 0.85, green: 0.75, blue: 0.60)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: stringThickness / 2)
-                    .stroke(Color.black.opacity(0.2), lineWidth: 0.3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: stringThickness / 2)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.6), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 0.5)
-            .frame(width: stringThickness, height: max(stringHeight, 2))
-            .position(x: stringX, y: stringTopY + stringHeight / 2)
-    }
-}
-
-private struct BrassStringSegment: View {
-    let width: CGFloat
-    let height: CGFloat
-    let segmentIndex: Int
-    let totalSegments: Int
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: width / 2, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.96, green: 0.94, blue: 0.88),
-                        Color(red: 0.82, green: 0.69, blue: 0.47),
-                        Color(red: 0.65, green: 0.50, blue: 0.30),
-                        Color(red: 0.85, green: 0.75, blue: 0.60)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: width / 2)
-                    .stroke(Color.black.opacity(0.2), lineWidth: 0.3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: width / 2)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.6), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 0.5)
-            .frame(width: width, height: max(height, 2))
     }
 }
 
@@ -908,17 +790,7 @@ struct MaestroGameplayView: View {
             let rightFretIndicatorX = (proxy.size.width / 2) + (highlightWidth / 2) + sideWindowGap
             let fretIndicatorText = "\(max(currentRound, 0))"
 
-#if DEBUG
-            let _ = { () -> Void in
-                logAlignmentDiagnostics(
-                    neckTopY: neckTopY,
-                    activeMidpoint: activeMidpoint,
-                    highlightCenterY: pipingCenterY,
-                    highlightTopGridLineY: highlightTopGridLineY,
-                    gridRowHeight: gridRowHeight
-                )
-            }()
-#endif
+
 
             ZStack {
                 if consoleSkin == .tweed {

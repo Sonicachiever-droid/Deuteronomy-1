@@ -230,10 +230,14 @@ final class SharedAudioEngine: ObservableObject {
                 self.isPlaying = true
             }
 
+            #if DEBUG
             print("[SharedAudioEngine] Playing: \(currentTrackTitle) (looping: \(loop))")
+            #endif
 
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to play: \(error)")
+            #endif
         }
     }
 
@@ -250,7 +254,9 @@ final class SharedAudioEngine: ObservableObject {
         DispatchQueue.main.async {
             self.isPlaying = false
         }
+        #if DEBUG
         print("[SharedAudioEngine] Paused at beat \(pausedPositionInBeats ?? 0)")
+        #endif
     }
 
     func resume() {
@@ -266,9 +272,13 @@ final class SharedAudioEngine: ObservableObject {
             DispatchQueue.main.async {
                 self.isPlaying = true
             }
+            #if DEBUG
             print("[SharedAudioEngine] Resumed at beat \(sequencer.currentPositionInBeats)")
+            #endif
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to resume: \(error)")
+            #endif
         }
     }
 
@@ -281,12 +291,16 @@ final class SharedAudioEngine: ObservableObject {
         DispatchQueue.main.async {
             self.isPlaying = false
         }
+        #if DEBUG
         print("[SharedAudioEngine] Stopped")
+        #endif
     }
 
     func setTempo(bpm: Double) {
         sequencer.rate = Float(bpm / 120.0)
+        #if DEBUG
         print("[SharedAudioEngine] Tempo changed to \(bpm) BPM")
+        #endif
     }
 
     func currentBeatPosition() -> Double {
@@ -299,7 +313,9 @@ final class SharedAudioEngine: ObservableObject {
             track.numberOfLoops = looping ? -1 : 1
             track.isLoopingEnabled = looping
         }
+        #if DEBUG
         print("[SharedAudioEngine] Looping set to: \(looping)")
+        #endif
     }
 
     func muteTrack0() {
@@ -343,7 +359,9 @@ final class SharedAudioEngine: ObservableObject {
                     bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
                     bankLSB: 0
                 )
+                #if DEBUG
                 print("[SharedAudioEngine] Loaded guitar sounds from \(instrumentURL.lastPathComponent)")
+                #endif
                 // Prime the sampler to avoid first-note glitch
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self else { return }
@@ -354,7 +372,9 @@ final class SharedAudioEngine: ObservableObject {
                 }
                 return
             } catch {
+                #if DEBUG
                 print("[SharedAudioEngine] Failed loading \(instrumentURL.lastPathComponent) - \(error)")
+                #endif
             }
         }
 
@@ -366,10 +386,14 @@ final class SharedAudioEngine: ObservableObject {
                     bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
                     bankLSB: 0
                 )
+                #if DEBUG
                 print("[SharedAudioEngine] Using system sound bank fallback")
+                #endif
                 return
             } catch {
+                #if DEBUG
                 print("[SharedAudioEngine] Failed fallback sound bank load - \(error)")
+                #endif
             }
         }
     }
@@ -453,7 +477,9 @@ final class SharedAudioEngine: ObservableObject {
 
     private func loadMIDISamplers() {
         guard let sf2URL = Bundle.main.url(forResource: "GeneralUser GS v1.472", withExtension: "sf2") else {
+            #if DEBUG
             print("[SharedAudioEngine] SoundFont not found")
+            #endif
             return
         }
 
@@ -466,7 +492,9 @@ final class SharedAudioEngine: ObservableObject {
         do {
             try sampler.loadSoundBankInstrument(at: url, program: program, bankMSB: bankMSB, bankLSB: bankLSB)
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to load instrument program \(program): \(error)")
+            #endif
         }
     }
 
@@ -505,7 +533,9 @@ final class SharedAudioEngine: ObservableObject {
         do {
             try engine.start()
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Engine start failed - \(error)")
+            #endif
         }
     }
 

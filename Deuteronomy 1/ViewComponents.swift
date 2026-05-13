@@ -43,10 +43,10 @@ struct StringLineOverlay: View {
                             isBass
                             ? LinearGradient(
                                 colors: [
-                                    Color(red: 0.96, green: 0.94, blue: 0.88),
-                                    Color(red: 0.82, green: 0.69, blue: 0.47),
-                                    Color(red: 0.65, green: 0.50, blue: 0.30),
-                                    Color(red: 0.85, green: 0.75, blue: 0.60)
+                                    .brassStringLight,
+                                    .brassStringMid,
+                                    .brassStringDark,
+                                    .brassStringWarm
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
