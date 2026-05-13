@@ -94,23 +94,23 @@ struct MaestroGameplayView: View {
 
     @Environment(\.displayScale) private var displayScale
     private let totalFrets: Int = 20
-    private var maxFretOffset: Int { totalFrets }
-    private var minFretOffset: Int { -totalFrets }
+    var maxFretOffset: Int { totalFrets }
+    var minFretOffset: Int { -totalFrets }
 
-    private var isPhaseDescending: Bool {
+    var isPhaseDescending: Bool {
         LessonDirection(rawValue: playDirectionRawValue) == .descending
     }
 
-    private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+    var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
-    private var maestroUsesFlats: Bool { isPhaseDescending }
+    var maestroUsesFlats: Bool { isPhaseDescending }
 
-    private var activeStringOrder: [Int] {
+    var activeStringOrder: [Int] {
         let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
         return isProgressionLowToHigh ? base.reversed() : base
     }
 
-    private var modePayoutMultiplier: Double {
+    var modePayoutMultiplier: Double {
         switch selectedMode {
         case .freestyle:
             return 1.0
@@ -124,9 +124,9 @@ struct MaestroGameplayView: View {
             return 1.15
         }
     }
-    private let chromaticSharps: [String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    private let chromaticFlats: [String] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    private let openNoteByString: [Int: String] = [
+    let chromaticSharps: [String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    let chromaticFlats: [String] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+    let openNoteByString: [Int: String] = [
         6: "E",
         5: "A",
         4: "D",
@@ -134,80 +134,80 @@ struct MaestroGameplayView: View {
         2: "B",
         1: "E"
     ]
-    private let codenameNemoEnabled: Bool = false
-    private let scaleLengthInches: Double = 25.5
-    private let debugGridRows: Int = 8
-    private var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
-    @State private var currentFretStart: Int = 0
-    @State private var currentWindowRow: Int = 2
-    @State private var leftThumbState: ThumbGlowState = .neutral
-    @State private var rightThumbState: ThumbGlowState = .neutral
-    @State private var currentRound: Int = 0
-    @State private var roundStringIndex: Int = 0
-    @State private var repetitionsRemainingAtFret: Int = 1
-    @State private var isDescendingPhase: Bool = false
-    @State private var leftChoiceNote: String = ""
-    @State private var rightChoiceNote: String = ""
-    @State private var activePickedStringNumbers: [Int] = [1]
-    @State private var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
-    @State private var activeAnswerFeedback: ThumbGlowState? = nil
-    @State private var currentQuestionIsAccidental: Bool = false
-    @State private var introWindowBlack: Bool = true
-    @State private var introDidRun: Bool = false
-    @State private var isCodeScreensaverMode: Bool = true
-    @State private var cachedStringStatusLabel: String = ""
-    @State private var cachedFretStatusLabel: String = ""
-    @State private var bankDollars: Int = 0
-    @State private var displayedBankDollars: Int = 0
-    @State private var startupSequenceStartDate: Date = .now
-    @State private var startupSequenceElapsed: TimeInterval = 0
-    @State private var startupSequenceActivated: Bool = false
-    @State private var assetToNutBottomDelta: CGFloat? = nil
-    @State private var isAutoPlayTriggered: Bool = false
-    @State private var correctAnswerSide: AnswerSide = .left
-    @State private var isResolvingAnswer: Bool = false
-    @State private var gameplayMenuExpanded: Bool = false
-    @State private var maestroStartButtonBlinkOn: Bool = false
-    @State private var maestroStartButtonNextBlinkDate: Date? = nil
-    @State private var developerPromptText: String = ""
-    @State private var currentCorrectNote: String = ""
-    @State private var lastResolvedCorrectNote: String? = nil
-    @State private var lastResolvedCorrectString: Int? = nil
-    @State private var currentPromptStrings: [Int] = [1]
-    @State private var isRoundPaused: Bool = false
-    @State private var transportStoppedForResume: Bool = false
-    @State private var showFretboardGuide: Bool = false
-    @State private var isLaunchTransitionAnimating: Bool = false
-    @State private var launchTileScale: CGFloat = 1
-    @State private var launchTileOpacity: Double = 1
-    @State private var beatPulseActive: Bool = false
-    @State private var beatCountInRemaining: Int = 0
-    @State private var nextBeatTickDate: Date? = nil
-    @State private var beatLightFlashOn: Bool = false
-    @State private var beatLightLastProcessedBeat: Int? = nil
-    @State private var questionBoxPulsePhase: Bool = false
-    @State private var nextQuestionBoxPulseDate: Date? = nil
-    @State private var questionBoxIntroProgress: CGFloat = 0
-    @State private var autoPlayEnabled: Bool = false
-    @State private var autoPlayNextDate: Date? = nil
-    @State private var resetButtonPressed: Bool = false
+    let codenameNemoEnabled: Bool = false
+    let scaleLengthInches: Double = 25.5
+    let debugGridRows: Int = 8
+    var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
+    @State var currentFretStart: Int = 0
+    @State var currentWindowRow: Int = 2
+    @State var leftThumbState: ThumbGlowState = .neutral
+    @State var rightThumbState: ThumbGlowState = .neutral
+    @State var currentRound: Int = 0
+    @State var roundStringIndex: Int = 0
+    @State var repetitionsRemainingAtFret: Int = 1
+    @State var isDescendingPhase: Bool = false
+    @State var leftChoiceNote: String = ""
+    @State var rightChoiceNote: String = ""
+    @State var activePickedStringNumbers: [Int] = [1]
+    @State var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
+    @State var activeAnswerFeedback: ThumbGlowState? = nil
+    @State var currentQuestionIsAccidental: Bool = false
+    @State var introWindowBlack: Bool = true
+    @State var introDidRun: Bool = false
+    @State var isCodeScreensaverMode: Bool = true
+    @State var cachedStringStatusLabel: String = ""
+    @State var cachedFretStatusLabel: String = ""
+    @State var bankDollars: Int = 0
+    @State var displayedBankDollars: Int = 0
+    @State var startupSequenceStartDate: Date = .now
+    @State var startupSequenceElapsed: TimeInterval = 0
+    @State var startupSequenceActivated: Bool = false
+    @State var assetToNutBottomDelta: CGFloat? = nil
+    @State var isAutoPlayTriggered: Bool = false
+    @State var correctAnswerSide: AnswerSide = .left
+    @State var isResolvingAnswer: Bool = false
+    @State var gameplayMenuExpanded: Bool = false
+    @State var maestroStartButtonBlinkOn: Bool = false
+    @State var maestroStartButtonNextBlinkDate: Date? = nil
+    @State var developerPromptText: String = ""
+    @State var currentCorrectNote: String = ""
+    @State var lastResolvedCorrectNote: String? = nil
+    @State var lastResolvedCorrectString: Int? = nil
+    @State var currentPromptStrings: [Int] = [1]
+    @State var isRoundPaused: Bool = false
+    @State var transportStoppedForResume: Bool = false
+    @State var showFretboardGuide: Bool = false
+    @State var isLaunchTransitionAnimating: Bool = false
+    @State var launchTileScale: CGFloat = 1
+    @State var launchTileOpacity: Double = 1
+    @State var beatPulseActive: Bool = false
+    @State var beatCountInRemaining: Int = 0
+    @State var nextBeatTickDate: Date? = nil
+    @State var beatLightFlashOn: Bool = false
+    @State var beatLightLastProcessedBeat: Int? = nil
+    @State var questionBoxPulsePhase: Bool = false
+    @State var nextQuestionBoxPulseDate: Date? = nil
+    @State var questionBoxIntroProgress: CGFloat = 0
+    @State var autoPlayEnabled: Bool = false
+    @State var autoPlayNextDate: Date? = nil
+    @State var resetButtonPressed: Bool = false
 
-    private enum StartupSpeechPhase {
+    enum StartupSpeechPhase {
         case idle
         case pendingArmed
     }
 
-    @State private var startupSpeechPhase: StartupSpeechPhase = .idle
-    @State private var audioSettings = AudioSettings()
-    @State private var availableBackingTracks: [BackingTrack] = []
-    @State private var showAudioPage: Bool = false
+    @State var startupSpeechPhase: StartupSpeechPhase = .idle
+    @State var audioSettings = AudioSettings()
+    @State var availableBackingTracks: [BackingTrack] = []
+    @State var showAudioPage: Bool = false
 
-    private let audioEngine = SpeechEngine()
-    private let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
-    private let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
-    private let audioEngineEnabled: Bool = false
-    private let speakBeatTicks: Bool = false
-    private let speakGameplayPrompts: Bool = false
+    let audioEngine = SpeechEngine()
+    let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
+    let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
+    let audioEngineEnabled: Bool = false
+    let speakBeatTicks: Bool = false
+    let speakGameplayPrompts: Bool = false
 
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
@@ -1428,7 +1428,7 @@ struct MaestroGameplayView: View {
         }
     }
 
-    @ViewBuilder private func transportButtonBackground(fill: Color) -> some View {
+    @ViewBuilder func transportButtonBackground(fill: Color) -> some View {
         RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
             .fill(fill)
             .overlay(
@@ -1437,14 +1437,14 @@ struct MaestroGameplayView: View {
             )
     }
 
-    private func shiftFretSpan(by delta: Int) {
+    func shiftFretSpan(by delta: Int) {
         guard delta != 0 else { return }
         withAnimation(.easeInOut(duration: 0.5)) {
             currentFretStart = min(max(currentFretStart + delta, minFretOffset), maxFretOffset)
         }
     }
 
-    private func shiftWindow(by delta: Int) {
+    func shiftWindow(by delta: Int) {
         let proposed = currentWindowRow + delta
         let clamped = min(max(proposed, 0), 7)
         guard clamped != currentWindowRow else { return }
@@ -1453,7 +1453,7 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func nextThumbState(after state: ThumbGlowState) -> ThumbGlowState {
+    func nextThumbState(after state: ThumbGlowState) -> ThumbGlowState {
         switch state {
         case .neutral: return .green
         case .orange: return .green
@@ -1462,7 +1462,7 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func handleMaestroAutoPlayIfNeeded(currentDate: Date) {
+    func handleMaestroAutoPlayIfNeeded(currentDate: Date) {
         guard autoPlayEnabled,
               !isCodeScreensaverMode,
               !startupSequenceActivated,
@@ -1484,7 +1484,7 @@ struct MaestroGameplayView: View {
         autoPlayNextDate = currentDate.addingTimeInterval(0.38)
     }
 
-    private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
+    func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
         currentRound = playStartingFret
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
@@ -1522,7 +1522,7 @@ struct MaestroGameplayView: View {
         prepareCurrentQuestion()
     }
 
-    private func submitAnswer(_ side: AnswerSide, force: Bool = false) {
+    func submitAnswer(_ side: AnswerSide, force: Bool = false) {
         if isCodeScreensaverMode {
             if !startupSequenceActivated {
                 startupSequenceActivated = true
@@ -1605,7 +1605,7 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func handleMaestroStartButton() {
+    func handleMaestroStartButton() {
         if isCodeScreensaverMode {
             if !startupSequenceActivated {
                 startupSequenceActivated = true
@@ -1657,7 +1657,7 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func handleMaestroStopButton() {
+    func handleMaestroStopButton() {
         guard !isCodeScreensaverMode, !isRoundPaused else { return }
         isRoundPaused = true
         transportStoppedForResume = true
@@ -1668,7 +1668,7 @@ struct MaestroGameplayView: View {
         midiEngine.pause()
     }
 
-    private func handleMaestroResetButton() {
+    func handleMaestroResetButton() {
         resetButtonPressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             resetButtonPressed = false
@@ -1696,7 +1696,7 @@ struct MaestroGameplayView: View {
         autoPlayEnabled = false
     }
 
-    private func syncMaestroBackingTrack(allowResumeFromPause: Bool = false) {
+    func syncMaestroBackingTrack(allowResumeFromPause: Bool = false) {
         if availableBackingTracks.isEmpty {
             availableBackingTracks = BackingTrack.discoverBundledTracks()
         }
@@ -1721,7 +1721,7 @@ struct MaestroGameplayView: View {
         midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
     }
 
-    private func advanceGame(afterCorrectAnswer isCorrect: Bool, fromAutoPlay: Bool = false) {
+    func advanceGame(afterCorrectAnswer isCorrect: Bool, fromAutoPlay: Bool = false) {
         if !isCorrect {
             restartAtCurrentFret()
             return
@@ -1782,7 +1782,7 @@ struct MaestroGameplayView: View {
         prepareCurrentQuestion()
     }
 
-    private func prepareCurrentQuestion() {
+    func prepareCurrentQuestion() {
         if roundStringIndex == 0 { answeredNotesByStringAtCurrentFret = [:] }
         let targetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
         currentPromptStrings = [targetString]
@@ -1829,11 +1829,11 @@ struct MaestroGameplayView: View {
 
     }
 
-    private func payoutForRound(_ round: Int) -> Int {
+    func payoutForRound(_ round: Int) -> Int {
         return 2
     }
 
-    private func restartAtCurrentFret() {
+    func restartAtCurrentFret() {
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
         answeredNotesByStringAtCurrentFret = [:]
@@ -1845,7 +1845,7 @@ struct MaestroGameplayView: View {
     }
 
     @ViewBuilder
-    private func maestroTransportButtonOverlay(
+    func maestroTransportButtonOverlay(
         proxyWidth: CGFloat,
         proxyHeight: CGFloat,
         lowerWhitePipingY: CGFloat,
@@ -1922,7 +1922,7 @@ struct MaestroGameplayView: View {
         .opacity(codenameNemoEnabled ? 0 : 1)
     }
 
-    private func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {
+    func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {
         Group {
             if !isHidden {
                 Text(text)
@@ -1941,7 +1941,7 @@ struct MaestroGameplayView: View {
         .allowsHitTesting(false)
     }
 
-    private func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
+    func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
         guard let openNote = openNoteByString[string],
               let openIndex = chromaticSharps.firstIndex(of: openNote) else {
             return "?"
@@ -1952,7 +1952,7 @@ struct MaestroGameplayView: View {
         return scale[noteIndex]
     }
 
-    private func randomIncorrectNote(excluding correct: String, excludingLast lastCorrect: String?, useFlats: Bool) -> String {
+    func randomIncorrectNote(excluding correct: String, excludingLast lastCorrect: String?, useFlats: Bool) -> String {
         let source = useFlats ? chromaticFlats : chromaticSharps
         let correctIsAccidental = guitarNoteContainsAccidental(correct)
         let pool = source.filter { note in
@@ -1968,7 +1968,7 @@ struct MaestroGameplayView: View {
         return ceil(text.size(withAttributes: attributes).width)
     }
 
-    private func handleGameplayMenuSelection(_ option: GameplayMenuOption) {
+    func handleGameplayMenuSelection(_ option: GameplayMenuOption) {
         gameplayMenuExpanded = false
         if !isCodeScreensaverMode && !isRoundPaused {
             handleMaestroStopButton()
@@ -1984,7 +1984,7 @@ struct MaestroGameplayView: View {
         showDeveloperPrompt("MENU: \(option.title)")
     }
 
-    private func handleStartupSpeech(for phase: MaestroStartupSequenceView.Phase) {
+    func handleStartupSpeech(for phase: MaestroStartupSequenceView.Phase) {
         guard audioEngineEnabled else { return }
         switch phase {
         case .armed:
@@ -1995,17 +1995,17 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func speakStartup(_ phrase: String) {
+    func speakStartup(_ phrase: String) {
         audioEngine.speakStartupAlert(phrase, volume: stringVolume)
     }
 
-    private func handleFretboardButtonPress() {
+    func handleFretboardButtonPress() {
         showFretboardGuide.toggle()
         showDeveloperPrompt(showFretboardGuide ? "Fretboard guide ON" : "Fretboard guide OFF")
     }
 
 
-    private func showDeveloperPrompt(_ text: String) {
+    func showDeveloperPrompt(_ text: String) {
         developerPromptText = text
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             if developerPromptText == text {
@@ -2015,7 +2015,7 @@ struct MaestroGameplayView: View {
     }
 }
 
-private extension MaestroGameplayView {
+extension MaestroGameplayView {
     func debugGridOverlay(size: CGSize, columns: Int, rows: Int) -> some View {
         let cellWidth = size.width / CGFloat(columns)
         let cellHeight = size.height / CGFloat(rows)
