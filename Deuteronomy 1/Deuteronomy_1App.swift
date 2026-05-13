@@ -197,11 +197,11 @@ private struct MenuRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundColor(.white.opacity(0.7))
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(gold)
         }
     }
@@ -213,9 +213,9 @@ private struct MenuTextRow: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .regular, design: .monospaced))
+            .font(.system(size: 16, weight: .medium, design: .monospaced))
             .foregroundColor(.white.opacity(0.85))
-            .lineSpacing(4)
+            .lineSpacing(5)
     }
 }
 
@@ -274,7 +274,7 @@ private struct Deuteronomy1MenuSheet: View {
                                 if highFretsPurchased {
                                     Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
                                         .foregroundColor(.white)
-                                        .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                        .font(.system(size: 16, weight: .medium, design: .monospaced))
                                         .tint(gold)
                                         .accessibilityLabel(A11y.Settings.highFretsToggle)
                                         .accessibilityHint(A11y.Settings.highFretsHint)
@@ -292,11 +292,11 @@ private struct Deuteronomy1MenuSheet: View {
                                     }) {
                                         HStack {
                                             Text("Enable High Frets (12+)")
-                                                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                .font(.system(size: 16, weight: .medium, design: .monospaced))
                                                 .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
                                             Spacer()
                                             Text("$500")
-                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
                                                 .foregroundColor(balancePoints >= 500 ? gold : .red)
                                         }
                                     }
@@ -325,11 +325,11 @@ private struct Deuteronomy1MenuSheet: View {
                                         }) {
                                             HStack {
                                                 Text("Landscape Mode")
-                                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                                     .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
                                                 Spacer()
                                                 Text("$500")
-                                                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                    .font(.system(size: 16, weight: .bold, design: .monospaced))
                                                     .foregroundColor(balancePoints >= 500 ? gold : .red)
                                             }
                                         }
@@ -345,12 +345,12 @@ private struct Deuteronomy1MenuSheet: View {
                                 Button(action: { consoleSkinRawValue = ConsoleSkin.classic.rawValue }) {
                                     HStack {
                                         Text("Classic")
-                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .font(.system(size: 16, weight: .medium, design: .monospaced))
                                             .foregroundColor(.white.opacity(0.7))
                                         Spacer()
                                         if consoleSkin == .classic {
                                             Text("ACTIVE")
-                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .font(.system(size: 13, weight: .bold, design: .monospaced))
                                                 .foregroundColor(Color.green)
                                         }
                                     }
@@ -371,20 +371,20 @@ private struct Deuteronomy1MenuSheet: View {
                                 }) {
                                     HStack {
                                         Text("Tweed")
-                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .font(.system(size: 16, weight: .medium, design: .monospaced))
                                             .foregroundColor(tweedPurchased ? .white.opacity(0.7) : (balancePoints >= 500 ? gold : .white.opacity(0.3)))
                                         Spacer()
                                         if consoleSkin == .tweed {
                                             Text("ACTIVE")
-                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .font(.system(size: 13, weight: .bold, design: .monospaced))
                                                 .foregroundColor(Color.green)
                                         } else if tweedPurchased {
                                             Text("owned")
-                                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                                .font(.system(size: 13, weight: .medium, design: .monospaced))
                                                 .foregroundColor(.white.opacity(0.4))
                                         } else {
                                             Text("$500")
-                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
                                                 .foregroundColor(balancePoints >= 500 ? gold : .red)
                                         }
                                     }
@@ -412,21 +412,21 @@ private struct Deuteronomy1MenuSheet: View {
                                 Stepper("Repetitions: \(repetitionDisplay)", value: $repetitions, in: 1...8)
                                     .disabled(infiniteRepetitions)
                                     .foregroundColor(.white)
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.repetitionsStepper)
                                     .accessibilityValue(A11y.Settings.repetitionsValue(repetitions))
 
                                 Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
                                     .foregroundColor(.white)
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.infiniteRepsToggle)
                                     .accessibilityHint(A11y.Settings.infiniteRepsHint)
 
                                 Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(highFretsPurchased && enableHighFrets ? 19 : 12))
                                     .foregroundColor(.white)
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.startingFretStepper)
                                     .accessibilityValue(A11y.Settings.startingFretValue(startingFret))
@@ -486,7 +486,7 @@ private struct Deuteronomy1MenuSheet: View {
                                     }
                                 } label: {
                                     Text(layoutMode == .beginner ? "SWITCH TO MAESTRO" : "SWITCH TO BEGINNER")
-                                        .font(.system(size: 15, weight: .black, design: .monospaced))
+                                        .font(.system(size: 16, weight: .black, design: .monospaced))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 14)
@@ -550,7 +550,7 @@ private struct Deuteronomy1MenuSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundColor(gold)
                         .accessibilityLabel(A11y.Settings.doneButton)
                         .accessibilityHint(A11y.Settings.doneHint)

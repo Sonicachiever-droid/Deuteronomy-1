@@ -426,7 +426,7 @@ struct GoldPickerRow<T: Hashable>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(size: 14, weight: .regular, design: .monospaced))
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundColor(disabled ? .white.opacity(0.3) : .white.opacity(0.7))
             HStack(spacing: 8) {
                 ForEach(options, id: \.value) { option in
@@ -436,7 +436,7 @@ struct GoldPickerRow<T: Hashable>: View {
                         selection = option.value
                     }) {
                         Text(option.label)
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
                             .foregroundColor(isSelected ? .black : (disabled ? .white.opacity(0.3) : .white))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -465,7 +465,7 @@ struct MenuSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 11, weight: .black, design: .monospaced))
+                .font(.system(size: 13, weight: .black, design: .monospaced))
                 .foregroundColor(gold)
                 .tracking(2)
                 .padding(.horizontal, 20)

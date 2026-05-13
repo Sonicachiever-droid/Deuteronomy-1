@@ -51,7 +51,7 @@ struct AudioPageView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { onDone() }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundColor(gold)
                 }
             }
@@ -60,7 +60,7 @@ struct AudioPageView: View {
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button("Done") { onDone() }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundColor(gold)
                 }
             }

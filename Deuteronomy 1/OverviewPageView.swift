@@ -19,7 +19,7 @@ struct OverviewPageView: View {
                     // Header
                     VStack(alignment: .center, spacing: 6) {
                         Text("REFRET")
-                            .font(.system(size: 65, weight: .black, design: .monospaced))
+                            .font(.system(size: 68, weight: .black, design: .monospaced))
                             .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                             .tracking(4)
                     }
@@ -39,18 +39,18 @@ struct OverviewPageView: View {
                         VStack(alignment: .leading, spacing: 14) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("BEGINNER CONSOLE")
-                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                     .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                                 Text("Six answer buttons, one per string, each showing a note name. Tap the correct note for the highlighted string. Notes are revealed progressively before each round begins.")
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .foregroundColor(.white.opacity(0.88))
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("MAESTRO CONSOLE")
-                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                     .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                                 Text("No hints. Two answer buttons show note names — identify the correct one from memory. Wrong answers restart the current fret. A more demanding test of recall.")
-                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .foregroundColor(.white.opacity(0.88))
                             }
                         }
@@ -89,7 +89,7 @@ struct OverviewPageView: View {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Text("CLOSE")
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
@@ -116,14 +116,14 @@ private struct OverviewSection<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(size: 13, weight: .black, design: .monospaced))
+                .font(.system(size: 14, weight: .black, design: .monospaced))
                 .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
                 .tracking(2)
 
             content()
-                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundColor(.white.opacity(0.88))
-                .lineSpacing(4)
+                .lineSpacing(5)
         }
     }
 }
