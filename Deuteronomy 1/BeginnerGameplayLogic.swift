@@ -56,12 +56,12 @@ extension BeginnerGameplayView {
             startupNeckVisualsHidden = true
             launchTileScale = 1
             launchTileOpacity = 1
-            withAnimation(.easeIn(duration: 0.4725)) {
+            withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
                 isCodeScreensaverMode = false
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
@@ -166,7 +166,7 @@ extension BeginnerGameplayView {
 
     func handleRoundResetButton() {
         beginnerRuntime.resetButtonPressed = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.resetDelay) {
             beginnerRuntime.resetButtonPressed = false
         }
 
@@ -231,12 +231,12 @@ extension BeginnerGameplayView {
             startupNeckVisualsHidden = true
             launchTileScale = 1
             launchTileOpacity = 1
-            withAnimation(.easeIn(duration: 0.4725)) {
+            withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
                 isCodeScreensaverMode = false
                 startupSequenceActivated = false
                 startupSequenceElapsed = 0
@@ -263,7 +263,7 @@ extension BeginnerGameplayView {
         guard force || !beginnerRuntime.isResolvingAnswer else { return }
         beginnerRuntime.isResolvingAnswer = true
         beatQuestionDeadline = nil
-        playCurrentPromptedGuitarNotes(velocity: force ? 0.82 : 0.94)
+        playCurrentPromptedGuitarNotes(velocity: force ? AudioVelocity.soft : 0.94)
 
         let isCorrect = side == beginnerRuntime.correctAnswerSide
         if isCorrect {
@@ -474,7 +474,7 @@ extension BeginnerGameplayView {
         questionBoxAssistActive = false
 
         guard canAdvanceBeginnerProgression else {
-            playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: 0.98)
+            playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)
             return
         }
 
@@ -484,7 +484,7 @@ extension BeginnerGameplayView {
             handleBeginnerChordProgressionIfNeeded(selectedNote: selectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
         }
 
-        playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: 0.98)
+        playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)
     }
 
     func handleBeginnerRoundOneProgressionIfNeeded(selectedNote: String, selectedString: Int, buttonIndex: Int) {
@@ -576,10 +576,10 @@ extension BeginnerGameplayView {
             }
             if safeSequenceIndex == currentScaleNotes.count - 1 {
                 if let rewardPolicy = beginnerRewardPolicyForCurrentStage() {
-                    playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: 0.98)
+                    playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)
                     scheduleBeginnerRewardChordThenAdvance(selectedString: selectedString, policy: rewardPolicy)
                 } else {
-                    playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: 0.98)
+                    playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)
                     scheduleBeginnerAdvanceAfterFinalNoteHold(selectedString: selectedString)
                 }
                 return
@@ -767,7 +767,7 @@ extension BeginnerGameplayView {
         beginnerRuntime.rewardNoteTextByString = beginnerRuntime.rewardScheduledNoteTextByString
         let rewardChordRingDuration = guitarNoteEngine.playChord(
             midiNotes: beginnerRuntime.rewardScheduledMIDINotes,
-            velocity: 0.98,
+            velocity: AudioVelocity.full,
             sustainMultiplier: beginnerRuntime.rewardSustainMultiplier
         )
 
@@ -953,7 +953,7 @@ extension BeginnerGameplayView {
         beginnerRuntime.lastPickedNote = nil
         applyBeginnerBassTransposeForCurrentStage()
         if playTransitionNote {
-            playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: 0.98)
+            playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)
         }
     }
 
@@ -1144,7 +1144,7 @@ extension BeginnerGameplayView {
             let expectedNote = beginnerCurrentScaleNotes[safeSequenceIndex]
 
             if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
@@ -1155,7 +1155,7 @@ extension BeginnerGameplayView {
                 guitarNoteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
             }
             guard let selectedString = matchedString else {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
                 return
             }
             beginnerRuntime.autoPlayLastStringByNote[expectedNote] = selectedString
@@ -1163,7 +1163,7 @@ extension BeginnerGameplayView {
             beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: expectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
             beginnerRuntime.isAutoPlayTriggered = false
-            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
         }
     }
 
@@ -1275,7 +1275,7 @@ extension BeginnerGameplayView {
                 }
 
                 beginnerRuntime.beatLightFlashOn = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.beatFlash) {
                     beginnerRuntime.beatLightFlashOn = false
                 }
             }
@@ -1576,7 +1576,7 @@ extension BeginnerGameplayView {
     func postponeBeatDeadlineForAssist() {
         guard !isCodeScreensaverMode, modeVariant == .beat else { return }
         let bpm = Double(max(beatBPM, 60))
-        beatQuestionDeadline = .now.addingTimeInterval(max(1.0, 120.0 / bpm))
+        beatQuestionDeadline = .now.addingTimeInterval(max(AnimationDurations.armedFlashPeriod, 120.0 / bpm))
     }
 
     func showDeveloperPrompt(_ text: String) {

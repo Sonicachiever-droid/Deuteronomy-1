@@ -14,7 +14,7 @@ struct MaestroStartupSequenceView: View {
 
     var body: some View {
         let state = MaestroStartupSequenceView.state(for: elapsed)
-        let fontSize: CGFloat = 29.6
+        let fontSize: CGFloat = UIMetrics.startupFontSize
         let fontWeight: Font.Weight = .black
 
         Text(state.text)
@@ -22,11 +22,11 @@ struct MaestroStartupSequenceView: View {
             .foregroundStyle(state.color)
             .multilineTextAlignment(.center)
             .opacity(state.isVisible ? 1 : 0)
-            .animation(.easeInOut(duration: 0.08), value: state.isVisible)
+            .animation(.easeInOut(duration: AnimationDurations.beatFlash), value: state.isVisible)
     }
 
     static func state(for elapsed: TimeInterval) -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
-        let armedFlashPeriod: TimeInterval = 1.0
+        let armedFlashPeriod: TimeInterval = AnimationDurations.armedFlashPeriod
         let isVisible = Int(elapsed / armedFlashPeriod).isMultiple(of: 2)
         return ("Memorization Sequence Armed", Color.green.opacity(0.98), isVisible, .armed)
     }
@@ -52,11 +52,11 @@ struct RowOneIdentifierOverlay: View {
             textWidth(for: "Open Strings", font: bannerFont)
         )
         let bannerWidth = measuredWidth + 32
-        let bannerHeight = max(min(rowHeight * 0.66, 50), 40)
+        let bannerHeight = max(min(rowHeight * UIMetrics.bannerHeightFraction, UIMetrics.bannerMaxHeight), UIMetrics.bannerMinHeight)
 
         return HStack(spacing: 16) {
-            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
-            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
+            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: UIMetrics.bannerFontScale, consoleSkin: consoleSkin)
+            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: UIMetrics.bannerFontScale, consoleSkin: consoleSkin)
         }
         .frame(width: size.width, height: rowHeight)
         .position(x: size.width / 2, y: rowHeight / 2)

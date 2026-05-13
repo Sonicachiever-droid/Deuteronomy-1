@@ -57,7 +57,7 @@ extension MaestroGameplayView {
         isAutoPlayTriggered = true
         submitAnswer(correctAnswerSide, force: true)
         isAutoPlayTriggered = false
-        autoPlayNextDate = currentDate.addingTimeInterval(0.38)
+        autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
     }
 
     // MARK: - Game session
@@ -119,12 +119,12 @@ extension MaestroGameplayView {
             launchTileOpacity = 1
             // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
             currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
-            withAnimation(.easeIn(duration: 0.4725)) {
+            withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
                 self.isCodeScreensaverMode = false
                 self.startupSequenceActivated = false
                 self.startupSequenceElapsed = 0
@@ -161,7 +161,7 @@ extension MaestroGameplayView {
             for (index, stringNumber) in currentPromptStrings.enumerated() {
                 let delay = Double(index) * 0.035
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    self.guitarNoteEngine.play(string: stringNumber, fret: max(self.currentRound, 0), velocity: 0.98)
+                    self.guitarNoteEngine.play(string: stringNumber, fret: max(self.currentRound, 0), velocity: AudioVelocity.full)
                 }
             }
         } else {
@@ -202,11 +202,11 @@ extension MaestroGameplayView {
             launchTileOpacity = 1
             // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
             currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
-            withAnimation(.easeIn(duration: 0.4725)) {
+            withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
                 self.isCodeScreensaverMode = false
                 self.startupSequenceActivated = false
                 self.startupSequenceElapsed = 0
@@ -252,7 +252,7 @@ extension MaestroGameplayView {
 
     func handleMaestroResetButton() {
         resetButtonPressed = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.resetDelay) {
             self.resetButtonPressed = false
         }
 
