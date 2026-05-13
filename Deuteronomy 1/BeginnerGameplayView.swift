@@ -28,8 +28,8 @@ struct BeginnerGameplayView: View {
     let consoleSkin: ConsoleSkin
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
 
-    @State private var audioSettings = AudioSettings()
-    @State private var showAudioPage: Bool = false
+    @State var audioSettings = AudioSettings()
+    @State var showAudioPage: Bool = false
     let layoutMode: LayoutMode = .beginner
 
     @Environment(\.displayScale) private var displayScale
@@ -129,27 +129,27 @@ struct BeginnerGameplayView: View {
     @State private var introWindowBlack: Bool = true
     @State private var introDidRun: Bool = false
     @State var isCodeScreensaverMode: Bool = true
-    @State private var startupSequenceStartDate: Date = .now
+    @State var startupSequenceStartDate: Date = .now
     @State var startupSequenceElapsed: TimeInterval = 0
     @State var startupSequenceActivated: Bool = false
     @State private var assetToNutBottomDelta: CGFloat? = nil
     @State private var questionBoxAssistActive: Bool = false
-    @State private var gameplayMenuExpanded: Bool = false
+    @State var gameplayMenuExpanded: Bool = false
     @State var developerPromptText: String = ""
     @State private var beatQuestionDeadline: Date? = nil
-    @State private var showFretboardGuide: Bool = false
+    @State var showFretboardGuide: Bool = false
     @State var isRoundPaused: Bool = false
-    @State private var isBackingTrackPlaying: Bool = false
-    @State private var isLaunchTransitionAnimating: Bool = false
-    @State private var launchTileScale: CGFloat = 1
-    @State private var launchTileOpacity: Double = 1
-    @State private var startupNeckVisualsHidden: Bool = false
+    @State var isBackingTrackPlaying: Bool = false
+    @State var isLaunchTransitionAnimating: Bool = false
+    @State var launchTileScale: CGFloat = 1
+    @State var launchTileOpacity: Double = 1
+    @State var startupNeckVisualsHidden: Bool = false
     @State var startupStartButtonBlinkOn: Bool = false
     @State private var startupStartButtonNextBlinkDate: Date? = nil
     @State var beatPulseActive: Bool = false
     @State var beginnerRuntime = BeginnerGameState()
 
-    private enum StartupSpeechPhase {
+    enum StartupSpeechPhase {
         case idle
         case pendingSystem
         case pendingPhase
@@ -184,12 +184,12 @@ struct BeginnerGameplayView: View {
         let preferredStrings: [Int]?
     }
 
-    @State private var startupSpeechPhase: StartupSpeechPhase = .idle
-    @State private var availableBackingTracks: [BackingTrack] = []
+    @State var startupSpeechPhase: StartupSpeechPhase = .idle
+    @State var availableBackingTracks: [BackingTrack] = []
 
     private let gameplayAudioEngine = SpeechEngine()
     private let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
-    private let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
+    let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
     private let audioEngineEnabled: Bool = false
     private let speakBeatTicks: Bool = false
     private let speakGameplayPrompts: Bool = false
@@ -1268,7 +1268,7 @@ struct BeginnerGameplayView: View {
         return effectivePlayRepetitions
     }
 
-    private func updateDirectionLockState() {
+    func updateDirectionLockState() {
         directionLockActive = shouldLockPlayDirection
     }
 
@@ -1307,7 +1307,7 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.roundRevealLastTickDate = nil
     }
 
-    private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
+    func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
         if layoutMode == .beginner {
             beginnerRuntime.currentRound = beginnerRoundOneStartingFret
             beginnerRuntime.isDescendingPhase = beginnerRoundOneStartsDescending
@@ -2221,35 +2221,8 @@ struct BeginnerGameplayView: View {
         return ceil(text.size(withAttributes: attributes).width)
     }
 
-    private func handleGameplayMenuSelection(_ option: GameplayMenuOption) {
-        gameplayMenuExpanded = false
-        if !isCodeScreensaverMode && !beginnerRuntime.isRoundArmed && !isRoundPaused {
-            handleRoundStopButton()
-        }
-        if option == .audio {
-            availableBackingTracks = BackingTrack.discoverBundledTracks()
-            audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
-            showAudioPage = true
-            showDeveloperPrompt("MENU: AUDIO")
-            return
-        }
-        onMenuSelection?(option)
-        showDeveloperPrompt("MENU: \(option.title)")
-    }
-
-    private func handleHintButtonPress() {
-        postponeBeatDeadlineForAssist()
-        if layoutMode == .beginner {
-            showFretboardGuide.toggle()
-        }
-        showDeveloperPrompt("HINT: \(guitarNoteDisplayText(beginnerRuntime.currentCorrectNote))")
-    }
-
-    private func handleAudioPageDismiss() {
-        if beginnerRuntime.transportStoppedForResume {
-            resumeRoundFromTransportStop()
-        }
-    }
+    // handleGameplayMenuSelection, handleHintButtonPress, handleAudioPageDismiss
+    // — moved to BeginnerGameplayLogic.swift (Step 4a)
 
     // developerConsoleFrame — moved to BeginnerSubviews.swift
 
@@ -2459,7 +2432,7 @@ struct BeginnerGameplayView: View {
         guitarNoteEngine.play(string: stringNumber, fret: max(fret, 0), velocity: velocity)
     }
 
-    private func syncBackingTrackPlayback(allowResumeFromPause: Bool = false) {
+    func syncBackingTrackPlayback(allowResumeFromPause: Bool = false) {
         guard !availableBackingTracks.isEmpty else {
             midiEngine.stop()
             isBackingTrackPlaying = false
@@ -2505,160 +2478,17 @@ struct BeginnerGameplayView: View {
         isBackingTrackPlaying = midiEngine.isPlaying
     }
 
-    private func handleFretboardButtonPress() {
-        showFretboardGuide.toggle()
-        postponeBeatDeadlineForAssist()
-        showDeveloperPrompt(showFretboardGuide ? "Fretboard guide ON" : "Fretboard guide OFF")
-    }
+    // handleFretboardButtonPress, handleRoundStartButton, handleStartButtonPress,
+    // handleRoundStopButton, resumeRoundFromTransportStop, handleRoundResetButton
+    // — moved to BeginnerGameplayLogic.swift (Step 4a)
 
-    private func handleRoundStartButton(animateNeckSlideFromStartup: Bool = false) {
-        if isCodeScreensaverMode {
-            guard !isLaunchTransitionAnimating else { return }
-            isLaunchTransitionAnimating = true
-            startupNeckVisualsHidden = true
-            launchTileScale = 1
-            launchTileOpacity = 1
-            withAnimation(.easeIn(duration: 0.4725)) {
-                launchTileScale = 0.1
-                launchTileOpacity = 0
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
-                isCodeScreensaverMode = false
-                startupSequenceActivated = false
-                startupSequenceElapsed = 0
-                startupSpeechPhase = .idle
-                isLaunchTransitionAnimating = false
-                launchTileScale = 1
-                launchTileOpacity = 1
-                beginnerRuntime.questionBoxIntroProgress = 1
-                handleRoundStartButton(animateNeckSlideFromStartup: true)
-            }
-            return
-        }
-
-        if layoutMode == .beginner {
-            beginnerRuntime.reset()
-        }
-        isCodeScreensaverMode = false
-        startupSequenceActivated = false
-        startupSequenceElapsed = 0
-        startupSpeechPhase = .idle
-        beginnerRuntime.questionBoxIntroProgress = 1
-        isRoundPaused = false
-        beginnerRuntime.transportStoppedForResume = false
-        beginnerRuntime.isRoundArmed = false
-        beginnerRuntime.roundRevealElapsedBeats = 0
-        beginnerRuntime.roundRevealLastTickDate = nil
-
-        // Ensure reveal beat-buckets are always fresh for the active style at START
-        if lessonStyle == .sequential {
-            beginnerRuntime.sequentialRevealCount = 0
-            beginnerRuntime.sequentialRevealStartBeatBucket = nil
-        }
-
-        startGameFromBeginning(animateNeckSlideFromStartup: animateNeckSlideFromStartup)
-        updateDirectionLockState()
-        if !animateNeckSlideFromStartup {
-            syncBackingTrackPlayback()
-        }
-    }
-
-    func handleStartButtonPress() {
-        if startupStartButtonAttentionActive,
-           layoutMode == .beginner,
-           isCodeScreensaverMode,
-           !startupSequenceActivated {
-            startupSequenceActivated = true
-            startupSequenceStartDate = .now
-            startupSequenceElapsed = 0
-            startupSpeechPhase = .pendingArmed
-            beginnerRuntime.questionBoxIntroProgress = 0
-            return
-        }
-
-        if beginnerRuntime.transportStoppedForResume {
-            resumeRoundFromTransportStop()
-            return
-        }
-
-        if isRoundPaused {
-            resumeRoundFromTransportStop(forceIfPaused: true)
-            return
-        }
-
-        if !beginnerRuntime.isRoundArmed {
-            handleRoundResetButton()
-            return
-        }
-
-        handleRoundStartButton()
-    }
-
-    func handleRoundStopButton() {
-        guard canPressStopButton else { return }
-
-        isRoundPaused = true
-        beginnerRuntime.transportStoppedForResume = true
-        beginnerRuntime.roundRevealLastTickDate = nil
-        midiEngine.pause()
-        isBackingTrackPlaying = midiEngine.isPlaying
-        beginnerRuntime.beatLightFlashOn = false
-        beginnerRuntime.beatLightLastProcessedBeat = nil
-        beginnerRuntime.beatLightIntroMeasureSkipped = false
-        updateDirectionLockState()
-    }
-
-    func resumeRoundFromTransportStop(forceIfPaused: Bool = false) {
-        guard beginnerRuntime.transportStoppedForResume || (forceIfPaused && isRoundPaused) else { return }
-
-        beginnerRuntime.transportStoppedForResume = false
-        isRoundPaused = false
-        beginnerRuntime.roundRevealLastTickDate = nil
-        midiEngine.resume()
-        beginnerRuntime.beatLightFlashOn = false
-        beginnerRuntime.beatLightLastProcessedBeat = nil
-        beginnerRuntime.beatLightIntroMeasureSkipped = false
-        updateDirectionLockState()
-    }
-
-    func handleRoundResetButton() {
-        beginnerRuntime.resetButtonPressed = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            beginnerRuntime.resetButtonPressed = false
-        }
-
-        if layoutMode == .beginner {
-            beginnerRuntime.reset()
-        }
-        isCodeScreensaverMode = true
-        startupSequenceActivated = true
-        startupSequenceStartDate = .now
-        startupSequenceElapsed = 0
-        startupSpeechPhase = .pendingArmed
-        beginnerRuntime.questionBoxIntroProgress = 0
-        isLaunchTransitionAnimating = false
-        launchTileScale = 1
-        launchTileOpacity = 1
-        isRoundPaused = false
-        beginnerRuntime.transportStoppedForResume = false
-        beginnerRuntime.isRoundArmed = true
-        beginnerRuntime.roundRevealElapsedBeats = 0
-        beginnerRuntime.roundRevealLastTickDate = nil
-        syncBackingTrackPlayback()
-        startGameFromBeginning()
-        developerPromptText = ""
-        beginnerRuntime.answerBoxReady = false
-        updateDirectionLockState()
-    }
-
-    private func postponeBeatDeadlineForAssist() {
+    func postponeBeatDeadlineForAssist() {
         guard !isCodeScreensaverMode, modeVariant == .beat else { return }
         let bpm = Double(max(beatBPM, 60))
         beatQuestionDeadline = .now.addingTimeInterval(max(1.0, 120.0 / bpm))
     }
 
-    private func showDeveloperPrompt(_ text: String) {
+    func showDeveloperPrompt(_ text: String) {
         developerPromptText = text
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             if developerPromptText == text {
