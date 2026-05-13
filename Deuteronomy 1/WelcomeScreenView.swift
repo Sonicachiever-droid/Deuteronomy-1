@@ -8,10 +8,10 @@ struct WelcomeScreenView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let tileWidth = proxy.size.width * 0.72
+            let tileWidth = (proxy.size.width - 48) * 0.9
             let tileHeight = tileWidth * (605.0 / 832.0)
             let tileCornerRadius = min(24, tileWidth * 0.08)
-            let tileCenterY = proxy.size.height * 0.34
+            let tileCenterY = proxy.size.height * 0.25
 
             ZStack {
                 FullScreenElephantBackground()
