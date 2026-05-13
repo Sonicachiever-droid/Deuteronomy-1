@@ -98,10 +98,11 @@ extension BeginnerGameplayView {
         SharedAudioEngine.shared.setTempo(bpm: Double(effective))
     }
 
-    /// Returns the Date of the next beat that falls on beat 1 or beat 3 of a 4/4 measure
-    /// (i.e. where floor(beatPosition) % 4 == 0 or == 2).
-    /// If the MIDI isn't playing, falls back to the old fixed interval.
-    func nextOnAndThreeBeatDate(after date: Date) -> Date {
+    /// Returns the Date of the next beat-1 or beat-3 of a 4/4 measure,
+    /// always waiting for the START of the next full measure before the
+    /// first note, so playback enters cleanly on the downbeat.
+    /// If the MIDI isn't playing, falls back to a 2-beat interval.
+    func nextOnAndThreeBeatDate(after date: Date, waitForDownbeat: Bool = false) -> Date {
         let bpm = Double(max(audioSettings.startingBPM, 40))
         let secondsPerBeat = 60.0 / bpm
         guard midiEngine.isPlaying else {
@@ -110,7 +111,17 @@ extension BeginnerGameplayView {
         let currentBeat = midiEngine.currentBeatPosition()
         let currentBeatFloor = floor(currentBeat)
         let beatInMeasure = Int(currentBeatFloor) % 4   // 0,1,2,3
-        // How many beats until the next 0 or 2 within the measure
+        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
+        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
+
+        if waitForDownbeat {
+            // Wait for the top of the next measure (beat 0), then fire on beat 0
+            let beatsToNextMeasureStart = Double(4 - beatInMeasure)
+            let seconds = secondsToNextWholeBeat + (beatsToNextMeasureStart - 1.0) * secondsPerBeat
+            return date.addingTimeInterval(max(seconds, 0.05))
+        }
+
+        // Normal: target next beat 0 or 2 within the measure
         let beatsUntilNext: Double
         switch beatInMeasure {
         case 0: beatsUntilNext = 2   // next target is beat 2
@@ -119,9 +130,6 @@ extension BeginnerGameplayView {
         case 3: beatsUntilNext = 1   // next target is beat 0 of next measure
         default: beatsUntilNext = 2
         }
-        // Add fractional beat remaining in current beat bucket
-        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
-        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
         let secondsToTarget = secondsToNextWholeBeat + (beatsUntilNext - 1.0) * secondsPerBeat
         return date.addingTimeInterval(max(secondsToTarget, 0.05))
     }

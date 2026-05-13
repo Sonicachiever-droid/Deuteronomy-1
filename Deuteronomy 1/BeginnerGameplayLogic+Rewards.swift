@@ -506,11 +506,18 @@ extension BeginnerGameplayView {
                 return
             }
             let nextNote = currentGenerator.currentNoteSequence[idx]
+            let bps = Double(max(audioSettings.startingBPM, 40)) / 60.0
+            let oneBeat = 1.0 / bps
             if beginnerRuntime.autoPlayNextDate == nil {
                 beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
+            // If we're more than one beat late, the date is stale — reschedule cleanly
+            if currentDate.timeIntervalSince(nextDate) > oneBeat {
+                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+                return
+            }
             let buttonIndex = nextString >= 4 ? (nextString - 4) : (6 - nextString)
             beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: nextNote, selectedString: nextString, buttonIndex: buttonIndex)
@@ -533,11 +540,18 @@ extension BeginnerGameplayView {
             }
             let expectedNote = beginnerCurrentScaleNotes[safeSequenceIndex]
 
+            let bps = Double(max(audioSettings.startingBPM, 40)) / 60.0
+            let oneBeat = 1.0 / bps
             if beginnerRuntime.autoPlayNextDate == nil {
                 beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
+            // If we're more than one beat late, the date is stale — reschedule cleanly
+            if currentDate.timeIntervalSince(nextDate) > oneBeat {
+                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+                return
+            }
             let preferredStringOrder = beginnerAutoPlayPreferredStringOrder(for: expectedNote)
             let matchedString = preferredStringOrder.first {
                 guitarNoteName(forString: $0, fret: fret, useFlats: false) == expectedNote

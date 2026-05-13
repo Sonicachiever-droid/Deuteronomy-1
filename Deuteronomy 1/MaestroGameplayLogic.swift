@@ -17,7 +17,7 @@ extension MaestroGameplayView {
         SharedAudioEngine.shared.setTempo(bpm: Double(effective))
     }
 
-    func nextOnAndThreeBeatDate(after date: Date) -> Date {
+    func nextOnAndThreeBeatDate(after date: Date, waitForDownbeat: Bool = false) -> Date {
         let bpm = Double(max(audioSettings.startingBPM, 40))
         let secondsPerBeat = 60.0 / bpm
         guard midiEngine.isPlaying else {
@@ -26,6 +26,13 @@ extension MaestroGameplayView {
         let currentBeat = midiEngine.currentBeatPosition()
         let currentBeatFloor = floor(currentBeat)
         let beatInMeasure = Int(currentBeatFloor) % 4
+        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
+        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
+        if waitForDownbeat {
+            let beatsToNextMeasureStart = Double(4 - beatInMeasure)
+            let seconds = secondsToNextWholeBeat + (beatsToNextMeasureStart - 1.0) * secondsPerBeat
+            return date.addingTimeInterval(max(seconds, 0.05))
+        }
         let beatsUntilNext: Double
         switch beatInMeasure {
         case 0: beatsUntilNext = 2
@@ -34,8 +41,6 @@ extension MaestroGameplayView {
         case 3: beatsUntilNext = 1
         default: beatsUntilNext = 2
         }
-        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
-        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
         let secondsToTarget = secondsToNextWholeBeat + (beatsUntilNext - 1.0) * secondsPerBeat
         return date.addingTimeInterval(max(secondsToTarget, 0.05))
     }
@@ -83,6 +88,13 @@ extension MaestroGameplayView {
         }
 
         guard let nextDate = autoPlayNextDate, currentDate >= nextDate else { return }
+
+        // If we're more than one beat late, the date is stale — reschedule cleanly
+        let oneBeat = 60.0 / Double(max(audioSettings.startingBPM, 40))
+        if currentDate.timeIntervalSince(nextDate) > oneBeat {
+            autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+            return
+        }
 
         // Submit the correct answer
         isAutoPlayTriggered = true
