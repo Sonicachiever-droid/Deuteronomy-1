@@ -376,8 +376,7 @@ extension BeginnerGameplayView {
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
-                            .chromeHighlight, .chromeLight, .chromeMid,
-                            .chromeDark, .chromeLow, .chromeShadow
+                            .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
                         ] : [
                             .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],

@@ -15,15 +15,12 @@ extension Color {
     static let goldBorderMid   = Color(red: 0.95, green: 0.82, blue: 0.47)
     static let goldBorderDark  = Color(red: 0.78, green: 0.60, blue: 0.22)
 
-    // MARK: - Chrome (Tweed) Skin — double-reflection gradient (cool blue cast)
-    // Read top→bottom: sky-white → upper-sky → mid-grey → dark trough → lower-bounce → shadow base
-    static let chromeHighlight = Color(red: 1.00, green: 1.00, blue: 1.00)          // pure specular
-    static let chromeLight     = Color(red: 0.88, green: 0.90, blue: 0.95)          // cool upper sky
-    static let chromeMid       = Color(red: 0.58, green: 0.60, blue: 0.65)          // cool mid grey
-    static let chromeDark      = Color(red: 0.18, green: 0.19, blue: 0.22)          // near-black trough
-    static let chromeLow       = Color(red: 0.62, green: 0.64, blue: 0.68)          // lower-sky bounce
-    static let chromeShadow    = Color(red: 0.28, green: 0.29, blue: 0.32)          // dark base
-    static let chromeBase      = Color(red: 0.54, green: 0.55, blue: 0.59)          // neutral fill fallback
+    // MARK: - Chrome (Tweed) Skin — plate/button gradient, 4× across 3 files
+    static let chromeLight  = Color(red: 0.95, green: 0.95, blue: 0.95)
+    static let chromeMid    = Color(red: 0.60, green: 0.60, blue: 0.60)
+    static let chromeDark   = Color(red: 0.45, green: 0.45, blue: 0.45)
+    static let chromeShadow = Color(red: 0.25, green: 0.25, blue: 0.25)
+    static let chromeBase   = Color(red: 0.55, green: 0.55, blue: 0.55)
 
     // MARK: - Screen / Display — dark CRT background, 3× across 3 files
     static let screenDark    = Color(red: 0.08, green: 0.08, blue: 0.10)
