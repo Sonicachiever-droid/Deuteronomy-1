@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if DEBUG
+
 // MARK: - Developer Button Stack
 
 struct DeveloperButtonStack: View {
@@ -640,3 +642,5 @@ struct DeveloperTVStreakMeterView: View {
         }
     }
 }
+
+#endif
