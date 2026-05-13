@@ -116,6 +116,8 @@ struct MaestroGameplayView: View {
     @State var autoPlayEnabled: Bool = false
     @State var autoPlayNextDate: Date? = nil
     @State var resetButtonPressed: Bool = false
+    @State var streakMeterLitSegments: Int = 0
+    @State var streakMeterFailureActive: Bool = false
 
     enum StartupSpeechPhase {
         case idle
@@ -780,7 +782,9 @@ struct MaestroGameplayView: View {
                     chordRevealCount: 0,
                     chordAnsweredCount: 0,
                     rewardNoteTextByString: nil,
-                    consoleSkin: consoleSkin
+                    consoleSkin: consoleSkin,
+                    streakMeterLitSegments: isCodeScreensaverMode ? nil : streakMeterLitSegments,
+                    streakMeterFailureActive: streakMeterFailureActive
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
@@ -1193,7 +1197,9 @@ struct MaestroGameplayView: View {
                 chordRevealCount: 0,
                 chordAnsweredCount: 0,
                 rewardNoteTextByString: nil,
-                consoleSkin: consoleSkin
+                consoleSkin: consoleSkin,
+                streakMeterLitSegments: isCodeScreensaverMode ? nil : streakMeterLitSegments,
+                streakMeterFailureActive: streakMeterFailureActive
             )
             .position(x: screenCenterX, y: consoleCenterY)
             .allowsHitTesting(false)

@@ -264,6 +264,8 @@ struct DeveloperConsoleFrame: View {
     let chordAnsweredCount: Int
     let rewardNoteTextByString: [Int: String]?
     var consoleSkin: ConsoleSkin = .classic
+    var streakMeterLitSegments: Int? = nil
+    var streakMeterFailureActive: Bool = false
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -522,6 +524,18 @@ struct DeveloperConsoleFrame: View {
             }
         .scaleEffect(isHintVisible ? 1.02 : 1.0)
         .frame(width: width, height: height)
+        .overlay(alignment: .bottom) {
+            if let lit = streakMeterLitSegments {
+                DeveloperTVStreakMeterView(
+                    litColumns: lit,
+                    totalColumns: 12,
+                    failureActive: streakMeterFailureActive,
+                    failureVisibleColumns: streakMeterFailureActive ? 12 : 0
+                )
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
+            }
+        }
     }
 
     private func hintFontSize(for text: String) -> CGFloat {
@@ -566,10 +580,9 @@ struct DeveloperConsoleFrame: View {
 
 struct DeveloperTVStreakMeterView: View {
     let litColumns: Int
+    var totalColumns: Int = 12
     let failureActive: Bool
     let failureVisibleColumns: Int
-
-    private let totalColumns: Int = 20
 
     var body: some View {
         let activeColumns = min(max(litColumns, 0), totalColumns)
@@ -586,7 +599,7 @@ struct DeveloperTVStreakMeterView: View {
                             return index < activeColumns
                         }()
                         let isTwentiethColumn = index == totalColumns - 1
-                        let isWarningColumn = index >= 15
+                        let isWarningColumn = index >= totalColumns - (totalColumns / 4)
                         let fillColor: Color = {
                             guard isLit else { return Color(red: 0.12, green: 0.14, blue: 0.12).opacity(0.42) }
                             if failureActive {

@@ -140,6 +140,8 @@ extension MaestroGameplayView {
         beatLightLastProcessedBeat = nil
         autoPlayNextDate = nil
         isResolvingAnswer = false
+        streakMeterLitSegments = 0
+        streakMeterFailureActive = false
         midiEngine.setBassTransposeSemitones(0)
         prepareCurrentQuestion()
     }
@@ -196,6 +198,9 @@ extension MaestroGameplayView {
                 rightThumbState = .green
                 activeAnswerFeedback = .green
             }
+            let totalSegments = 12
+            streakMeterFailureActive = false
+            streakMeterLitSegments = (streakMeterLitSegments % totalSegments) + 1
             lastResolvedCorrectNote = currentCorrectNote
             lastResolvedCorrectString = currentPromptStrings.first
             // Track correctly answered notes per string at current fret
@@ -471,6 +476,8 @@ extension MaestroGameplayView {
         currentPromptStrings = [1]
         activeAnswerFeedback = nil
         isResolvingAnswer = false
+        streakMeterFailureActive = true
+        streakMeterLitSegments = 0
         prepareCurrentQuestion()
     }
 
