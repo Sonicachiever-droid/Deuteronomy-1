@@ -22,6 +22,43 @@ enum GameConstants {
     static let rightColumnStrings: [Int] = [3, 2, 1]
 }
 
+// MARK: - Animation Durations
+
+enum AnimationDurations {
+    /// Eased transition for launch/round-start screen wipe
+    static let launchTransition: TimeInterval = 0.4725
+    /// Quick beat-flash for the startup sequence armed state
+    static let beatFlash: TimeInterval = 0.08
+    /// Short delay before a reset takes effect
+    static let resetDelay: TimeInterval = 0.3
+    /// Flash period for the "armed" banner in the startup sequence
+    static let armedFlashPeriod: TimeInterval = 1.0
+}
+
+// MARK: - Audio Constants
+
+enum AudioVelocity {
+    /// Standard full-strength note velocity
+    static let full: Double = 0.98
+    /// Softer velocity used when force-playing prompted notes
+    static let soft: Double = 0.82
+}
+
+// MARK: - UI Dimensions
+
+enum UIMetrics {
+    /// Font size for the startup sequence label
+    static let startupFontSize: CGFloat = 29.6
+    /// Maximum fraction of row height for the banner
+    static let bannerHeightFraction: CGFloat = 0.66
+    /// Maximum banner height in points
+    static let bannerMaxHeight: CGFloat = 50
+    /// Minimum banner height in points
+    static let bannerMinHeight: CGFloat = 40
+    /// Font scale applied to MiniTVFrame banners
+    static let bannerFontScale: CGFloat = 0.82
+}
+
 // MARK: - Core Enums (unchanged from Exodus-5)
 
 enum GameplayMenuOption: String, CaseIterable, Identifiable {
