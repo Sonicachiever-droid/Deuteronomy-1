@@ -21,9 +21,37 @@ struct StringLineOverlay: View {
 
             ZStack {
                 ForEach(0..<GuitarStringLayout.totalStrings, id: \.self) { index in
+                    let isBass = index < 3  // indices 0-2 = strings 6/5/4 (E A D)
+                    let stringWidth = isBass ? 2.8 - CGFloat(index) * 0.35 : 1.4
+                    let centerX = grooveCenters[index]
+                    let midY = clippedTopY + clippedHeight / 2
+
+                    // Brass edge lines — one hair-thin black line on each side
+                    if isBass {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.55))
+                            .frame(width: 0.5, height: clippedHeight)
+                            .position(x: centerX - stringWidth / 2 - 0.25, y: midY)
+                        Rectangle()
+                            .fill(Color.black.opacity(0.55))
+                            .frame(width: 0.5, height: clippedHeight)
+                            .position(x: centerX + stringWidth / 2 + 0.25, y: midY)
+                    }
+
                     Rectangle()
                         .fill(
-                            LinearGradient(
+                            isBass
+                            ? LinearGradient(
+                                colors: [
+                                    Color(red: 0.96, green: 0.94, blue: 0.88),
+                                    Color(red: 0.82, green: 0.69, blue: 0.47),
+                                    Color(red: 0.65, green: 0.50, blue: 0.30),
+                                    Color(red: 0.85, green: 0.75, blue: 0.60)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            : LinearGradient(
                                 colors: [
                                     Color(red: 0.88, green: 0.88, blue: 0.84),
                                     Color(red: 0.62, green: 0.62, blue: 0.58),
@@ -33,9 +61,8 @@ struct StringLineOverlay: View {
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: index < 3 ? 2.8 - CGFloat(index) * 0.35 : 1.4)
-                        .frame(height: clippedHeight)
-                        .position(x: grooveCenters[index], y: clippedTopY + clippedHeight / 2)
+                        .frame(width: stringWidth, height: clippedHeight)
+                        .position(x: centerX, y: midY)
                 }
             }
             .frame(width: safeCGFloat(geo.size.width), height: safeCGFloat(geo.size.height))
