@@ -540,18 +540,14 @@ extension BeginnerGameplayView {
             }
             let expectedNote = beginnerCurrentScaleNotes[safeSequenceIndex]
 
-            let bps = Double(max(audioSettings.startingBPM, 40)) / 60.0
-            let oneBeat = 1.0 / bps
+            // NOTE: Chord style uses the original fixed interval rather than beat-locking.
+            // Beat-locked timing (nextOnAndThreeBeatDate) works well for sequential and
+            // Maestro but conflicts with chord's multi-note scale stage logic. May revisit.
             if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
-            // If we're more than one beat late, the date is stale — reschedule cleanly
-            if currentDate.timeIntervalSince(nextDate) > oneBeat {
-                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
-                return
-            }
             let preferredStringOrder = beginnerAutoPlayPreferredStringOrder(for: expectedNote)
             let matchedString = preferredStringOrder.first {
                 guitarNoteName(forString: $0, fret: fret, useFlats: false) == expectedNote
@@ -559,7 +555,7 @@ extension BeginnerGameplayView {
                 guitarNoteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
             }
             guard let selectedString = matchedString else {
-                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
                 return
             }
             beginnerRuntime.autoPlayLastStringByNote[expectedNote] = selectedString
@@ -567,7 +563,7 @@ extension BeginnerGameplayView {
             beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: expectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
             beginnerRuntime.isAutoPlayTriggered = false
-            beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
+            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
         }
     }
 
