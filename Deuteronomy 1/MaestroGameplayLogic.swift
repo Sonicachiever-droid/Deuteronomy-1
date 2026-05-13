@@ -198,7 +198,7 @@ extension MaestroGameplayView {
                 rightThumbState = .green
                 activeAnswerFeedback = .green
             }
-            let totalSegments = 12
+            let totalSegments = 60 // 20 columns × 3 rows
             streakMeterFailureActive = false
             streakMeterLitSegments = (streakMeterLitSegments % totalSegments) + 1
             lastResolvedCorrectNote = currentCorrectNote
@@ -477,7 +477,7 @@ extension MaestroGameplayView {
         activeAnswerFeedback = nil
         isResolvingAnswer = false
         streakMeterFailureActive = true
-        streakMeterLitSegments = 12
+        streakMeterLitSegments = 60 // 20 columns × 3 rows — all lit red
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
             self.streakMeterFailureActive = false
             self.streakMeterLitSegments = 0

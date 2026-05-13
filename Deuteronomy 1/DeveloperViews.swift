@@ -528,9 +528,8 @@ struct DeveloperConsoleFrame: View {
             if let lit = streakMeterLitSegments {
                 DeveloperTVStreakMeterView(
                     litColumns: lit,
-                    totalColumns: 12,
                     failureActive: streakMeterFailureActive,
-                    failureVisibleColumns: streakMeterFailureActive ? 12 : 0
+                    failureVisibleColumns: 0
                 )
                 .padding(.horizontal, 10)
                 .padding(.bottom, 8)
@@ -576,79 +575,52 @@ struct DeveloperConsoleFrame: View {
 }
 
 // MARK: - Developer TV Streak Meter View
-// 20-column LED bar shown inside the dev console.
+// Sequential streak meter: segments fill left-to-right across 3 rows.
+// Each correct answer lights one more segment; a wrong answer flashes
+// all red then clears back to zero.
 
 struct DeveloperTVStreakMeterView: View {
-    let litColumns: Int
-    var totalColumns: Int = 12
+    let litColumns: Int      // how many segments are currently lit
     let failureActive: Bool
-    let failureVisibleColumns: Int
+    let failureVisibleColumns: Int  // unused externally; kept for API compat
+
+    private let columnsPerRow: Int = 20
+    private let numRows: Int = 3
+    private var totalSegments: Int { columnsPerRow * numRows }
 
     var body: some View {
-        let activeColumns = min(max(litColumns, 0), totalColumns)
-        let visibleFailureColumns = min(max(failureVisibleColumns, 0), totalColumns)
+        let litCount = failureActive ? totalSegments : min(max(litColumns, 0), totalSegments)
 
-        VStack(spacing: 4) {
-            ForEach(0..<2, id: \.self) { _ in
-                HStack(spacing: 3) {
-                    ForEach(0..<totalColumns, id: \.self) { index in
-                        let isLit: Bool = {
-                            if failureActive {
-                                return index < visibleFailureColumns
-                            }
-                            return index < activeColumns
-                        }()
-                        let isTwentiethColumn = index == totalColumns - 1
-                        let isWarningColumn = index >= totalColumns - (totalColumns / 4)
+        VStack(spacing: 2) {
+            ForEach(0..<numRows, id: \.self) { row in
+                HStack(spacing: 2) {
+                    ForEach(0..<columnsPerRow, id: \.self) { col in
+                        let segIndex = row * columnsPerRow + col
+                        let isLit = segIndex < litCount
                         let fillColor: Color = {
-                            guard isLit else { return Color(red: 0.12, green: 0.14, blue: 0.12).opacity(0.42) }
-                            if failureActive {
-                                return Color(red: 1.0, green: 0.22, blue: 0.18).opacity(0.96)
-                            }
-                            if isTwentiethColumn {
-                                return Color(red: 0.35, green: 0.66, blue: 1.0).opacity(0.96)
-                            }
-                            if isWarningColumn {
-                                return Color(red: 1.0, green: 0.82, blue: 0.16).opacity(0.96)
-                            }
-                            return Color(red: 0.58, green: 1.0, blue: 0.22).opacity(0.96)
+                            guard isLit else { return Color(red: 0.10, green: 0.12, blue: 0.10).opacity(0.5) }
+                            if failureActive { return Color(red: 1.0, green: 0.22, blue: 0.18).opacity(0.96) }
+                            return Color(red: 0.40, green: 1.0, blue: 0.22).opacity(0.96)
                         }()
                         let strokeColor: Color = {
-                            guard isLit else { return Color.white.opacity(0.08) }
-                            if failureActive {
-                                return Color(red: 0.7, green: 0.05, blue: 0.04).opacity(0.95)
-                            }
-                            if isTwentiethColumn {
-                                return Color(red: 0.06, green: 0.22, blue: 0.62).opacity(0.94)
-                            }
-                            if isWarningColumn {
-                                return Color(red: 0.72, green: 0.46, blue: 0.0).opacity(0.9)
-                            }
-                            return Color(red: 0.12, green: 0.4, blue: 0.05).opacity(0.92)
+                            guard isLit else { return Color.white.opacity(0.06) }
+                            if failureActive { return Color(red: 0.7, green: 0.05, blue: 0.04).opacity(0.9) }
+                            return Color(red: 0.08, green: 0.38, blue: 0.04).opacity(0.88)
                         }()
                         let shadowColor: Color = {
                             guard isLit else { return .clear }
-                            if failureActive {
-                                return Color.red.opacity(0.75)
-                            }
-                            if isTwentiethColumn {
-                                return Color.blue.opacity(0.75)
-                            }
-                            if isWarningColumn {
-                                return Color.yellow.opacity(0.65)
-                            }
-                            return Color.green.opacity(0.75)
+                            return failureActive ? Color.red.opacity(0.6) : Color.green.opacity(0.55)
                         }()
 
-                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
                             .fill(fillColor)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 10)
+                            .frame(height: 5)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                                    .stroke(strokeColor, lineWidth: 0.8)
+                                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                                    .stroke(strokeColor, lineWidth: 0.6)
                             )
-                            .shadow(color: shadowColor, radius: isLit ? 3 : 0)
+                            .shadow(color: shadowColor, radius: isLit ? 2 : 0)
                     }
                 }
             }
