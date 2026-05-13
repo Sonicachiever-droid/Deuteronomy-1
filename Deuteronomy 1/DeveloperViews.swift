@@ -529,8 +529,7 @@ struct DeveloperConsoleFrame: View {
             if let lit = streakMeterLitSegments {
                 DeveloperTVStreakMeterView(
                     litColumns: lit,
-                    failureActive: streakMeterFailureActive,
-                    failureVisibleColumns: 0
+                    failureActive: streakMeterFailureActive
                 )
                 .padding(.horizontal, 10)
                 .padding(.bottom, 8)
@@ -595,9 +594,8 @@ struct DeveloperConsoleFrame: View {
 // all red then clears back to zero.
 
 struct DeveloperTVStreakMeterView: View {
-    let litColumns: Int      // how many segments are currently lit
+    let litColumns: Int
     let failureActive: Bool
-    let failureVisibleColumns: Int  // unused externally; kept for API compat
 
     private let columnsPerRow: Int = 20
     private let numRows: Int = 3
