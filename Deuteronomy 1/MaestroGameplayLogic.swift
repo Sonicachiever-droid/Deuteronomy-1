@@ -17,6 +17,29 @@ extension MaestroGameplayView {
         SharedAudioEngine.shared.setTempo(bpm: Double(effective))
     }
 
+    func nextOnAndThreeBeatDate(after date: Date) -> Date {
+        let bpm = Double(max(audioSettings.startingBPM, 40))
+        let secondsPerBeat = 60.0 / bpm
+        guard midiEngine.isPlaying else {
+            return date.addingTimeInterval(secondsPerBeat * 2)
+        }
+        let currentBeat = midiEngine.currentBeatPosition()
+        let currentBeatFloor = floor(currentBeat)
+        let beatInMeasure = Int(currentBeatFloor) % 4
+        let beatsUntilNext: Double
+        switch beatInMeasure {
+        case 0: beatsUntilNext = 2
+        case 1: beatsUntilNext = 1
+        case 2: beatsUntilNext = 2
+        case 3: beatsUntilNext = 1
+        default: beatsUntilNext = 2
+        }
+        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
+        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
+        let secondsToTarget = secondsToNextWholeBeat + (beatsUntilNext - 1.0) * secondsPerBeat
+        return date.addingTimeInterval(max(secondsToTarget, 0.05))
+    }
+
     // MARK: - Navigation helpers
 
     func shiftFretSpan(by delta: Int) {
@@ -65,7 +88,7 @@ extension MaestroGameplayView {
         isAutoPlayTriggered = true
         submitAnswer(correctAnswerSide, force: true)
         isAutoPlayTriggered = false
-        autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+        autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
     }
 
     // MARK: - Game session

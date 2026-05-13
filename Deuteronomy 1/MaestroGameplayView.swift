@@ -240,7 +240,7 @@ struct MaestroGameplayView: View {
                 autoPlayNextDate = nil
                 return
             }
-            autoPlayNextDate = Date().addingTimeInterval(0.38)
+            autoPlayNextDate = nextOnAndThreeBeatDate(after: Date())
         }
         .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { date in
             if isRoundPaused {

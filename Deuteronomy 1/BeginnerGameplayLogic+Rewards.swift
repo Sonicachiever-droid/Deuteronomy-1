@@ -507,7 +507,7 @@ extension BeginnerGameplayView {
             }
             let nextNote = currentGenerator.currentNoteSequence[idx]
             if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
@@ -515,7 +515,7 @@ extension BeginnerGameplayView {
             beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: nextNote, selectedString: nextString, buttonIndex: buttonIndex)
             beginnerRuntime.isAutoPlayTriggered = false
-            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+            beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
             return
         } else {
             // Chord style: existing behavior
@@ -534,7 +534,7 @@ extension BeginnerGameplayView {
             let expectedNote = beginnerCurrentScaleNotes[safeSequenceIndex]
 
             if beginnerRuntime.autoPlayNextDate == nil {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
                 return
             }
             guard let nextDate = beginnerRuntime.autoPlayNextDate, currentDate >= nextDate else { return }
@@ -545,7 +545,7 @@ extension BeginnerGameplayView {
                 guitarNoteName(forString: $0, fret: fret, useFlats: beginnerUsesFlats) == expectedNote
             }
             guard let selectedString = matchedString else {
-                beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+                beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
                 return
             }
             beginnerRuntime.autoPlayLastStringByNote[expectedNote] = selectedString
@@ -553,7 +553,7 @@ extension BeginnerGameplayView {
             beginnerRuntime.isAutoPlayTriggered = true
             handleBeginnerConsoleButtonPress(selectedNote: expectedNote, selectedString: selectedString, buttonIndex: buttonIndex)
             beginnerRuntime.isAutoPlayTriggered = false
-            beginnerRuntime.autoPlayNextDate = currentDate.addingTimeInterval(GameConstants.autoPlayInterval)
+            beginnerRuntime.autoPlayNextDate = nextOnAndThreeBeatDate(after: currentDate)
         }
     }
 

@@ -98,6 +98,34 @@ extension BeginnerGameplayView {
         SharedAudioEngine.shared.setTempo(bpm: Double(effective))
     }
 
+    /// Returns the Date of the next beat that falls on beat 1 or beat 3 of a 4/4 measure
+    /// (i.e. where floor(beatPosition) % 4 == 0 or == 2).
+    /// If the MIDI isn't playing, falls back to the old fixed interval.
+    func nextOnAndThreeBeatDate(after date: Date) -> Date {
+        let bpm = Double(max(audioSettings.startingBPM, 40))
+        let secondsPerBeat = 60.0 / bpm
+        guard midiEngine.isPlaying else {
+            return date.addingTimeInterval(secondsPerBeat * 2)
+        }
+        let currentBeat = midiEngine.currentBeatPosition()
+        let currentBeatFloor = floor(currentBeat)
+        let beatInMeasure = Int(currentBeatFloor) % 4   // 0,1,2,3
+        // How many beats until the next 0 or 2 within the measure
+        let beatsUntilNext: Double
+        switch beatInMeasure {
+        case 0: beatsUntilNext = 2   // next target is beat 2
+        case 1: beatsUntilNext = 1   // next target is beat 2
+        case 2: beatsUntilNext = 2   // next target is beat 0 of next measure
+        case 3: beatsUntilNext = 1   // next target is beat 0 of next measure
+        default: beatsUntilNext = 2
+        }
+        // Add fractional beat remaining in current beat bucket
+        let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
+        let secondsToNextWholeBeat = fractionalRemaining * secondsPerBeat
+        let secondsToTarget = secondsToNextWholeBeat + (beatsUntilNext - 1.0) * secondsPerBeat
+        return date.addingTimeInterval(max(secondsToTarget, 0.05))
+    }
+
     func syncBackingTrackPlayback(allowResumeFromPause: Bool = false) {
         guard !availableBackingTracks.isEmpty else {
             midiEngine.stop()

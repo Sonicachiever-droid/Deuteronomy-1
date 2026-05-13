@@ -832,7 +832,7 @@ struct BeginnerGameplayView: View {
                 }
                 let revealReady = !beginnerRuntime.roundOneIntroActive
                     && beginnerRuntime.pentatonicRevealCount >= beginnerCurrentScaleNotes.count
-                beginnerRuntime.autoPlayNextDate = revealReady ? Date().addingTimeInterval(0.2) : nil
+                beginnerRuntime.autoPlayNextDate = revealReady ? nextOnAndThreeBeatDate(after: Date()) : nil
             }
             .offset(y: globalContentShiftY)
         }
