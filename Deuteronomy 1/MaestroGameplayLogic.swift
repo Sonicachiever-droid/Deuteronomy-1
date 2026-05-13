@@ -142,6 +142,8 @@ extension MaestroGameplayView {
         isResolvingAnswer = false
         streakMeterLitSegments = 0
         streakMeterFailureActive = false
+        streakMultiplier = 1
+        streakMultiplierFlashText = nil
         midiEngine.setBassTransposeSemitones(0)
         prepareCurrentQuestion()
     }
@@ -200,7 +202,24 @@ extension MaestroGameplayView {
             }
             let totalSegments = 60 // 20 columns × 3 rows
             streakMeterFailureActive = false
-            streakMeterLitSegments = (streakMeterLitSegments % totalSegments) + 1
+            let prevLit = streakMeterLitSegments % totalSegments
+            let newLit = prevLit + 1
+            streakMeterLitSegments = newLit == totalSegments ? 0 : newLit
+
+            // Multiplier thresholds — trigger on crossing 25 and 50
+            if newLit == 25 {
+                streakMultiplier = 2
+                streakMultiplierFlashText = "2× MULTIPLIER"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                    if self.streakMultiplierFlashText == "2× MULTIPLIER" { self.streakMultiplierFlashText = nil }
+                }
+            } else if newLit == 50 {
+                streakMultiplier = 3
+                streakMultiplierFlashText = "3× MULTIPLIER"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
+                    if self.streakMultiplierFlashText == "3× MULTIPLIER" { self.streakMultiplierFlashText = nil }
+                }
+            }
             lastResolvedCorrectNote = currentCorrectNote
             lastResolvedCorrectString = currentPromptStrings.first
             // Track correctly answered notes per string at current fret
@@ -362,9 +381,9 @@ extension MaestroGameplayView {
             return
         }
 
-        // Only award $1 for player correct answers, not autoplay
+        // Only award points for player correct answers, not autoplay
         if !fromAutoPlay {
-            let payout = payoutForRound(currentRound)
+            let payout = payoutForRound(currentRound) * streakMultiplier
             bankDollars += payout
             displayedBankDollars = bankDollars
             walletDollars = bankDollars
@@ -476,6 +495,8 @@ extension MaestroGameplayView {
         currentPromptStrings = [1]
         activeAnswerFeedback = nil
         isResolvingAnswer = false
+        streakMultiplier = 1
+        streakMultiplierFlashText = nil
         streakMeterFailureActive = true
         streakMeterLitSegments = 60 // 20 columns × 3 rows — all lit red
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {

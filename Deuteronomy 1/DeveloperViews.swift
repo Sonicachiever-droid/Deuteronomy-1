@@ -266,6 +266,7 @@ struct DeveloperConsoleFrame: View {
     var consoleSkin: ConsoleSkin = .classic
     var streakMeterLitSegments: Int? = nil
     var streakMeterFailureActive: Bool = false
+    var streakMultiplierFlashText: String? = nil
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
@@ -535,6 +536,20 @@ struct DeveloperConsoleFrame: View {
                 .padding(.bottom, 8)
             }
         }
+        .overlay {
+            if let flashText = streakMultiplierFlashText {
+                Text(flashText)
+                    .font(.system(size: min(width * 0.11, 28), weight: .black, design: .monospaced))
+                    .foregroundStyle(Color.yellow.opacity(0.96))
+                    .shadow(color: Color.yellow.opacity(0.7), radius: 10, x: 0, y: 0)
+                    .shadow(color: Color.orange.opacity(0.5), radius: 20, x: 0, y: 0)
+                    .multilineTextAlignment(.center)
+                    .transition(.opacity.combined(with: .scale(scale: 1.12)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .allowsHitTesting(false)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: streakMultiplierFlashText)
     }
 
     private func hintFontSize(for text: String) -> CGFloat {
