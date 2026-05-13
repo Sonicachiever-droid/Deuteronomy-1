@@ -39,9 +39,9 @@ enum AnimationDurations {
 
 enum AudioVelocity {
     /// Standard full-strength note velocity
-    static let full: Double = 0.98
+    static let full: Float = 0.98
     /// Softer velocity used when force-playing prompted notes
-    static let soft: Double = 0.82
+    static let soft: Float = 0.82
 }
 
 // MARK: - UI Dimensions
