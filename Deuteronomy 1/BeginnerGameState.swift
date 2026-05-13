@@ -66,6 +66,56 @@ final class BeginnerGameState {
     // MARK: MIDI Stop
     var pendingMidiStopDate: Date? = nil
 
+    // MARK: Note/fret navigation (moved from BeginnerGameplayView @State — Step 3)
+    var currentRound: Int = 0
+    var isDescendingPhase: Bool = false
+    var currentFretStart: Int = 0
+    var currentWindowRow: Int = 2
+    var leftChoiceNote: String = ""
+    var rightChoiceNote: String = ""
+    var correctAnswerSide: AnswerSide = .left
+    var currentCorrectNote: String = ""
+    var currentQuestionIsAccidental: Bool = false
+    var currentPromptStrings: [Int] = [1]
+    var bankDollars: Int = 0
+    var displayedBankDollars: Int = 0
+    var isRoundArmed: Bool = true
+    var transportStoppedForResume: Bool = false
+    var isResolvingAnswer: Bool = false
+    var activePickedStringNumbers: [Int] = [1]
+    var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
+    var autoPlayLastStringByNote: [String: Int] = [:]
+    var activeAnswerFeedback: ThumbGlowState? = nil
+
+    // MARK: Beat timing (moved from BeginnerGameplayView @State — Step 2)
+    var beatCountInRemaining: Int = 0
+    var nextBeatTickDate: Date? = nil
+
+    // MARK: Round reveal timing (moved from BeginnerGameplayView @State — Step 2)
+    var roundRevealElapsedBeats: Double = 0
+    var roundRevealLastTickDate: Date? = nil
+
+    // MARK: Question box animation (moved from BeginnerGameplayView @State — Step 2)
+    var questionBoxIntroProgress: CGFloat = 0
+
+    // MARK: Streak meter (moved from BeginnerGameplayView @State — Step 2)
+    var streakMeterLitColumns: Int = 0
+    var streakMeterFailureActive: Bool = false
+    var streakMeterFailureVisibleColumns: Int = 0
+
+    // MARK: Last resolved note (moved from BeginnerGameplayView @State — Step 2)
+    var lastResolvedCorrectNote: String? = nil
+    var lastResolvedCorrectString: Int? = nil
+
+    // MARK: Last prompted note (moved from BeginnerGameplayView @State — Step 2)
+    var lastPromptedCorrectNote: String? = nil
+    var lastPromptedStringHalf: AnswerSide? = nil
+    var lastPromptedStringNumber: Int? = nil
+    var recentPromptedCorrectNotes: [String] = []
+
+    // MARK: Transport UI state (moved from BeginnerGameplayView @State — Step 2)
+    var resetButtonPressed: Bool = false
+
     // MARK: Reset
 
     func reset() {

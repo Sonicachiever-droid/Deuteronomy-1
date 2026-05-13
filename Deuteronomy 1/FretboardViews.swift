@@ -81,6 +81,87 @@ struct RosewoodSegmentedBackground: View {
     }
 }
 
+// MARK: - Maple Segmented Background
+
+struct MapleSegmentedBackground: View {
+    let fretRatios: [CGFloat]
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        GeometryReader { geometry in
+            let neckHeight = geometry.size.height
+            let neckWidth = geometry.size.width
+            let segments = segmentBounds(from: fretRatios)
+            let bindingInset = max(neckWidth * 0.02, 6)
+            let mapleTexture = Image("Maple set")
+
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
+                    // One texture per fret segment (matches REFRET TOO / REFRET THREE).
+                    // The previous group-of-3 approach produced visible image seams at
+                    // fret 3 / 6 / 9 — invisible on rosewood, but reads as a "silver nut"
+                    // on maple.
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, bounds in
+                        let segmentHeight = max((bounds.end - bounds.start) * neckHeight, 1)
+                        mapleTexture
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: neckWidth, height: segmentHeight)
+                            .clipped()
+                    }
+                }
+                .padding(.horizontal, bindingInset)
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.black.opacity(0.1), lineWidth: 1)
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.14),
+                                Color.clear,
+                                Color.black.opacity(0.18)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .blendMode(.multiply)
+
+                VStack(spacing: 0) {
+                    ForEach(Array(segments.enumerated()), id: \.offset) { index, bounds in
+                        Spacer()
+                            .frame(height: max((bounds.end - bounds.start) * neckHeight, 1))
+                            .overlay(
+                                Rectangle()
+                                    .fill(Color.white.opacity(((index + 1) % 3 == 0) ? 0.08 : 0))
+                                    .frame(height: 1.2)
+                                    .opacity(bounds.end >= 1 ? 0 : 1)
+                            )
+                    }
+                }
+                .padding(.horizontal, bindingInset)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
+    }
+
+    private func segmentBounds(from ratios: [CGFloat]) -> [(start: CGFloat, end: CGFloat)] {
+        guard ratios.count >= 2 else { return [(0, 1)] }
+        var pairs: [(CGFloat, CGFloat)] = []
+        for index in 0..<(ratios.count - 1) {
+            let start = ratios[index]
+            let end = ratios[index + 1]
+            pairs.append((start, end))
+        }
+        if let last = ratios.last, last < 1 {
+            pairs.append((last, 1))
+        }
+        return pairs
+    }
+}
+
 // MARK: - Binding Layer
 
 struct BindingLayer: View {

@@ -10,6 +10,7 @@ struct GameplayControlPlateShell: View {
     let onFretboard: () -> Void
     let onToggleMenu: () -> Void
     let onSelectMenuOption: (GameplayMenuOption) -> Void
+    var consoleSkin: ConsoleSkin = .classic
 
     private let menuOptions: [GameplayMenuOption] = [.home, .audio, .guide, .learn]
 
@@ -20,25 +21,32 @@ struct GameplayControlPlateShell: View {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [Color(red: 0.95, green: 0.95, blue: 0.95), Color(red: 0.58, green: 0.58, blue: 0.58)],
+                                colors: [.chromeLight, Color(red: 0.58, green: 0.58, blue: 0.58)],
                                 center: UnitPoint(x: 0.35, y: 0.3),
                                 startRadius: 1,
                                 endRadius: 16
                             )
                         )
-                        .frame(width: 28, height: 28)
+                        .frame(width: UIConstants.powerIndicatorDiameter, height: UIConstants.powerIndicatorDiameter)
                         .overlay(Circle().stroke(Color.black.opacity(0.35), lineWidth: 1.2))
                     Circle()
                         .fill(Color.black.opacity(0.9))
-                        .frame(width: 14, height: 14)
+                        .frame(width: UIConstants.powerIndicatorDotDiameter, height: UIConstants.powerIndicatorDotDiameter)
                 }
 
                 HStack(spacing: 8) {
                     plateButton(title: "AUTOPLAY", action: onAutoplay, isActive: isAutoplayActive)
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.autoplay)
+                        .accessibilityHint(isAutoplayActive ? A11y.ControlPlate.autoplayHintOn : A11y.ControlPlate.autoplayHintOff)
+                        .accessibilityAddTraits(isAutoplayActive ? [.isSelected] : [])
                     plateButton(title: "FRETBOARD", action: onFretboard)
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.fretboard)
+                        .accessibilityHint(A11y.ControlPlate.fretboardHint)
                     plateButton(title: isMenuExpanded ? "CLOSE" : "MENU", action: onToggleMenu)
+                        .accessibilityLabel(isMenuExpanded ? A11y.ControlPlate.menuClose : A11y.ControlPlate.menuOpen)
+                        .accessibilityHint(isMenuExpanded ? A11y.ControlPlate.menuCloseHint : A11y.ControlPlate.menuOpenHint)
                 }
             }
 
@@ -49,34 +57,35 @@ struct GameplayControlPlateShell: View {
                             onSelectMenuOption(option)
                         }
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.menuOption(option.title))
+                        .accessibilityHint(A11y.ControlPlate.menuOptionHint(option.title))
                     }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, UIConstants.controlPlatePaddingH)
+        .padding(.vertical, UIConstants.controlPlatePaddingV)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.98, green: 0.9, blue: 0.66),
-                            Color(red: 0.9, green: 0.74, blue: 0.4),
-                            Color(red: 0.73, green: 0.55, blue: 0.26),
-                            Color(red: 0.94, green: 0.82, blue: 0.53)
+                        colors: consoleSkin == .tweed ? [
+                            .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
+                        ] : [
+                            .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                         .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateRadius, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [Color.white.opacity(0.5), .clear],
@@ -93,26 +102,26 @@ struct GameplayControlPlateShell: View {
     private func plateButton(title: String, action: @escaping () -> Void, isActive: Bool = false) -> some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(red: 0.90, green: 0.76, blue: 0.44),
-                                Color(red: 0.72, green: 0.54, blue: 0.26),
-                                Color(red: 0.87, green: 0.72, blue: 0.40)
+                            colors: consoleSkin == .tweed ? [
+                                .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, .chromeMid
+                            ] : [
+                                .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
                 if isActive {
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(Color.green.opacity(0.9))
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 34, maxHeight: 34)
+            .frame(maxWidth: .infinity, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                     .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
             )
             .overlay(
@@ -126,3 +135,4 @@ struct GameplayControlPlateShell: View {
         .buttonStyle(.plain)
     }
 }
+

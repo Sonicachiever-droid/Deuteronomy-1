@@ -2,498 +2,7 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-private struct MaestroStartupSequenceView: View {
-    enum Phase {
-        case armed
-    }
-
-    let elapsed: TimeInterval
-
-    var body: some View {
-        let state = MaestroStartupSequenceView.state(for: elapsed)
-        let fontSize: CGFloat = 29.6
-        let fontWeight: Font.Weight = .black
-
-        Text(state.text)
-            .font(.system(size: fontSize, weight: fontWeight, design: .monospaced))
-            .foregroundStyle(state.color)
-            .multilineTextAlignment(.center)
-            .opacity(state.isVisible ? 1 : 0)
-            .animation(.easeInOut(duration: 0.08), value: state.isVisible)
-    }
-
-    static func state(for elapsed: TimeInterval) -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
-        let armedFlashPeriod: TimeInterval = 1.0
-        let isVisible = Int(elapsed / armedFlashPeriod).isMultiple(of: 2)
-        return ("Memorization Sequence Armed", Color.green.opacity(0.98), isVisible, .armed)
-    }
-}
-
-private typealias MaestroStartupState = MaestroStartupSequenceView.Phase// Thumb button glow states
-
-// LED-style thumb button matching the exhibit styling
-
-
-private func logNutBaselineDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Nut baseline delta: \(delta)")
-    }
-}
-
-private func logAlignmentDelta(_ delta: CGFloat) {
-    if abs(delta) > 0.5 {
-        print("[Project Genesis] Midpoint/bisector delta: \(delta)")
-    }
-}
-
-private func logAlignmentDiagnostics(
-    neckTopY: CGFloat,
-    activeMidpoint: CGFloat,
-    highlightCenterY: CGFloat,
-    highlightTopGridLineY: CGFloat,
-    gridRowHeight: CGFloat
-) {
-    let blueMidpointY = neckTopY + activeMidpoint
-    let greenBisectorY = highlightCenterY
-    let nutBottomRowY = highlightTopGridLineY + 2 * gridRowHeight
-    logAlignmentDelta(blueMidpointY - greenBisectorY)
-    logNutBaselineDelta(neckTopY - nutBottomRowY)
-}
-
-private struct DeveloperCodeRunnerView: View {
-    @State private var startDate: Date = .now
-
-    private struct RenderState {
-        let renderedLines: [String]
-        let lineHeight: CGFloat
-        let offsetY: CGFloat
-    }
-
-    private static let sourceText: String = {
-        if let url = Bundle.main.url(forResource: "ContentViewSource", withExtension: "txt"),
-           let text = try? String(contentsOf: url, encoding: .utf8),
-           !text.isEmpty {
-            return text
-        }
-        if let text = try? String(contentsOfFile: #filePath, encoding: .utf8), !text.isEmpty {
-            return text
-        }
-        return "import SwiftUI\nstruct MaestroGameplayView: View {\n    var body: some View {\n        Text(\"Loading Source\")\n    }\n}"
-    }()
-
-    private static let lines: [String] = {
-        let split = sourceText.components(separatedBy: .newlines)
-        return split.isEmpty ? ["// source unavailable"] : split
-    }()
-
-    private static let charsPerSecond: Double = 42
-    private static let postLineHold: Double = 0.12
-    private static let lineHeight: CGFloat = 14
-    private static let loopPause: Double = 0.9
-    private static let lineDurations: [Double] = lines.map { max(Double($0.count) / charsPerSecond, 0.02) + postLineHold }
-    private static let cumulativeDurations: [Double] = lineDurations.reduce(into: []) { partial, duration in
-        partial.append((partial.last ?? 0) + duration)
-    }
-    private static let typingDuration: Double = lineDurations.reduce(0, +)
-    private static let cycleDuration: Double = max(typingDuration + loopPause, 0.1)
-
-    var body: some View {
-        GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 0.03)) { context in
-                let elapsed = context.date.timeIntervalSince(startDate)
-                let state = makeRenderState(elapsed: elapsed, viewportHeight: geo.size.height)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(state.renderedLines.enumerated()), id: \.offset) { index, line in
-                        Text(line)
-                            .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(color(for: index))
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, minHeight: state.lineHeight, maxHeight: state.lineHeight, alignment: .leading)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .offset(y: state.offsetY)
-                .clipped()
-            }
-        }
-    }
-
-    private func makeRenderState(elapsed: TimeInterval, viewportHeight: CGFloat) -> RenderState {
-        let cycleElapsed = elapsed.truncatingRemainder(dividingBy: Self.cycleDuration)
-
-        let activeLine: Int = {
-            if cycleElapsed >= Self.typingDuration {
-                return max(Self.lines.count - 1, 0)
-            }
-            return Self.cumulativeDurations.firstIndex(where: { cycleElapsed <= $0 }) ?? max(Self.lines.count - 1, 0)
-        }()
-
-        let elapsedIntoLine: Double = {
-            if cycleElapsed >= Self.typingDuration {
-                return Self.lineDurations.last ?? 0
-            }
-            let previousTotal = activeLine > 0 ? Self.cumulativeDurations[activeLine - 1] : 0
-            return max(cycleElapsed - previousTotal, 0)
-        }()
-
-        let currentLineDuration = Self.lineDurations.isEmpty ? 1 : Self.lineDurations[activeLine]
-        let typingWindow = max(currentLineDuration - Self.postLineHold, 0.02)
-        let typedChars = min(
-            Int(max(elapsedIntoLine, 0) * Self.charsPerSecond),
-            Self.lines[activeLine].count
-        )
-
-        var renderedLines: [String] = []
-        if activeLine > 0 {
-            renderedLines.append(contentsOf: Self.lines.prefix(activeLine))
-        }
-        let activeText = String(Self.lines[activeLine].prefix(max(typedChars, 0)))
-        let showCursor = cycleElapsed < Self.typingDuration && elapsedIntoLine <= typingWindow
-        renderedLines.append(activeText + (showCursor ? "▋" : ""))
-
-        let typedProgress = min(max((elapsedIntoLine / currentLineDuration), 0), 1)
-        let contentOffset = (CGFloat(activeLine) + CGFloat(typedProgress)) * Self.lineHeight
-        let baselineY = viewportHeight - Self.lineHeight
-
-        return RenderState(
-            renderedLines: renderedLines,
-            lineHeight: Self.lineHeight,
-            offsetY: baselineY - contentOffset
-        )
-    }
-
-    private func color(for index: Int) -> Color {
-        let palette: [Color] = [.orange, .cyan, .mint, .pink, .yellow, .green]
-        return palette[index % palette.count].opacity(0.95)
-    }
-}
-
-private struct DeveloperConsoleFrame: View {
-    let width: CGFloat
-    let height: CGFloat
-    let isScreensaverMode: Bool
-    let scaleRepetitionText: String
-    let currentRound: Int
-    let bankText: String
-    let repetitionCountColor: Color
-    let startupElapsed: TimeInterval
-    let showStartupSequence: Bool
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red: 0.08, green: 0.08, blue: 0.1), Color(red: 0.18, green: 0.18, blue: 0.2)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.65), lineWidth: 3)
-                .padding(3)
-
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.82, blue: 0.47),
-                            Color(red: 0.78, green: 0.6, blue: 0.22),
-                            Color(red: 0.97, green: 0.85, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 2.5
-                )
-                .padding(1.5)
-
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.96), Color(red: 0.07, green: 0.07, blue: 0.08), Color.black.opacity(0.96)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .padding(2)
-                .overlay {
-                    Group {
-                        if isScreensaverMode {
-                            ZStack {
-                                if !showStartupSequence {
-                                    DeveloperCodeRunnerView()
-                                        .padding(.horizontal, 8)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 6)
-                                }
-
-                                if showStartupSequence {
-                                    MaestroStartupSequenceView(elapsed: startupElapsed)
-                                        .padding(.horizontal, 6)
-                                        .padding(.top, 12)
-                                        .padding(.bottom, 4)
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                                }
-                            }
-                        } else {
-                            HStack {
-                                Text(scaleRepetitionText)
-                                    .font(.system(size: 20, weight: .black, design: .monospaced))
-                                    .foregroundStyle(repetitionCountColor)
-                                Spacer()
-                                Text("FRET \(currentRound)")
-                                    .font(.system(size: 20, weight: .black, design: .monospaced))
-                                    .foregroundStyle(Color.white)
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("WALLET")
-                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                        .foregroundStyle(Color.white.opacity(0.9))
-                                    Text(bankText)
-                                        .font(.system(size: 16, weight: .black, design: .monospaced))
-                                        .foregroundStyle(Color.green.opacity(0.96))
-                                }
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                            .padding(.horizontal, 8)
-                            .padding(.top, 8)
-                        }
-                    }
-                }
-                .padding(2)
-        }
-        .frame(width: width, height: height)
-    }
-}
-
-private struct WhiteNoteBoxOverlay: View {
-    let centerY: CGFloat
-    let availableSize: CGSize
-    let boxHeight: CGFloat
-    let neckWidth: CGFloat
-    let activeStringNumbers: [Int]
-    let answerFeedback: ThumbGlowState?
-    let currentQuestionIsAccidental: Bool
-    let blinkingActive: Bool
-    let blinkOrange: Bool
-    let revealedNote: String?
-    let revealedNoteTextByString: [Int: String]?
-
-    private let totalStrings: Int = 6
-    private let stratNutWidthInches: CGFloat = 1.650
-    private let stratStringSpanInches: CGFloat = 1.362
-
-    var body: some View {
-        let clampedBoxHeight = min(boxHeight, availableSize.height)
-        let nutWidth = neckWidth * 0.99
-        let overallWidth = availableSize.width
-        let overallPadding = (overallWidth - nutWidth) / 2
-
-        let widthPerInch = nutWidth / stratNutWidthInches
-        let interStringSpacing = (stratStringSpanInches / CGFloat(totalStrings - 1)) * widthPerInch
-        let edgeMargin = ((stratNutWidthInches - stratStringSpanInches) / 2) * widthPerInch
-        let grooveCenters = (0..<totalStrings).map { index in
-            overallPadding + edgeMargin + CGFloat(index) * interStringSpacing
-        }
-
-        let minCenterSpacing = grooveCenters.enumerated().dropFirst().map { idx, center in
-            center - grooveCenters[idx - 1]
-        }.min() ?? interStringSpacing
-        let spacingGap = max(minCenterSpacing * 0.12, 6)
-        let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
-        let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
-        let activeSet = Set(activeStringNumbers)
-
-        return ZStack {
-            // Six individual translucent backgrounds for each answer box
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.black.opacity(0.42))
-                    .frame(width: boxWidth, height: clampedBoxHeight)
-                    .opacity(isActive ? 1 : 0.0001)
-                    .position(x: grooveCenters[index], y: centerY)
-            }
-
-            ForEach(0..<totalStrings, id: \.self) { index in
-                let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
-                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNote
-                let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
-                let fillColor: Color = {
-                    guard isActive else { return Color.clear }
-                    switch answerFeedback {
-                    case .red:
-                        return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
-                    default:
-                        return noteIsAccidental ? Color.black.opacity(0.95) : Color.white.opacity(0.92)
-                    }
-                }()
-                let strokeColor: Color = {
-                    guard isActive else { return .clear }
-                    switch answerFeedback {
-                    case .red: return Color(red: 0.48, green: 0.06, blue: 0.06).opacity(0.9)
-                    default:
-                        return noteIsAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
-                    }
-                }()
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(fillColor)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(strokeColor, lineWidth: 2)
-                        )
-                    if isActive, let noteText = revealedNoteTextByString?[stringNumber] ?? revealedNote {
-                        Text(guitarNoteDisplayText(noteText))
-                            .font(.system(size: min(clampedBoxHeight * 0.78, 28), weight: .black, design: .monospaced))
-                            .foregroundColor(noteIsAccidental ? .white : .black)
-                            .minimumScaleFactor(0.32)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(width: boxWidth, height: clampedBoxHeight)
-                .position(x: grooveCenters[index], y: centerY)
-            }
-        }
-        .animation(.easeInOut(duration: 0.18), value: activeStringNumbers)
-        .animation(.easeInOut(duration: 0.18), value: answerFeedback)
-    }
-}
-
-
-private struct RowOneIdentifierOverlay: View {
-    let leftLabel: String
-    let rightLabel: String
-    let size: CGSize
-    let rowHeight: CGFloat
-
-    var body: some View {
-        let bannerFont = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        let measuredWidth = max(
-            textWidth(for: leftLabel, font: bannerFont),
-            textWidth(for: rightLabel, font: bannerFont),
-            textWidth(for: "Open Strings", font: bannerFont)
-        )
-        let bannerWidth = measuredWidth + 32
-        let bannerHeight = max(min(rowHeight * 0.66, 50), 40)
-
-        return HStack(spacing: 16) {
-            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82)
-            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82)
-        }
-        .frame(width: size.width, height: rowHeight)
-        .position(x: size.width / 2, y: rowHeight / 2)
-        .allowsHitTesting(false)
-    }
-
-    private func textWidth(for text: String, font: UIFont) -> CGFloat {
-        let attributes = [NSAttributedString.Key.font: font]
-        return ceil(text.size(withAttributes: attributes).width)
-    }
-}
-
-
-
-private struct BrassStringView: View {
-    let stringX: CGFloat
-    let stringHeight: CGFloat
-    let stringTopY: CGFloat
-    let stringNumber: Int
-    
-    private var stringThickness: CGFloat {
-        switch stringNumber {
-        case 6: return 4.0
-        case 5: return 3.5
-        case 4: return 3.0
-        default: return 2.5
-        }
-    }
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: stringThickness / 2, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.96, green: 0.94, blue: 0.88),
-                        Color(red: 0.82, green: 0.69, blue: 0.47),
-                        Color(red: 0.65, green: 0.50, blue: 0.30),
-                        Color(red: 0.85, green: 0.75, blue: 0.60)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: stringThickness / 2)
-                    .stroke(Color.black.opacity(0.2), lineWidth: 0.3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: stringThickness / 2)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.6), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 0.5)
-            .frame(width: stringThickness, height: max(stringHeight, 2))
-            .position(x: stringX, y: stringTopY + stringHeight / 2)
-    }
-}
-
-private struct BrassStringSegment: View {
-    let width: CGFloat
-    let height: CGFloat
-    let segmentIndex: Int
-    let totalSegments: Int
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: width / 2, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.96, green: 0.94, blue: 0.88),
-                        Color(red: 0.82, green: 0.69, blue: 0.47),
-                        Color(red: 0.65, green: 0.50, blue: 0.30),
-                        Color(red: 0.85, green: 0.75, blue: 0.60)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: width / 2)
-                    .stroke(Color.black.opacity(0.2), lineWidth: 0.3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: width / 2)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.white.opacity(0.6), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.5
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 0.5)
-            .frame(width: width, height: max(height, 2))
-    }
-}
-
+// MaestroStartupSequenceView, RowOneIdentifierOverlay — moved to MaestroSubviews.swift
 
 
 
@@ -515,26 +24,27 @@ struct MaestroGameplayView: View {
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
     let orientation: Orientation
+    let consoleSkin: ConsoleSkin
 
     @Environment(\.displayScale) private var displayScale
     private let totalFrets: Int = 20
-    private var maxFretOffset: Int { totalFrets }
-    private var minFretOffset: Int { -totalFrets }
+    var maxFretOffset: Int { totalFrets }
+    var minFretOffset: Int { -totalFrets }
 
-    private var isPhaseDescending: Bool {
+    var isPhaseDescending: Bool {
         LessonDirection(rawValue: playDirectionRawValue) == .descending
     }
 
-    private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+    var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
-    private var maestroUsesFlats: Bool { isPhaseDescending }
+    var maestroUsesFlats: Bool { isPhaseDescending }
 
-    private var activeStringOrder: [Int] {
+    var activeStringOrder: [Int] {
         let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
         return isProgressionLowToHigh ? base.reversed() : base
     }
 
-    private var modePayoutMultiplier: Double {
+    var modePayoutMultiplier: Double {
         switch selectedMode {
         case .freestyle:
             return 1.0
@@ -548,90 +58,81 @@ struct MaestroGameplayView: View {
             return 1.15
         }
     }
-    private let chromaticSharps: [String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    private let chromaticFlats: [String] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    private let openNoteByString: [Int: String] = [
-        6: "E",
-        5: "A",
-        4: "D",
-        3: "G",
-        2: "B",
-        1: "E"
-    ]
-    private let codenameNemoEnabled: Bool = false
-    private let scaleLengthInches: Double = 25.5
-    private let debugGridRows: Int = 8
-    private var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
-    @State private var currentFretStart: Int = 0
-    @State private var currentWindowRow: Int = 2
-    @State private var leftThumbState: ThumbGlowState = .neutral
-    @State private var rightThumbState: ThumbGlowState = .neutral
-    @State private var currentRound: Int = 0
-    @State private var roundStringIndex: Int = 0
-    @State private var repetitionsRemainingAtFret: Int = 1
-    @State private var isDescendingPhase: Bool = false
-    @State private var leftChoiceNote: String = ""
-    @State private var rightChoiceNote: String = ""
-    @State private var activePickedStringNumbers: [Int] = [1]
-    @State private var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
-    @State private var activeAnswerFeedback: ThumbGlowState? = nil
-    @State private var currentQuestionIsAccidental: Bool = false
-    @State private var introWindowBlack: Bool = true
-    @State private var introDidRun: Bool = false
-    @State private var isCodeScreensaverMode: Bool = true
-    @State private var cachedStringStatusLabel: String = ""
-    @State private var cachedFretStatusLabel: String = ""
-    @State private var bankDollars: Int = 0
-    @State private var displayedBankDollars: Int = 0
-    @State private var startupSequenceStartDate: Date = .now
-    @State private var startupSequenceElapsed: TimeInterval = 0
-    @State private var startupSequenceActivated: Bool = false
-    @State private var assetToNutBottomDelta: CGFloat? = nil
-    @State private var isAutoPlayTriggered: Bool = false
-    @State private var correctAnswerSide: AnswerSide = .left
-    @State private var isResolvingAnswer: Bool = false
-    @State private var gameplayMenuExpanded: Bool = false
-    @State private var maestroStartButtonBlinkOn: Bool = false
-    @State private var maestroStartButtonNextBlinkDate: Date? = nil
-    @State private var developerPromptText: String = ""
-    @State private var currentCorrectNote: String = ""
-    @State private var lastResolvedCorrectNote: String? = nil
-    @State private var lastResolvedCorrectString: Int? = nil
-    @State private var currentPromptStrings: [Int] = [1]
-    @State private var isRoundPaused: Bool = false
-    @State private var transportStoppedForResume: Bool = false
-    @State private var showFretboardGuide: Bool = false
-    @State private var isLaunchTransitionAnimating: Bool = false
-    @State private var launchTileScale: CGFloat = 1
-    @State private var launchTileOpacity: Double = 1
-    @State private var beatPulseActive: Bool = false
-    @State private var beatCountInRemaining: Int = 0
-    @State private var nextBeatTickDate: Date? = nil
-    @State private var beatLightFlashOn: Bool = false
-    @State private var beatLightLastProcessedBeat: Int? = nil
-    @State private var questionBoxPulsePhase: Bool = false
-    @State private var nextQuestionBoxPulseDate: Date? = nil
-    @State private var questionBoxIntroProgress: CGFloat = 0
-    @State private var autoPlayEnabled: Bool = false
-    @State private var autoPlayNextDate: Date? = nil
-    @State private var resetButtonPressed: Bool = false
+    // chromaticSharps, chromaticFlats, openNoteByString — use module-level globals from GuitarHelpers.swift
+    let codenameNemoEnabled: Bool = false
+    let scaleLengthInches: Double = 25.5
+    let debugGridRows: Int = 8
+    var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
+    @State var currentFretStart: Int = 0
+    @State var currentWindowRow: Int = 2
+    @State var leftThumbState: ThumbGlowState = .neutral
+    @State var rightThumbState: ThumbGlowState = .neutral
+    @State var currentRound: Int = 0
+    @State var roundStringIndex: Int = 0
+    @State var repetitionsRemainingAtFret: Int = 1
+    @State var isDescendingPhase: Bool = false
+    @State var leftChoiceNote: String = ""
+    @State var rightChoiceNote: String = ""
+    @State var activePickedStringNumbers: [Int] = [1]
+    @State var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
+    @State var activeAnswerFeedback: ThumbGlowState? = nil
+    @State var currentQuestionIsAccidental: Bool = false
+    @State var introWindowBlack: Bool = true
+    @State var introDidRun: Bool = false
+    @State var isCodeScreensaverMode: Bool = true
+    @State var cachedStringStatusLabel: String = ""
+    @State var cachedFretStatusLabel: String = ""
+    @State var bankDollars: Int = 0
+    @State var displayedBankDollars: Int = 0
+    @State var startupSequenceStartDate: Date = .now
+    @State var startupSequenceElapsed: TimeInterval = 0
+    @State var startupSequenceActivated: Bool = false
+    @State var assetToNutBottomDelta: CGFloat? = nil
+    @State var isAutoPlayTriggered: Bool = false
+    @State var correctAnswerSide: AnswerSide = .left
+    @State var isResolvingAnswer: Bool = false
+    @State var gameplayMenuExpanded: Bool = false
+    @State var maestroStartButtonBlinkOn: Bool = false
+    @State var maestroStartButtonNextBlinkDate: Date? = nil
+    @State var developerPromptText: String = ""
+    @State var currentCorrectNote: String = ""
+    @State var lastResolvedCorrectNote: String? = nil
+    @State var lastResolvedCorrectString: Int? = nil
+    @State var currentPromptStrings: [Int] = [1]
+    @State var isRoundPaused: Bool = false
+    @State var transportStoppedForResume: Bool = false
+    @State var showFretboardGuide: Bool = false
+    @State var isLaunchTransitionAnimating: Bool = false
+    @State var launchTileScale: CGFloat = 1
+    @State var launchTileOpacity: Double = 1
+    @State var beatPulseActive: Bool = false
+    @State var beatCountInRemaining: Int = 0
+    @State var nextBeatTickDate: Date? = nil
+    @State var beatLightFlashOn: Bool = false
+    @State var beatLightLastProcessedBeat: Int? = nil
+    @State var questionBoxPulsePhase: Bool = false
+    @State var nextQuestionBoxPulseDate: Date? = nil
+    @State var questionBoxIntroProgress: CGFloat = 0
+    @State var autoPlayEnabled: Bool = false
+    @State var autoPlayNextDate: Date? = nil
+    @State var resetButtonPressed: Bool = false
 
-    private enum StartupSpeechPhase {
+    enum StartupSpeechPhase {
         case idle
         case pendingArmed
     }
 
-    @State private var startupSpeechPhase: StartupSpeechPhase = .idle
-    @State private var audioSettings = AudioSettings()
-    @State private var availableBackingTracks: [BackingTrack] = []
-    @State private var showAudioPage: Bool = false
+    @State var startupSpeechPhase: StartupSpeechPhase = .idle
+    @State var audioSettings = AudioSettings()
+    @State var availableBackingTracks: [BackingTrack] = []
+    @State var showAudioPage: Bool = false
 
-    private let audioEngine = SpeechEngine()
-    private let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
-    private let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
-    private let audioEngineEnabled: Bool = false
-    private let speakBeatTicks: Bool = false
-    private let speakGameplayPrompts: Bool = false
+    let audioEngine = SpeechEngine()
+    let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
+    let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
+    let audioEngineEnabled: Bool = false
+    let speakBeatTicks: Bool = false
+    let speakGameplayPrompts: Bool = false
 
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
@@ -648,7 +149,8 @@ struct MaestroGameplayView: View {
         playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
         balanceDollars: Binding<Int> = .constant(0),
-        orientation: Orientation = .portrait
+        orientation: Orientation = .portrait,
+        consoleSkin: ConsoleSkin = .classic
     ) {
         self.orientation = orientation
         self.onMenuSelection = onMenuSelection
@@ -665,6 +167,7 @@ struct MaestroGameplayView: View {
         self._playProgression = playProgression
         self._walletDollars = walletDollars
         self._balanceDollars = balanceDollars
+        self.consoleSkin = consoleSkin
     }
 
     var body: some View {
@@ -830,7 +333,7 @@ struct MaestroGameplayView: View {
     // Identical to the inline block previously in portraitBody. Computes F1–F5 from `size` so the
     // same view tree can be reused (and, in a later stage, rotated) without duplicating geometry math.
     @ViewBuilder
-    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0, matchBackgroundTexture: Bool = false) -> some View {
+    private func portraitNeckLayer(size: CGSize, centerScreensaverOnWindow: Bool = false, cutoutOffsetY: CGFloat = 0, matchBackgroundTexture: Bool = false, showWindowOverlay: Bool = true) -> some View {
         let padding: CGFloat = 24
         let neckWidth = (size.width - padding * 2) * 0.8
         let fretRatios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: scaleLengthInches)
@@ -901,7 +404,7 @@ struct MaestroGameplayView: View {
         let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
         let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
         let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
         let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
         let stringTopY = nutBottomY + stringStopInset
 
@@ -910,18 +413,25 @@ struct MaestroGameplayView: View {
             ZStack {
                 ZStack(alignment: .top) {
                     ZStack {
-                        RosewoodSegmentedBackground(
-                            fretRatios: fretRatios,
-                            cornerRadius: 18
-                        )
+                        if consoleSkin == .tweed {
+                            MapleSegmentedBackground(
+                                fretRatios: fretRatios,
+                                cornerRadius: 18
+                            )
+                        } else {
+                            RosewoodSegmentedBackground(
+                                fretRatios: fretRatios,
+                                cornerRadius: 18
+                            )
+                        }
                         BindingLayer()
                         FretWireLayer(fretRatios: fretRatios)
                         FretMarkerLayer(fretRatios: fretRatios)
                     }
                     .frame(width: neckWidth, height: neckHeight)
 
-                    NutLayer(width: neckWidth * 0.99, height: nutVisualHeight)
-                        .frame(width: neckWidth * 0.99, height: nutVisualHeight)
+                    NutLayer(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
+                        .frame(width: neckWidth * GuitarConstants.nutWidthRatio, height: nutVisualHeight)
                         .offset(y: -nutVisualHeight * 0.85)
                 }
                 .frame(width: neckWidth, height: neckHeight)
@@ -946,33 +456,65 @@ struct MaestroGameplayView: View {
             .allowsHitTesting(false)
             .opacity(introWindowBlack ? 1 : 0)
 
-        ElephantWindowView(
-            canvasSize: size,
-            highlightWidth: highlightWidth,
-            highlightHeight: highlightHeight,
-            highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
-            highlightCornerRadius: highlightCornerRadius,
-            textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
-            textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
-            textureBleed: matchBackgroundTexture ? 48 : 36
-        )
-        .allowsHitTesting(false)
+        if showWindowOverlay {
+            if consoleSkin == .tweed {
+                TweedWindowView(
+                    canvasSize: size,
+                    highlightWidth: highlightWidth,
+                    highlightHeight: highlightHeight,
+                    highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                    highlightCornerRadius: highlightCornerRadius,
+                    textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                    textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                    textureBleed: matchBackgroundTexture ? 48 : 36
+                )
+                .allowsHitTesting(false)
+            } else {
+                ElephantWindowView(
+                    canvasSize: size,
+                    highlightWidth: highlightWidth,
+                    highlightHeight: highlightHeight,
+                    highlightCenter: CGPoint(x: size.width / 2, y: (centerScreensaverOnWindow ? pipingCenterY : orangeGreenUnitCenterY) + cutoutOffsetY),
+                    highlightCornerRadius: highlightCornerRadius,
+                    textureBrightness: matchBackgroundTexture ? 0.08 : 0.12,
+                    textureOverlayOpacity: matchBackgroundTexture ? 0.18 : 0.2,
+                    textureBleed: matchBackgroundTexture ? 48 : 36
+                )
+                .allowsHitTesting(false)
+            }
+        }
 
         if isCodeScreensaverMode {
             ZStack {
-                Image("REFRETLOGOSET")
-                    .resizable()
-                    .scaledToFill()
-                    .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
-                    .frame(width: highlightWidth, height: highlightHeight)
-                    .clipped()
-                    .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+                if consoleSkin == .tweed {
+                    Image("Refret tweed logo")
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .clipped()
+                        .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
 
-                HighlightWindowGoldBorder(
-                    width: highlightWidth,
-                    height: highlightHeight,
-                    cornerRadius: highlightCornerRadius
-                )
+                    HighlightWindowChromeBorder(
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    )
+                } else {
+                    Image("REFRETLOGOSET")
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(x: 1.15, y: 1.0, anchor: .center)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .clipped()
+                        .clipShape(HighlightWindowShape(cornerRadius: highlightCornerRadius))
+
+                    HighlightWindowGoldBorder(
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    )
+                }
             }
             .scaleEffect(isLaunchTransitionAnimating ? launchTileScale : 1)
             .opacity(isLaunchTransitionAnimating ? launchTileOpacity : 1)
@@ -986,14 +528,14 @@ struct MaestroGameplayView: View {
             let stringCenters = GuitarStringLayout.stringCenters(containerWidth: size.width, neckWidth: neckWidth)
             let centerSpacings = (1..<stringCenters.count).map { stringCenters[$0] - stringCenters[$0 - 1] }
             let minCenterSpacing = centerSpacings.min() ?? 60
-            let spacingGap = max(minCenterSpacing * 0.12, 6)
+            let spacingGap = max(minCenterSpacing * GuitarConstants.stringGapMultiplier, 6)
             let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
             let boxWidth = min(guideBoxHeight * 1.8, maxBoxWidthFromSpacing)
             let fretboardStrings = (0..<GuitarStringLayout.totalStrings).map { GuitarStringLayout.highestStringNumber - $0 }
             ZStack {
                 // Six individual translucent backgrounds for each note box
                 ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                         .fill(Color.black.opacity(0.42))
                         .frame(width: boxWidth, height: guideBoxHeight)
                         .position(x: stringCenters[index], y: guideBoxCenterY)
@@ -1007,10 +549,10 @@ struct MaestroGameplayView: View {
                     let strokeColor: Color = isAccidental ? Color.white.opacity(0.86) : Color.black.opacity(0.72)
                     let textColor: Color = isAccidental ? Color.white.opacity(0.96) : Color.black
                     let textSize = min(guideBoxHeight * 0.78, 28)
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                         .fill(fillColor)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                                 .stroke(strokeColor, lineWidth: 2)
                         )
                         .overlay(
@@ -1071,7 +613,7 @@ struct MaestroGameplayView: View {
             let isGameplayStarted = !isCodeScreensaverMode
             let displayedFretStatusLabel = isGameplayStarted ? cachedFretStatusLabel : ""
             let displayedStringStatusLabel = isGameplayStarted ? cachedStringStatusLabel : ""
-            let roundStatusLabel = "FRET \(currentRound)"
+            let _ = "FRET \(currentRound)"
             let screenBannerFont = UIFont.systemFont(ofSize: 20, weight: .semibold)
             let screenMeasuredWidth = max(
                 textWidth(for: cachedFretStatusLabel, font: screenBannerFont),
@@ -1101,14 +643,14 @@ struct MaestroGameplayView: View {
             let buttonBottomY = buttonCenterY + (thumbDiameter / 2)
             let whitePipingGap = max(gridRowHeight * 0.32, 14)
             let upperWhitePipingY = buttonTopY - whitePipingGap
-            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * 0.18)
+            let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * GuitarConstants.gridRowHeightRatio)
             let whitePipingWidth = max(proxy.size.width - 7, 0)
-            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 2
+            let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 14
             let developerOverlaysEnabled: Bool = false
             let windowTopY = holeCenterY - highlightHeight / 2
             let topStatusOuterWidth = highlightWidth
             let topStatusOuterHeight = max(min(gridRowHeight * 1.35, 120), 74)
-            let topStatusBottomGap = max(gridRowHeight * 0.18, 10)
+            let topStatusBottomGap = max(gridRowHeight * GuitarConstants.gridRowHeightRatio, 10)
             let topStatusCenterY = (windowTopY - topStatusBottomGap) - (topStatusOuterHeight / 2)
 
             let unsignedN = abs(currentFretStart)
@@ -1146,9 +688,9 @@ struct MaestroGameplayView: View {
             let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
             let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
             let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+            let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
             let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
-            let stringTopY = nutBottomY + stringStopInset
+            let _ = nutBottomY + stringStopInset
             let calibratedAssetToNutDelta = assetToNutBottomDelta ?? 0
             let _ = (nutBottomY + calibratedAssetToNutDelta) - rowOneBottomLineY
             let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
@@ -1171,23 +713,24 @@ struct MaestroGameplayView: View {
             let sideWindowGap = max((proxy.size.width - highlightWidth) / 4, 18)
             let leftFretIndicatorX = (proxy.size.width / 2) - (highlightWidth / 2) - sideWindowGap
             let rightFretIndicatorX = (proxy.size.width / 2) + (highlightWidth / 2) + sideWindowGap
-            let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
+            let fretIndicatorText = "\(max(currentRound, 0))"
 
-#if DEBUG
-            let _ = { () -> Void in
-                logAlignmentDiagnostics(
-                    neckTopY: neckTopY,
-                    activeMidpoint: activeMidpoint,
-                    highlightCenterY: pipingCenterY,
-                    highlightTopGridLineY: highlightTopGridLineY,
-                    gridRowHeight: gridRowHeight
-                )
-            }()
-#endif
+
 
             ZStack {
-                FullScreenElephantBackground()
-                    .ignoresSafeArea()
+                if consoleSkin == .tweed {
+                    FullScreenTweedBackground()
+                        .ignoresSafeArea()
+                    // Black fill so the window hole reveals a dark background, not more tweed
+                    RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                        .fill(Color.black)
+                        .frame(width: highlightWidth, height: highlightHeight)
+                        .position(x: proxy.size.width / 2, y: orangeGreenUnitCenterY)
+                        .allowsHitTesting(false)
+                } else {
+                    FullScreenElephantBackground()
+                        .ignoresSafeArea()
+                }
 
                 portraitNeckLayer(size: proxy.size)
 
@@ -1212,12 +755,34 @@ struct MaestroGameplayView: View {
                     width: topStatusOuterWidth,
                     height: topStatusOuterHeight,
                     isScreensaverMode: isCodeScreensaverMode,
-                    scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                    currentRound: currentRound,
+                    layoutMode: .maestro,
+                    roundTitle: "",
+                    fretTitle: "",
+                    stringTitle: "",
                     bankText: "$\(displayedBankDollars)",
-                    repetitionCountColor: .white,
+                    scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
+                    promptText: "",
                     startupElapsed: startupSequenceElapsed,
                     showStartupSequence: startupSequenceActivated,
+                    startupShowFullSequence: true,
+                    startupArmedText: "Memorization Sequence Armed",
+                    beginnerRoundStatusText: nil,
+                    centeredStatusMessage: nil,
+                    centeredStatusColor: .clear,
+                    currentRound: currentRound,
+                    repetitionCountColor: .white,
+                    walletColor: .green,
+                    hideRoundLabel: false,
+                    pentatonicRevealComplete: false,
+                    noteHighlightIndex: nil,
+                    sequentialSlots: nil,
+                    sequentialRevealCount: 0,
+                    sequentialAnsweredCount: 0,
+                    chordSlots: nil,
+                    chordRevealCount: 0,
+                    chordAnsweredCount: 0,
+                    rewardNoteTextByString: nil,
+                    consoleSkin: consoleSkin
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
@@ -1235,14 +800,16 @@ struct MaestroGameplayView: View {
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                         MiniTVFrame(
                             text: displayedFretStatusLabel,
                             width: screenBannerWidth,
                             height: screenBannerHeight,
                             fontScale: 0.82,
-                            hitTestingEnabled: false
+                            hitTestingEnabled: false,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .scaleEffect(introScale)
@@ -1252,25 +819,35 @@ struct MaestroGameplayView: View {
                     .position(x: proxy.size.width / 2, y: topScreenY)
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity * introScale)
 
-                    // Blue beat light (left side)
+                    // Blue beat light (center)
                     Circle()
-                        .fill(Color.blue)
-                        .frame(width: 12, height: 12)
-                        .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(red: 0.62, green: 0.86, blue: 1.0),
+                                    Color(red: 0.09, green: 0.45, blue: 1.0)
+                                ],
+                                center: .center,
+                                startRadius: 0.5,
+                                endRadius: 10
+                            )
+                        )
+                        .frame(width: 18, height: 18)
+                        .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                         .shadow(color: Color.white.opacity(0.45), radius: 5)
                         .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
-                        .position(x: leftAnswerCenterX - lowerScreenWidth/2 - 16, y: noteChoiceY)
+                        .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
                         .opacity(beatLightFlashOn ? 1 : 0)
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0)
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)
@@ -1283,31 +860,39 @@ struct MaestroGameplayView: View {
                         neckWidth: neckWidth,
                         activeStringNumbers: activePickedStringNumbers,
                         answerFeedback: activeAnswerFeedback,
-                        currentQuestionIsAccidental: currentQuestionIsAccidental,
-                        blinkingActive: false,
-                        blinkOrange: false,
-                        revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
-                        revealedNoteTextByString: answeredNotesByStringAtCurrentFret
+                        showFeedbackColors: false,
+                        revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                        revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
+                        revealedNoteTextColor: Color.black.opacity(0.96)
                     )
                     .allowsHitTesting(false)
                     .offset(y: questionBoxOffsetY)
                     .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
                 }
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: upperWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : 1)
+                if consoleSkin != .tweed {
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: upperWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
 
-                GoldHorizontalPipingLine(width: whitePipingWidth)
-                    .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
-                    .allowsHitTesting(false)
-                    .opacity(codenameNemoEnabled ? 0 : 1)
+                    GoldHorizontalPipingLine(width: whitePipingWidth)
+                        .position(x: proxy.size.width / 2, y: lowerWhitePipingY)
+                        .allowsHitTesting(false)
+                        .opacity(codenameNemoEnabled ? 0 : 1)
+                }
 
-                GoldPipingBorder(bottomInset: 0)
-                    .allowsHitTesting(false)
-                    .offset(y: -globalContentShiftY)
-                    .zIndex(100)
+                if consoleSkin == .tweed {
+                    WhitePipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                } else {
+                    GoldPipingBorder(bottomInset: 0)
+                        .allowsHitTesting(false)
+                        .offset(y: -globalContentShiftY)
+                        .zIndex(100)
+                }
 
             }
             .overlay {
@@ -1316,69 +901,12 @@ struct MaestroGameplayView: View {
                     .opacity(developerOverlaysEnabled ? 0.8 : 0)
             }
             .overlay {
-                let maestroTransportCenterY = lowerWhitePipingY + (proxy.size.height - lowerWhitePipingY) * 0.28
-                HStack(spacing: 6) {
-                    Button("START") { handleMaestroStartButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button(isRoundPaused ? "RESUME" : "PAUSE") {
-                        if isRoundPaused { handleMaestroStartButton() }
-                        else { handleMaestroStopButton() }
-                    }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .disabled(isCodeScreensaverMode && !isRoundPaused)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                    Button("RESET") { handleMaestroResetButton() }
-                        .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                        .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                                )
-                        )
-                }
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.black.opacity(0.92))
-                .buttonStyle(.plain)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.94, green: 0.82, blue: 0.53),
-                                    Color(red: 0.78, green: 0.6, blue: 0.22),
-                                    Color(red: 0.94, green: 0.82, blue: 0.53)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
-                        )
+                maestroTransportButtonOverlay(
+                    proxyWidth: proxy.size.width,
+                    proxyHeight: proxy.size.height,
+                    lowerWhitePipingY: lowerWhitePipingY,
+                    startButtonBlinkOn: startButtonBlinkOn
                 )
-                .frame(width: min((proxy.size.width - 24) * 0.88, 370) * 0.72, height: 50)
-                .position(x: proxy.size.width / 2, y: maestroTransportCenterY)
-                .opacity(codenameNemoEnabled ? 0 : 1)
             }
             .overlay(alignment: .bottom) {
                 GameplayControlPlateShell(
@@ -1398,7 +926,8 @@ struct MaestroGameplayView: View {
                     },
                     onSelectMenuOption: { option in
                         handleGameplayMenuSelection(option)
-                    }
+                    },
+                    consoleSkin: consoleSkin
                 )
                     .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
                     .padding(.bottom, 12)
@@ -1410,19 +939,25 @@ struct MaestroGameplayView: View {
                         ThumbButtonView(
                             diameter: thumbDiameter,
                             label: "",
-                            state: effectiveLeftThumbState
+                            state: effectiveLeftThumbState,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(A11y.Maestro.leftThumb)
+                    .accessibilityHint(A11y.Maestro.leftThumbHint)
 
                     Button(action: { submitAnswer(.right) }) {
                         ThumbButtonView(
                             diameter: thumbDiameter,
                             label: "",
-                            state: effectiveRightThumbState
+                            state: effectiveRightThumbState,
+                            consoleSkin: consoleSkin
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(A11y.Maestro.rightThumb)
+                    .accessibilityHint(A11y.Maestro.rightThumbHint)
                 }
                 .frame(maxWidth: .infinity)
                 .position(x: proxy.size.width / 2, y: buttonCenterY)
@@ -1506,9 +1041,9 @@ struct MaestroGameplayView: View {
         let manualBlueAdjustment: CGFloat = -gridRowHeight * 0.5
         let finalNeckOffsetY = neckOffsetY + manualBlueAdjustment
         let neckVisualOffsetAdjustment = finalNeckOffsetY - neckOffsetY
-        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * 0.15)
+        let nutBottomY = neckTopY + neckVisualOffsetAdjustment + (nutVisualHeight * GuitarConstants.nutHeightOffset)
         let stringStopInset = max(1.0, 2.0 / max(scale, 1.0))
-        let stringTopY = nutBottomY + stringStopInset
+        let _ = nutBottomY + stringStopInset
 
         // Startup/screensaver state
         let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
@@ -1565,26 +1100,59 @@ struct MaestroGameplayView: View {
         let fretOffsetFromWindow: CGFloat = 6
         let leftFretIndicatorX = (windowLeftEdge + leftThumbInnerEdge) / 2 - fretOffsetFromWindow
         let rightFretIndicatorX = (windowRightEdge + rightThumbInnerEdge) / 2 + fretOffsetFromWindow
-        let fretIndicatorText = "\(min(max(currentRound, 0), 12))"
+        let fretIndicatorText = "\(max(currentRound, 0))"
 
         let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
 
         ZStack {
-            FullScreenElephantBackground()
-                .ignoresSafeArea()
+            if consoleSkin == .tweed {
+                // Layer 1: plain tweed background (no cutout) — behind the neck
+                FullScreenTweedBackground()
+                    .ignoresSafeArea()
 
-            // Stage 2a: rotate the portrait neck/window/screensaver/fretboard-guide layer
-            // 90° to align with landscape orientation. Inherits portrait F1–F5 unchanged.
-            // Render the helper at full portrait proportions; elephant texture is gone so the
-            // layout box no longer needs to be clipped to the console-to-transport band.
-            // Offset shifts the layout so the window's pipingCenterY (= 5/16 of long axis)
-            // lands on screenCenterY, aligning with the chrome white note boxes.
+                // Layer 2: black fill at the window position — behind the neck,
+                // provides the dark interior when the neck doesn't fill the window.
+                RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
+                    .fill(Color.black)
+                    .frame(width: highlightWidth, height: highlightHeight)
+                    .position(x: screenCenterX, y: screenCenterY)
+                    .allowsHitTesting(false)
+            } else {
+                FullScreenElephantBackground()
+                    .ignoresSafeArea()
+            }
+
+            // Layer 3: neck/fretboard layer (no TweedWindowView for tweed in landscape)
             ZStack {
-                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true)
+                portraitNeckLayer(size: CGSize(width: proxy.size.height, height: proxy.size.width), centerScreensaverOnWindow: true, cutoutOffsetY: -gridRowHeight * 0.5, matchBackgroundTexture: true, showWindowOverlay: consoleSkin != .tweed)
             }
             .frame(width: proxy.size.height, height: proxy.size.width)
             .offset(y: proxy.size.width * 0.1875 + gridRowHeight * 0.5)
             .frame(width: proxy.size.width, height: proxy.size.height)
+
+            // Layer 4 (tweed only): tweed-with-hole sits ABOVE the neck, covering any
+            // neck content that bleeds outside the window. Uses the same ignoresSafeArea
+            // GeometryReader as Layer 1 so the texture is pixel-identical — no seam.
+            if consoleSkin == .tweed {
+                FullScreenTweedBackground(
+                    windowCutout: (
+                        center: CGPoint(x: screenCenterX, y: screenCenterY),
+                        width: highlightWidth,
+                        height: highlightHeight,
+                        cornerRadius: highlightCornerRadius
+                    ),
+                    safeAreaInsets: proxy.safeAreaInsets
+                )
+                .ignoresSafeArea()
+
+                HighlightWindowChromeBorder(
+                    width: highlightWidth,
+                    height: highlightHeight,
+                    cornerRadius: highlightCornerRadius
+                )
+                .position(x: screenCenterX, y: screenCenterY)
+                .allowsHitTesting(false)
+            }
 
             // Fret indicators (left/right of window)
             fretIndicatorOverlay(
@@ -1600,12 +1168,34 @@ struct MaestroGameplayView: View {
                 width: highlightWidth,
                 height: consoleHeight,
                 isScreensaverMode: isCodeScreensaverMode,
-                scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
-                currentRound: currentRound,
+                layoutMode: .maestro,
+                roundTitle: "",
+                fretTitle: "",
+                stringTitle: "",
                 bankText: "$\(displayedBankDollars)",
-                repetitionCountColor: .white,
+                scaleRepetitionText: repetitionsRemainingAtFret >= Int.max / 2 ? "∞X" : "\(repetitionsRemainingAtFret)X",
+                promptText: "",
                 startupElapsed: startupSequenceElapsed,
-                showStartupSequence: startupSequenceActivated
+                showStartupSequence: startupSequenceActivated,
+                startupShowFullSequence: true,
+                startupArmedText: "Memorization Sequence Armed",
+                beginnerRoundStatusText: nil,
+                centeredStatusMessage: nil,
+                centeredStatusColor: .clear,
+                currentRound: currentRound,
+                repetitionCountColor: .white,
+                walletColor: .green,
+                hideRoundLabel: false,
+                pentatonicRevealComplete: false,
+                noteHighlightIndex: nil,
+                sequentialSlots: nil,
+                sequentialRevealCount: 0,
+                sequentialAnsweredCount: 0,
+                chordSlots: nil,
+                chordRevealCount: 0,
+                chordAnsweredCount: 0,
+                rewardNoteTextByString: nil,
+                consoleSkin: consoleSkin
             )
             .position(x: screenCenterX, y: consoleCenterY)
             .allowsHitTesting(false)
@@ -1617,7 +1207,8 @@ struct MaestroGameplayView: View {
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote)
+                    isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: leftGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
@@ -1627,19 +1218,30 @@ struct MaestroGameplayView: View {
                     width: miniTVWidth,
                     height: miniTVHeight,
                     fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote)
+                    isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote),
+                    consoleSkin: consoleSkin
                 )
                 .position(x: rightGapCenter, y: miniTVCenterY)
                 .allowsHitTesting(false)
 
-                // Blue beat light
+                // Blue beat light (center)
                 Circle()
-                    .fill(Color.blue)
-                    .frame(width: 12, height: 12)
-                    .shadow(color: Color(red: 0.28, green: 0.7, blue: 1.0).opacity(0.95), radius: 12)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color(red: 0.62, green: 0.86, blue: 1.0),
+                                Color(red: 0.09, green: 0.45, blue: 1.0)
+                            ],
+                            center: .center,
+                            startRadius: 0.5,
+                            endRadius: 10
+                        )
+                    )
+                    .frame(width: 18, height: 18)
+                    .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
                     .shadow(color: Color.white.opacity(0.45), radius: 5)
                     .overlay(Circle().stroke(Color.white.opacity(0.75), lineWidth: 1))
-                    .position(x: leftGapCenter - miniTVWidth / 2 - 16, y: miniTVCenterY)
+                    .position(x: screenCenterX, y: screenCenterY)
                     .opacity(beatLightFlashOn ? 1 : 0)
                     .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                     .allowsHitTesting(false)
@@ -1652,11 +1254,10 @@ struct MaestroGameplayView: View {
                     neckWidth: neckWidth,
                     activeStringNumbers: activePickedStringNumbers,
                     answerFeedback: activeAnswerFeedback,
-                    currentQuestionIsAccidental: currentQuestionIsAccidental,
-                    blinkingActive: false,
-                    blinkOrange: false,
-                    revealedNote: activeAnswerFeedback == .green ? currentCorrectNote : nil,
-                    revealedNoteTextByString: answeredNotesByStringAtCurrentFret
+                    showFeedbackColors: false,
+                    revealedNoteText: activeAnswerFeedback == .green ? currentCorrectNote : nil,
+                    revealedNoteTextByString: answeredNotesByStringAtCurrentFret,
+                    revealedNoteTextColor: Color.black.opacity(0.96)
                 )
                 .allowsHitTesting(false)
                 .opacity(initialGameplayDimOpacity)
@@ -1664,51 +1265,54 @@ struct MaestroGameplayView: View {
 
             // Thumb buttons
             Button(action: { submitAnswer(.left) }) {
-                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveLeftThumbState)
+                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveLeftThumbState, consoleSkin: consoleSkin)
             }
             .buttonStyle(.plain)
             .position(x: leftGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
+            .accessibilityLabel(A11y.Maestro.leftThumb)
+            .accessibilityHint(A11y.Maestro.leftThumbHint)
 
             Button(action: { submitAnswer(.right) }) {
-                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveRightThumbState)
+                ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveRightThumbState, consoleSkin: consoleSkin)
             }
             .buttonStyle(.plain)
             .position(x: rightGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
+            .accessibilityLabel(A11y.Maestro.rightThumb)
+            .accessibilityHint(A11y.Maestro.rightThumbHint)
 
             // Gold perimeter
-            GoldPipingBorder(bottomInset: 0)
-                .allowsHitTesting(false)
+            if consoleSkin == .tweed {
+                WhitePipingBorder(bottomInset: 0)
+                    .allowsHitTesting(false)
+            } else {
+                GoldPipingBorder(bottomInset: 0)
+                    .allowsHitTesting(false)
+            }
         }
         .overlay {
             // Transport bar below neck window
             HStack(spacing: 6) {
                 Button("START") { handleMaestroStartButton() }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
+                    .background(transportButtonBackground(fill: startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear))
+                    .accessibilityLabel(A11y.Transport.start)
+                    .accessibilityHint(A11y.Transport.startHint)
                 Button(isRoundPaused ? "RESUME" : "PAUSE") {
                     if isRoundPaused { handleMaestroStartButton() }
                     else { handleMaestroStopButton() }
                 }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .disabled(isCodeScreensaverMode && !isRoundPaused)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .background(transportButtonBackground(fill: isRoundPaused ? Color.orange.opacity(0.85) : Color.clear))
+                    .accessibilityLabel(isRoundPaused ? A11y.Transport.resume : A11y.Transport.pause)
+                    .accessibilityHint(isRoundPaused ? A11y.Transport.resumeHint : A11y.Transport.pauseHint)
                 Button("RESET") { handleMaestroResetButton() }
-                    .frame(minWidth: 46, minHeight: 27, maxHeight: 27)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                            .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Color.black.opacity(0.34), lineWidth: 1.0))
-                    )
+                    .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
+                    .accessibilityLabel(A11y.Transport.reset)
+                    .accessibilityHint(A11y.Transport.resetHint)
+                    .background(transportButtonBackground(fill: resetButtonPressed ? Color.green.opacity(0.8) : Color.clear))
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))
             .foregroundStyle(Color.black.opacity(0.92))
@@ -1718,7 +1322,9 @@ struct MaestroGameplayView: View {
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(LinearGradient(
-                        colors: [Color(red: 0.94, green: 0.82, blue: 0.53), Color(red: 0.78, green: 0.6, blue: 0.22), Color(red: 0.94, green: 0.82, blue: 0.53)],
+                        colors: consoleSkin == .tweed
+                            ? [.white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)]
+                            : [.goldLight, .goldMid, .goldDark, .goldMidtone],
                         startPoint: .top, endPoint: .bottom
                     ))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Color.black.opacity(0.26), lineWidth: 1.2))
@@ -1738,7 +1344,8 @@ struct MaestroGameplayView: View {
                         gameplayMenuExpanded.toggle()
                     }
                 },
-                onSelectMenuOption: { option in handleGameplayMenuSelection(option) }
+                onSelectMenuOption: { option in handleGameplayMenuSelection(option) },
+                consoleSkin: consoleSkin
             )
             .scaleEffect(0.8, anchor: .bottom)
             .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
@@ -1746,557 +1353,8 @@ struct MaestroGameplayView: View {
         }
     }
 
-    private func shiftFretSpan(by delta: Int) {
-        guard delta != 0 else { return }
-        withAnimation(.easeInOut(duration: 0.5)) {
-            currentFretStart = min(max(currentFretStart + delta, minFretOffset), maxFretOffset)
-        }
-    }
-
-    private func shiftWindow(by delta: Int) {
-        let proposed = currentWindowRow + delta
-        let clamped = min(max(proposed, 0), 7)
-        guard clamped != currentWindowRow else { return }
-        withAnimation(.easeInOut(duration: 0.45)) {
-            currentWindowRow = clamped
-        }
-    }
-
-    private func nextThumbState(after state: ThumbGlowState) -> ThumbGlowState {
-        switch state {
-        case .neutral: return .green
-        case .orange: return .green
-        case .green: return .red
-        case .red: return .neutral
-        }
-    }
-
-    private func handleMaestroAutoPlayIfNeeded(currentDate: Date) {
-        guard autoPlayEnabled,
-              !isCodeScreensaverMode,
-              !startupSequenceActivated,
-              !isResolvingAnswer,
-              !isRoundPaused
-        else {
-            if !autoPlayEnabled {
-                autoPlayNextDate = nil
-            }
-            return
-        }
-
-        guard let nextDate = autoPlayNextDate, currentDate >= nextDate else { return }
-
-        // Submit the correct answer
-        isAutoPlayTriggered = true
-        submitAnswer(correctAnswerSide, force: true)
-        isAutoPlayTriggered = false
-        autoPlayNextDate = currentDate.addingTimeInterval(0.38)
-    }
-
-    private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
-        currentRound = playStartingFret
-        roundStringIndex = 0
-        repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
-        isDescendingPhase = isPhaseDescending
-        if animateNeckSlideFromStartup {
-            // Mirror BeginnerGameplayView: jump nut/neck off-screen, then animate slide-in.
-            currentFretStart = isDescendingPhase ? maxFretOffset : minFretOffset
-            DispatchQueue.main.async {
-                withAnimation(.easeInOut(duration: 0.78)) {
-                    currentFretStart = currentRound
-                }
-            }
-        }
-        bankDollars = 0
-        displayedBankDollars = 0
-        walletDollars = 0
-        currentPromptStrings = [1]
-        activePickedStringNumbers = [1]
-        answeredNotesByStringAtCurrentFret = [:]
-        beatCountInRemaining = 4
-        nextBeatTickDate = nil
-        leftThumbState = .neutral
-        rightThumbState = .neutral
-        activeAnswerFeedback = nil
-        gameplayMenuExpanded = false
-        developerPromptText = ""
-        currentCorrectNote = ""
-        lastResolvedCorrectNote = nil
-        lastResolvedCorrectString = nil
-        beatLightFlashOn = false
-        beatLightLastProcessedBeat = nil
-        autoPlayNextDate = nil
-        isResolvingAnswer = false
-        midiEngine.setBassTransposeSemitones(0)
-        prepareCurrentQuestion()
-    }
-
-    private func submitAnswer(_ side: AnswerSide, force: Bool = false) {
-        if isCodeScreensaverMode {
-            if !startupSequenceActivated {
-                startupSequenceActivated = true
-                startupSequenceStartDate = .now
-                startupSequenceElapsed = 0
-                questionBoxIntroProgress = 0
-                return
-            }
-
-            guard !isLaunchTransitionAnimating else { return }
-
-            isLaunchTransitionAnimating = true
-            launchTileScale = 1
-            launchTileOpacity = 1
-            // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
-            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
-            withAnimation(.easeIn(duration: 0.4725)) {
-                launchTileScale = 0.1
-                launchTileOpacity = 0
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
-                isCodeScreensaverMode = false
-                startupSequenceActivated = false
-                startupSequenceElapsed = 0
-                startupSpeechPhase = .idle
-                startGameFromBeginning(animateNeckSlideFromStartup: true)
-                syncMaestroBackingTrack()
-                isLaunchTransitionAnimating = false
-                launchTileScale = 1
-                launchTileOpacity = 1
-                withAnimation(.easeOut(duration: 0.6)) {
-                    questionBoxIntroProgress = 1
-                }
-            }
-            return
-
-        }
-
-        guard force || !isResolvingAnswer else { return }
-        isResolvingAnswer = true
-
-        let isCorrect = side == correctAnswerSide
-        if isCorrect {
-            withAnimation(.none) {
-                leftThumbState = .green
-                rightThumbState = .green
-                activeAnswerFeedback = .green
-            }
-            lastResolvedCorrectNote = currentCorrectNote
-            lastResolvedCorrectString = currentPromptStrings.first
-            // Track correctly answered notes per string at current fret
-            for stringNumber in currentPromptStrings {
-                answeredNotesByStringAtCurrentFret[stringNumber] = currentCorrectNote
-            }
-            for (index, stringNumber) in currentPromptStrings.enumerated() {
-                let delay = Double(index) * 0.035
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    guitarNoteEngine.play(string: stringNumber, fret: max(currentRound, 0), velocity: 0.98)
-                }
-            }
-        } else {
-            withAnimation(.none) {
-                leftThumbState = .red
-                rightThumbState = .red
-                activeAnswerFeedback = .red
-            }
-        }
-
-        // Capture autoplay state before delay since flag gets reset
-        let wasAutoPlayTriggered = isAutoPlayTriggered
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            leftThumbState = .neutral
-            rightThumbState = .neutral
-            if isCorrect {
-                advanceGame(afterCorrectAnswer: true, fromAutoPlay: wasAutoPlayTriggered)
-            } else {
-                advanceGame(afterCorrectAnswer: false, fromAutoPlay: wasAutoPlayTriggered)
-            }
-        }
-    }
-
-    private func handleMaestroStartButton() {
-        if isCodeScreensaverMode {
-            if !startupSequenceActivated {
-                startupSequenceActivated = true
-                startupSequenceStartDate = .now
-                startupSequenceElapsed = 0
-                questionBoxIntroProgress = 0
-                return
-            }
-            guard !isLaunchTransitionAnimating else { return }
-            isLaunchTransitionAnimating = true
-            launchTileScale = 1
-            launchTileOpacity = 1
-            // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
-            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
-            withAnimation(.easeIn(duration: 0.4725)) {
-                launchTileScale = 0.1
-                launchTileOpacity = 0
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4725) {
-                isCodeScreensaverMode = false
-                startupSequenceActivated = false
-                startupSequenceElapsed = 0
-                startupSpeechPhase = .idle
-                startGameFromBeginning(animateNeckSlideFromStartup: true)
-                isLaunchTransitionAnimating = false
-                launchTileScale = 1
-                launchTileOpacity = 1
-                isRoundPaused = false
-                transportStoppedForResume = false
-                syncMaestroBackingTrack()
-                withAnimation(.easeOut(duration: 0.6)) {
-                    questionBoxIntroProgress = 1
-                }
-            }
-            return
-        }
-
-        if transportStoppedForResume {
-            isRoundPaused = false
-            transportStoppedForResume = false
-            nextBeatTickDate = nil
-            beatLightLastProcessedBeat = nil
-            syncMaestroBackingTrack(allowResumeFromPause: true)
-            return
-        }
-
-        if !isCodeScreensaverMode {
-            handleMaestroResetButton()
-        }
-    }
-
-    private func handleMaestroStopButton() {
-        guard !isCodeScreensaverMode, !isRoundPaused else { return }
-        isRoundPaused = true
-        transportStoppedForResume = true
-        nextBeatTickDate = nil
-        beatPulseActive = false
-        beatLightFlashOn = false
-        beatLightLastProcessedBeat = nil
-        midiEngine.pause()
-    }
-
-    private func handleMaestroResetButton() {
-        resetButtonPressed = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            resetButtonPressed = false
-        }
-
-        isRoundPaused = false
-        transportStoppedForResume = false
-        nextBeatTickDate = nil
-        beatPulseActive = false
-        midiEngine.stop()
-        isCodeScreensaverMode = true
-        startupSequenceActivated = true
-        startupSequenceStartDate = .now
-        startupSequenceElapsed = 0
-        startupSpeechPhase = .pendingArmed
-        questionBoxIntroProgress = 0
-        isLaunchTransitionAnimating = false
-        launchTileScale = 1
-        launchTileOpacity = 1
-        startGameFromBeginning()
-        // Note: startGameFromBeginning now handles the transpose restart
-        beatLightFlashOn = false
-        beatLightLastProcessedBeat = nil
-        autoPlayNextDate = nil
-        autoPlayEnabled = false
-    }
-
-    private func syncMaestroBackingTrack(allowResumeFromPause: Bool = false) {
-        if availableBackingTracks.isEmpty {
-            availableBackingTracks = BackingTrack.discoverBundledTracks()
-        }
-        guard !availableBackingTracks.isEmpty else {
-            midiEngine.stop()
-            return
-        }
-        audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
-        guard let selectedTrackID = audioSettings.selectedBackingTrackID,
-              let selectedTrack = availableBackingTracks.first(where: { $0.id == selectedTrackID }),
-              let trackURL = selectedTrack.resourceURL() else {
-            midiEngine.stop()
-            return
-        }
-        if allowResumeFromPause {
-            midiEngine.resume()
-            return
-        }
-        if midiEngine.isPlaying, midiEngine.activeURL == trackURL {
-            return
-        }
-        midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
-    }
-
-    private func advanceGame(afterCorrectAnswer isCorrect: Bool, fromAutoPlay: Bool = false) {
-        if !isCorrect {
-            animateBankResetToZero {
-                startGameFromBeginning()
-            }
-            return
-        }
-
-        // Only award $1 for player correct answers, not autoplay
-        if !fromAutoPlay {
-            let payout = payoutForRound(currentRound)
-            bankDollars += payout
-            displayedBankDollars = bankDollars
-            walletDollars = bankDollars
-            balanceDollars += payout
-        }
-
-        // Advance to next string in round
-        if roundStringIndex < activeStringOrder.count - 1 {
-            roundStringIndex += 1
-        } else {
-            // Pass through all strings complete — decrement repetition counter
-            roundStringIndex = 0
-            if playInfiniteRepetitions {
-                // Infinite mode: never decrement, stay at current fret
-            } else {
-                repetitionsRemainingAtFret -= 1
-                if repetitionsRemainingAtFret <= 0 {
-                    repetitionsRemainingAtFret = max(playRepetitions, 1)
-                    // Clear answered notes when neck shifts to new fret
-                    answeredNotesByStringAtCurrentFret = [:]
-                    if !isPhaseDescending {
-                        if currentRound < 12 {
-                            currentRound += 1
-                        } else {
-                            // At upper boundary - reverse direction
-                            isDescendingPhase = true
-                            playDirectionRawValue = LessonDirection.descending.rawValue
-                            currentRound = 11
-                        }
-                    } else {
-                        if currentRound > 0 {
-                            currentRound -= 1
-                        } else {
-                            // At lower boundary - reverse direction
-                            isDescendingPhase = false
-                            playDirectionRawValue = LessonDirection.ascending.rawValue
-                            currentRound = 1
-                        }
-                    }
-                    // Immediate bass transpose
-                    midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
-                    // Immediate neck shift with animation
-                    withAnimation(.easeInOut(duration: 0.9)) {
-                        currentFretStart = max(currentRound, 0)
-                    }
-                }
-            }
-        }
-        isResolvingAnswer = false
-        prepareCurrentQuestion()
-    }
-
-    private func prepareCurrentQuestion() {
-        let targetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
-        currentPromptStrings = [targetString]
-
-        let noteString = currentPromptStrings.first ?? targetString
-        let fret = max(currentRound, 0)
-        let useFlats = maestroUsesFlats
-        let correctNote = noteName(forString: noteString, fret: fret, useFlats: useFlats)
-        let incorrectNote = randomIncorrectNote(excluding: correctNote, excludingLast: lastResolvedCorrectNote, useFlats: useFlats)
-
-        let correctOnLeft = Bool.random()
-
-        if correctOnLeft {
-            leftChoiceNote = correctNote
-            rightChoiceNote = incorrectNote
-        } else {
-            leftChoiceNote = incorrectNote
-            rightChoiceNote = correctNote
-        }
-
-        correctAnswerSide = correctOnLeft ? .left : .right
-        currentCorrectNote = correctNote
-
-        // Include both current prompt string and previously answered strings at current fret
-        let answeredStrings = Array(answeredNotesByStringAtCurrentFret.keys)
-        activePickedStringNumbers = answeredStrings + currentPromptStrings
-        currentQuestionIsAccidental = guitarNoteContainsAccidental(correctNote)
-        activeAnswerFeedback = nil
-
-        // Cache labels so they stay in sync with the question
-        cachedFretStatusLabel = "FRET \(fret)"
-        cachedStringStatusLabel = "STRING \(currentPromptStrings[0])"
-
-        if audioEngineEnabled && speakGameplayPrompts {
-            let promptSpoken = currentPromptStrings.count > 1
-                ? currentPromptStrings.map { "string \($0)" }.joined(separator: " and ")
-                : "string \(targetString)"
-            audioEngine.playNotePrompt(promptSpoken, volume: stringVolume)
-        }
-
-        withAnimation(.easeInOut(duration: 0.9)) {
-            currentFretStart = fret
-        }
-
-    }
-
-    private func payoutForRound(_ round: Int) -> Int {
-        return 1
-    }
-
-    private func animateBankResetToZero(completion: @escaping () -> Void) {
-        let startValue = displayedBankDollars
-        guard startValue > 0 else {
-            bankDollars = 0
-            displayedBankDollars = 0
-            completion()
-            return
-        }
-
-        let steps = 24
-        let interval: Double = 0.018
-        for step in 1...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (Double(step) * interval)) {
-                let remainingRatio = max(0, 1.0 - (Double(step) / Double(steps)))
-                displayedBankDollars = Int((Double(startValue) * remainingRatio).rounded())
-                if step == steps {
-                    bankDollars = 0
-                    displayedBankDollars = 0
-                    walletDollars = 0
-                    completion()
-                }
-            }
-        }
-    }
-
-    private func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {
-        Group {
-            if !isHidden {
-                Text(text)
-                    .font(.system(size: 24, weight: .black, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.96))
-                    .shadow(color: Color.black.opacity(0.72), radius: 3, x: 0, y: 1)
-                    .position(x: leftX, y: centerY)
-
-                Text(text)
-                    .font(.system(size: 24, weight: .black, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.96))
-                    .shadow(color: Color.black.opacity(0.72), radius: 3, x: 0, y: 1)
-                    .position(x: rightX, y: centerY)
-            }
-        }
-        .allowsHitTesting(false)
-    }
-
-    private func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
-        guard let openNote = openNoteByString[string],
-              let openIndex = chromaticSharps.firstIndex(of: openNote) else {
-            return "?"
-        }
-
-        let noteIndex = (openIndex + fret) % chromaticSharps.count
-        let scale = useFlats ? chromaticFlats : chromaticSharps
-        return scale[noteIndex]
-    }
-
-    private func randomIncorrectNote(excluding correct: String, excludingLast lastCorrect: String?, useFlats: Bool) -> String {
-        let source = useFlats ? chromaticFlats : chromaticSharps
-        let correctIsAccidental = guitarNoteContainsAccidental(correct)
-        let pool = source.filter { note in
-            note != correct &&
-            guitarNoteContainsAccidental(note) == correctIsAccidental &&
-            note != lastCorrect
-        }
-        return pool.randomElement() ?? (correctIsAccidental ? "C#" : "C")
-    }
-
-    private func textWidth(for text: String, font: UIFont) -> CGFloat {
-        let attributes = [NSAttributedString.Key.font: font]
-        return ceil(text.size(withAttributes: attributes).width)
-    }
-
-    private func handleGameplayMenuSelection(_ option: GameplayMenuOption) {
-        gameplayMenuExpanded = false
-        if !isCodeScreensaverMode && !isRoundPaused {
-            handleMaestroStopButton()
-        }
-        if option == .audio {
-            availableBackingTracks = BackingTrack.discoverBundledTracks()
-            audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
-            showAudioPage = true
-            showDeveloperPrompt("MENU: AUDIO")
-            return
-        }
-        onMenuSelection?(option)
-        showDeveloperPrompt("MENU: \(option.title)")
-    }
-
-    private func handleStartupSpeech(for phase: MaestroStartupSequenceView.Phase) {
-        guard audioEngineEnabled else { return }
-        switch phase {
-        case .armed:
-            if startupSpeechPhase == .pendingArmed {
-                speakStartup("Memorization Sequence Armed")
-                startupSpeechPhase = .idle
-            }
-        }
-    }
-
-    private func speakStartup(_ phrase: String) {
-        audioEngine.speakStartupAlert(phrase, volume: stringVolume)
-    }
-
-    private func handleFretboardButtonPress() {
-        showFretboardGuide.toggle()
-        showDeveloperPrompt(showFretboardGuide ? "Fretboard guide ON" : "Fretboard guide OFF")
-    }
-
-
-    private func showDeveloperPrompt(_ text: String) {
-        developerPromptText = text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            if developerPromptText == text {
-                developerPromptText = ""
-            }
-        }
-    }
 }
 
-private extension MaestroGameplayView {
-    func debugGridOverlay(size: CGSize, columns: Int, rows: Int) -> some View {
-        let cellWidth = size.width / CGFloat(columns)
-        let cellHeight = size.height / CGFloat(rows)
-
-        return ZStack {
-            Path { path in
-                for column in 0...columns {
-                    let x = CGFloat(column) * cellWidth
-                    path.move(to: CGPoint(x: x, y: 0))
-                    path.addLine(to: CGPoint(x: x, y: size.height))
-                }
-
-                for row in 0...rows {
-                    let y = CGFloat(row) * cellHeight
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: size.width, y: y))
-                }
-            }
-            .stroke(Color.red.opacity(0.45), lineWidth: 1)
-
-            ForEach(0..<rows, id: \.self) { row in
-                ForEach(0..<columns, id: \.self) { column in
-                    let index = row * columns + column + 1
-                    Text("\(index)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color.red.opacity(0.85))
-                        .position(
-                            x: CGFloat(column) * cellWidth + cellWidth / 2,
-                            y: CGFloat(row) * cellHeight + cellHeight / 2
-                        )
-                }
-            }
-        }
-    }
-}
 
 #Preview {
     MaestroGameplayView()

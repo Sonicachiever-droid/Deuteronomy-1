@@ -37,14 +37,12 @@ final class SharedAudioEngine: ObservableObject {
         delayLevel: .off
     )
 
-    private let openMIDINotesByString: [Int: Int] = [
-        6: 40, 5: 45, 4: 50, 3: 55, 2: 59, 1: 64,
-    ]
+    private let openMIDINotesByString: [Int: Int] = GuitarConstants.openMIDINotesByString
 
     private let instrumentByPreset: [GuitarTonePreset: InstrumentDescriptor] = [
-        .acoustic: InstrumentDescriptor(bundledResourceName: "guitar_acoustic", bundledFileExtension: "sf2", program: 24),
-        .electricClean: InstrumentDescriptor(bundledResourceName: "guitar_clean", bundledFileExtension: "sf2", program: 27),
-        .electricDirty: InstrumentDescriptor(bundledResourceName: "guitar_dirty", bundledFileExtension: "sf2", program: 30),
+        .acoustic: InstrumentDescriptor(bundledResourceName: "guitar_acoustic", bundledFileExtension: "sf2", program: GuitarConstants.programAcoustic),
+        .electricClean: InstrumentDescriptor(bundledResourceName: "guitar_clean", bundledFileExtension: "sf2", program: GuitarConstants.programElectricClean),
+        .electricDirty: InstrumentDescriptor(bundledResourceName: "guitar_dirty", bundledFileExtension: "sf2", program: GuitarConstants.programElectricDirty),
     ]
 
     // MARK: - MIDI state
@@ -56,7 +54,7 @@ final class SharedAudioEngine: ObservableObject {
     var activeURL: URL? { currentURL }
     private var isLooping: Bool = true
     private var loopTimer: Timer?
-    private let loopLengthInBeats: TimeInterval = 16
+    private let loopLengthInBeats: TimeInterval = AudioConstants.loopLengthInBeats
     private var bassTransposeSemitones: Int = 0
     private var pausedPositionInBeats: TimeInterval?
     private var isStopped: Bool = false
@@ -97,12 +95,12 @@ final class SharedAudioEngine: ObservableObject {
         engine.connect(drumsSampler, to: engine.mainMixerNode, format: nil)
 
         // FIX A2: Bass volume capped below unity. All samplers gain-staged safely.
-        keysSampler.volume = 0.65
-        bassSampler.volume = 0.85
-        drumsSampler.volume = 0.70
+        keysSampler.volume = AudioConstants.keysVolume
+        bassSampler.volume = AudioConstants.bassVolume
+        drumsSampler.volume = AudioConstants.drumsVolume
 
         // FIX A3: Master volume set ONCE — never mutated per-note.
-        engine.mainMixerNode.outputVolume = 0.72
+        engine.mainMixerNode.outputVolume = AudioConstants.masterVolume
 
         configureGuitarEffects()
         loadGuitarInstrument(for: toneConfiguration.preset)
@@ -121,7 +119,7 @@ final class SharedAudioEngine: ObservableObject {
         }
     }
 
-    func play(string: Int, fret: Int, velocity: Float = 0.92) {
+    func play(string: Int, fret: Int, velocity: Float = AudioConstants.defaultNoteVelocity) {
         guard let openMIDINote = openMIDINotesByString[string] else { return }
         let midiNote = openMIDINote + max(fret, 0)
         play(midiNote: midiNote, velocity: velocity)
@@ -147,8 +145,8 @@ final class SharedAudioEngine: ObservableObject {
         }
     }
 
-    func play(midiNote: Int, velocity: Float = 0.92) {
-        let clampedMIDINote = min(max(midiNote, 24), 88)
+    func play(midiNote: Int, velocity: Float = AudioConstants.defaultNoteVelocity) {
+        let clampedMIDINote = min(max(midiNote, GuitarConstants.midiNoteMin), GuitarConstants.midiNoteMax)
         startEngineIfNeeded()
         if let activeMIDINote {
             guitarSampler.stopNote(activeMIDINote, onChannel: 0)
@@ -174,8 +172,8 @@ final class SharedAudioEngine: ObservableObject {
     }
 
     @discardableResult
-    func playChord(midiNotes: [Int], velocity: Float = 0.92, sustainMultiplier: Double = 1.0) -> TimeInterval {
-        let clampedNotes = Array(Set(midiNotes.map { min(max($0, 24), 88) })).sorted()
+    func playChord(midiNotes: [Int], velocity: Float = AudioConstants.defaultNoteVelocity, sustainMultiplier: Double = 1.0) -> TimeInterval {
+        let clampedNotes = Array(Set(midiNotes.map { min(max($0, GuitarConstants.midiNoteMin), GuitarConstants.midiNoteMax) })).sorted()
         guard !clampedNotes.isEmpty else { return 0 }
 
         startEngineIfNeeded()
@@ -232,10 +230,14 @@ final class SharedAudioEngine: ObservableObject {
                 self.isPlaying = true
             }
 
+            #if DEBUG
             print("[SharedAudioEngine] Playing: \(currentTrackTitle) (looping: \(loop))")
+            #endif
 
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to play: \(error)")
+            #endif
         }
     }
 
@@ -252,7 +254,9 @@ final class SharedAudioEngine: ObservableObject {
         DispatchQueue.main.async {
             self.isPlaying = false
         }
+        #if DEBUG
         print("[SharedAudioEngine] Paused at beat \(pausedPositionInBeats ?? 0)")
+        #endif
     }
 
     func resume() {
@@ -268,9 +272,13 @@ final class SharedAudioEngine: ObservableObject {
             DispatchQueue.main.async {
                 self.isPlaying = true
             }
+            #if DEBUG
             print("[SharedAudioEngine] Resumed at beat \(sequencer.currentPositionInBeats)")
+            #endif
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to resume: \(error)")
+            #endif
         }
     }
 
@@ -283,12 +291,16 @@ final class SharedAudioEngine: ObservableObject {
         DispatchQueue.main.async {
             self.isPlaying = false
         }
+        #if DEBUG
         print("[SharedAudioEngine] Stopped")
+        #endif
     }
 
     func setTempo(bpm: Double) {
         sequencer.rate = Float(bpm / 120.0)
+        #if DEBUG
         print("[SharedAudioEngine] Tempo changed to \(bpm) BPM")
+        #endif
     }
 
     func currentBeatPosition() -> Double {
@@ -301,7 +313,9 @@ final class SharedAudioEngine: ObservableObject {
             track.numberOfLoops = looping ? -1 : 1
             track.isLoopingEnabled = looping
         }
+        #if DEBUG
         print("[SharedAudioEngine] Looping set to: \(looping)")
+        #endif
     }
 
     func muteTrack0() {
@@ -345,7 +359,9 @@ final class SharedAudioEngine: ObservableObject {
                     bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
                     bankLSB: 0
                 )
+                #if DEBUG
                 print("[SharedAudioEngine] Loaded guitar sounds from \(instrumentURL.lastPathComponent)")
+                #endif
                 // Prime the sampler to avoid first-note glitch
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
                     guard let self else { return }
@@ -356,7 +372,9 @@ final class SharedAudioEngine: ObservableObject {
                 }
                 return
             } catch {
+                #if DEBUG
                 print("[SharedAudioEngine] Failed loading \(instrumentURL.lastPathComponent) - \(error)")
+                #endif
             }
         }
 
@@ -368,10 +386,14 @@ final class SharedAudioEngine: ObservableObject {
                     bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
                     bankLSB: 0
                 )
+                #if DEBUG
                 print("[SharedAudioEngine] Using system sound bank fallback")
+                #endif
                 return
             } catch {
+                #if DEBUG
                 print("[SharedAudioEngine] Failed fallback sound bank load - \(error)")
+                #endif
             }
         }
     }
@@ -400,41 +422,41 @@ final class SharedAudioEngine: ObservableObject {
     private func feedback(for level: AudioEffectLevel, preset: GuitarTonePreset) -> Float {
         let base: Float
         switch level {
-        case .off: base = 0
-        case .low: base = 14
-        case .medium: base = 24
-        case .high: base = 34
+        case .off:    base = AudioConstants.feedbackOff
+        case .low:    base = AudioConstants.feedbackLow
+        case .medium: base = AudioConstants.feedbackMedium
+        case .high:   base = AudioConstants.feedbackHigh
         }
-        return preset == .electricDirty ? base + 6 : base
+        return preset == .electricDirty ? base + AudioConstants.electricDirtyFeedbackBoost : base
     }
 
     private func delayTime(for preset: GuitarTonePreset) -> TimeInterval {
         switch preset {
-        case .acoustic: return 0.12
-        case .electricClean: return 0.16
-        case .electricDirty: return 0.18
+        case .acoustic:      return AudioConstants.acousticDelayTime
+        case .electricClean: return AudioConstants.electricCleanDelayTime
+        case .electricDirty: return AudioConstants.electricDirtyDelayTime
         }
     }
 
     private func noteLength(for preset: GuitarTonePreset) -> TimeInterval {
         switch preset {
-        case .acoustic: return 1.35
-        case .electricClean: return 1.6
-        case .electricDirty: return 1.2
+        case .acoustic:      return AudioConstants.acousticNoteLength
+        case .electricClean: return AudioConstants.electricCleanNoteLength
+        case .electricDirty: return AudioConstants.electricDirtyNoteLength
         }
     }
 
     private func effectiveVelocity(for preset: GuitarTonePreset, requested: Float) -> Float {
         switch preset {
-        case .electricDirty: return min(requested, 0.62)
+        case .electricDirty: return min(requested, AudioConstants.electricDirtyVelocityCap)
         default: return requested
         }
     }
 
     private func effectiveSustainMultiplier(for preset: GuitarTonePreset, requested: Double) -> Double {
-        let clamped = max(requested, 0.1)
+        let clamped = max(requested, AudioConstants.sustainMultiplierMin)
         switch preset {
-        case .electricClean, .electricDirty: return min(clamped, 1.5)
+        case .electricClean, .electricDirty: return min(clamped, AudioConstants.sustainMultiplierMax)
         case .acoustic: return clamped
         }
     }
@@ -455,7 +477,9 @@ final class SharedAudioEngine: ObservableObject {
 
     private func loadMIDISamplers() {
         guard let sf2URL = Bundle.main.url(forResource: "GeneralUser GS v1.472", withExtension: "sf2") else {
+            #if DEBUG
             print("[SharedAudioEngine] SoundFont not found")
+            #endif
             return
         }
 
@@ -468,7 +492,9 @@ final class SharedAudioEngine: ObservableObject {
         do {
             try sampler.loadSoundBankInstrument(at: url, program: program, bankMSB: bankMSB, bankLSB: bankLSB)
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Failed to load instrument program \(program): \(error)")
+            #endif
         }
     }
 
@@ -507,7 +533,9 @@ final class SharedAudioEngine: ObservableObject {
         do {
             try engine.start()
         } catch {
+            #if DEBUG
             print("[SharedAudioEngine] Engine start failed - \(error)")
+            #endif
         }
     }
 

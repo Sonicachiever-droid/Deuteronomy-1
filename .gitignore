@@ -1,0 +1,8 @@
+# Xcode user-specific workspace state
+*.xcuserstate
+
+# Xcode derived data
+DerivedData/
+
+# macOS
+.DS_Store

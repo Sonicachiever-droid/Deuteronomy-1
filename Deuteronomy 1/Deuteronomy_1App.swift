@@ -26,20 +26,25 @@ struct Deuteronomy_1App: App {
     @AppStorage("numbers3.setup.selectedMode") private var selectedModeRawValue: String = "beginner"
     @AppStorage("numbers3.setup.progression") private var progressionRawValue: String = "highToLow"
     @AppStorage("numbers3.setup.orientation") private var orientationRawValue: String = Orientation.portrait.rawValue
+    @AppStorage("numbers3.setup.consoleSkin") private var consoleSkinRawValue: String = ConsoleSkin.classic.rawValue
+    @AppStorage("numbers3.setup.premiumUnlocked") private var premiumUnlocked: Bool = false
 
     private var orientation: Orientation {
         Orientation(rawValue: orientationRawValue) ?? .portrait
     }
 
+    private var consoleSkin: ConsoleSkin {
+        get { ConsoleSkin(rawValue: consoleSkinRawValue) ?? .classic }
+        set { consoleSkinRawValue = newValue.rawValue }
+    }
+
     init() {
         let savedMode = UserDefaults.standard.string(forKey: "numbers3.setup.selectedMode") ?? "beginner"
         let savedOrientation = UserDefaults.standard.string(forKey: "numbers3.setup.orientation") ?? Orientation.portrait.rawValue
-        // Only allow landscape lock if maestro mode
-        if savedMode == "maestro" && savedOrientation == Orientation.landscape.rawValue {
-            AppDelegate.orientationLock = .landscape
-        } else {
-            AppDelegate.orientationLock = .portrait
-        }
+        // Always portrait on launch — welcome screen is always shown first
+        AppDelegate.orientationLock = .portrait
+        _ = savedMode
+        _ = savedOrientation
         // FIX A5: Single audio session configuration — no per-engine conflicts
         #if os(iOS)
         do {
@@ -53,11 +58,17 @@ struct Deuteronomy_1App: App {
         if LessonDirection(rawValue: directionRawValue) == nil {
             directionRawValue = LessonDirection.ascending.rawValue
         }
-        if selectedModeRawValue == "beginner" {
-            layoutMode = .beginner
-        } else if selectedModeRawValue == "maestro" {
-            layoutMode = .maestro
+        // Clamp persisted values to what the user has actually purchased
+        let landscapePurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.landscape")
+        if !landscapePurchased {
+            UserDefaults.standard.set(Orientation.portrait.rawValue, forKey: "numbers3.setup.orientation")
         }
+        let highFretsPurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.highFrets")
+        if !highFretsPurchased {
+            UserDefaults.standard.set(false, forKey: "numbers3.setup.enableHighFrets")
+        }
+        // Always show welcome screen on cold launch
+        layoutMode = nil
     }
 
     var body: some Scene {
@@ -78,7 +89,8 @@ struct Deuteronomy_1App: App {
                             playLessonStyle: $lessonStyleRawValue,
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
-                            balanceDollars: $balancePoints
+                            balanceDollars: $balancePoints,
+                            consoleSkin: consoleSkin
                         )
                     case .maestro:
                         MaestroGameplayView(
@@ -94,48 +106,15 @@ struct Deuteronomy_1App: App {
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints,
-                            orientation: orientation
+                            orientation: orientation,
+                            consoleSkin: consoleSkin
                         )
                     }
                 } else {
-                    ZStack {
-                        Color.black.opacity(0.6)
-                            .ignoresSafeArea()
-                        VStack(spacing: 20) {
-                            Text("Choose Console")
-                                .font(.title2).bold()
-                                .foregroundColor(.white)
-                            VStack(spacing: 12) {
-                                Button {
-                                    layoutMode = .beginner
-                                } label: {
-                                    Text("Beginner Console")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(Color.blue.opacity(0.9))
-                                        .cornerRadius(12)
-                                }
-                                Button {
-                                    layoutMode = .maestro
-                                } label: {
-                                    Text("Maestro Console")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(Color.gray.opacity(0.9))
-                                        .cornerRadius(12)
-                                }
-                            }
-                            .frame(maxWidth: 320)
-                        }
-                        .padding(24)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.4), radius: 16, x: 0, y: 6)
-                    }
+                    WelcomeScreenView(
+                        onSelectBeginner: { layoutMode = .beginner },
+                        onSelectMaestro: { layoutMode = .maestro }
+                    )
                 }
             }
             .onChange(of: layoutMode) { _, newMode in
@@ -174,12 +153,15 @@ struct Deuteronomy_1App: App {
                     lessonStyleRawValue: $lessonStyleRawValue,
                     progressionRawValue: $progressionRawValue,
                     layoutMode: $layoutMode,
-                    orientationRawValue: $orientationRawValue
+                    orientationRawValue: $orientationRawValue,
+                    consoleSkinRawValue: $consoleSkinRawValue
                 )
             }
             .onChange(of: orientationRawValue) { _, newValue in
-                // Only allow landscape if in maestro mode
-                guard layoutMode == .maestro else {
+                let landscapePurchased = UserDefaults.standard.bool(forKey: "numbers3.purchased.landscape")
+                // Only allow landscape if in maestro mode AND purchase has been made
+                guard layoutMode == .maestro, landscapePurchased else {
+                    orientationRawValue = Orientation.portrait.rawValue
                     AppDelegate.orientationLock = .portrait
                     return
                 }
@@ -206,6 +188,37 @@ struct Deuteronomy_1App: App {
     }
 }
 
+
+private struct MenuRow: View {
+    let label: String
+    let value: String
+    let gold: Color
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                .foregroundColor(.white.opacity(0.7))
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                .foregroundColor(gold)
+        }
+    }
+}
+
+private struct MenuTextRow: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 14, weight: .regular, design: .monospaced))
+            .foregroundColor(.white.opacity(0.85))
+            .lineSpacing(4)
+    }
+}
+
 private struct Deuteronomy1MenuSheet: View {
     let option: GameplayMenuOption
     @Binding var walletPoints: Int
@@ -219,137 +232,328 @@ private struct Deuteronomy1MenuSheet: View {
     @Binding var progressionRawValue: String
     @Binding var layoutMode: LayoutMode?
     @Binding var orientationRawValue: String
+    @Binding var consoleSkinRawValue: String
+    @AppStorage("numbers3.purchased.tweed") private var tweedPurchased: Bool = false
+    @AppStorage("numbers3.purchased.highFrets") private var highFretsPurchased: Bool = false
+    @AppStorage("numbers3.purchased.landscape") private var landscapePurchased: Bool = false
     @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var isButtonPressed: Bool = false
+
+    private var consoleSkin: ConsoleSkin {
+        get { ConsoleSkin(rawValue: consoleSkinRawValue) ?? .classic }
+        set { consoleSkinRawValue = newValue.rawValue }
+    }
 
     private var repetitionDisplay: String {
         infiniteRepetitions ? "∞" : "\(repetitions)"
     }
 
+    private let gold = Color.goldBorderMid
+    private let goldDim = Color.goldBorderMid.opacity(0.55)
+
     var body: some View {
         NavigationStack {
-            Form {
-                switch option {
-                case .home:
-                    Section("Progress") {
-                        LabeledContent("Wallet", value: "\(walletPoints)")
-                        LabeledContent("Balance", value: "\(balancePoints)")
-                    }
-                    if layoutMode == .maestro {
-                        Section("Orientation") {
-                            Picker("Layout", selection: $orientationRawValue) {
-                                Text("Portrait").tag(Orientation.portrait.rawValue)
-                                Text("Landscape").tag(Orientation.landscape.rawValue)
+            ZStack {
+                FullScreenElephantBackground()
+                    .ignoresSafeArea()
+                Color.black.opacity(0.55)
+                    .ignoresSafeArea()
+                GoldPipingBorder(bottomInset: 0)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        switch option {
+                        case .home:
+                            MenuSection(title: "PROGRESS", gold: gold) {
+                                MenuRow(label: "Wallet", value: "$\(walletPoints)", gold: gold)
+                                MenuRow(label: "Balance", value: "$\(balancePoints)", gold: gold)
                             }
-                            .pickerStyle(.segmented)
-                        }
-                    }
-                case .learn:
-                    Section("Lesson Setup") {
-                        if layoutMode == .beginner {
-                            Picker("Style", selection: $lessonStyleRawValue) {
-                                Text("Sequential").tag("sequential")
-                                Text("Chord").tag("chord")
-                            }
-                            .pickerStyle(.segmented)
-                        }
-
-                        Stepper("Repetitions: \(repetitionDisplay)", value: $repetitions, in: 1...8)
-                            .disabled(infiniteRepetitions)
-
-                        Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
-
-                        Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(enableHighFrets ? 19 : 12))
-                            .onChange(of: startingFret) { _, newValue in
-                                if newValue == 0 {
-                                    directionRawValue = LessonDirection.ascending.rawValue
-                                } else if newValue >= (enableHighFrets ? 19 : 12) {
-                                    directionRawValue = LessonDirection.descending.rawValue
-                                }
-                            }
-
-                        let upperBound = enableHighFrets ? 19 : 12
-                        let descendingLocked = startingFret == 0
-                        let ascendingLocked = startingFret >= upperBound
-                        Picker("Direction", selection: Binding(
-                            get: { directionRawValue },
-                            set: { newValue in
-                                let isDescending = newValue == LessonDirection.descending.rawValue
-                                if isDescending && descendingLocked { return }
-                                if !isDescending && ascendingLocked { return }
-                                directionRawValue = newValue
-                            }
-                        )) {
-                            Text("Ascending").tag(LessonDirection.ascending.rawValue)
-                            Text("Descending").tag(LessonDirection.descending.rawValue)
-                        }
-                        .pickerStyle(.segmented)
-
-                        let progressionLocked = layoutMode == .beginner && lessonStyleRawValue == "chord"
-                        Picker("Progression", selection: $progressionRawValue) {
-                            Text("High → Low").tag("highToLow")
-                            Text("Low → High").tag("lowToHigh")
-                        }
-                        .pickerStyle(.segmented)
-                        .disabled(progressionLocked)
-                        .colorMultiply(progressionLocked ? .red : .white)
-
-                        Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
-                    }
-                    .onChange(of: enableHighFrets) { _, isEnabled in
-                        if !isEnabled {
-                            startingFret = min(startingFret, 12)
-                        }
-                    }
-
-                    Section {
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
-                                isButtonPressed = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                if layoutMode == .beginner {
-                                    layoutMode = .maestro
+                            MenuSection(title: "UNLOCKS", gold: gold) {
+                                // High Frets row
+                                if highFretsPurchased {
+                                    Toggle("Enable High Frets (12+)", isOn: $enableHighFrets)
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                        .tint(gold)
+                                        .accessibilityLabel(A11y.Settings.highFretsToggle)
+                                        .accessibilityHint(A11y.Settings.highFretsHint)
+                                        .onChange(of: enableHighFrets) { _, isEnabled in
+                                            if !isEnabled {
+                                                startingFret = min(startingFret, 12)
+                                            }
+                                        }
                                 } else {
-                                    layoutMode = .beginner
+                                    Button(action: {
+                                        if balancePoints >= 500 {
+                                            balancePoints -= 500
+                                            highFretsPurchased = true
+                                        }
+                                    }) {
+                                        HStack {
+                                            Text("Enable High Frets (12+)")
+                                                .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
+                                            Spacer()
+                                            Text("$500")
+                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(balancePoints < 500)
+                                    .accessibilityLabel(A11y.Settings.buyHighFrets)
+                                    .accessibilityHint(A11y.Settings.buyHighFretsHint(canAfford: balancePoints >= 500))
                                 }
-                                dismiss()
+                                // Landscape row (Maestro only)
+                                if layoutMode == .maestro {
+                                    if landscapePurchased {
+                                        GoldPickerRow(
+                                            label: "Layout",
+                                            options: [
+                                                (label: "Portrait", value: Orientation.portrait.rawValue),
+                                                (label: "Landscape", value: Orientation.landscape.rawValue)
+                                            ],
+                                            selection: $orientationRawValue
+                                        )
+                                    } else {
+                                        Button(action: {
+                                            if balancePoints >= 500 {
+                                                balancePoints -= 500
+                                                landscapePurchased = true
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text("Landscape Mode")
+                                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? .white.opacity(0.7) : .white.opacity(0.3))
+                                                Spacer()
+                                                Text("$500")
+                                                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(balancePoints < 500)
+                                        .accessibilityLabel(A11y.Settings.buyLandscape)
+                                        .accessibilityHint(A11y.Settings.buyLandscapeHint(canAfford: balancePoints >= 500))
+                                    }
+                                }
                             }
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Text(layoutMode == .beginner ? "Switch to Maestro Mode" : "Switch to Beginner Mode")
-                                    .font(.headline)
-                                Spacer()
+                            MenuSection(title: "SKINS", gold: gold) {
+                                // Classic row
+                                Button(action: { consoleSkinRawValue = ConsoleSkin.classic.rawValue }) {
+                                    HStack {
+                                        Text("Classic")
+                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .foregroundColor(.white.opacity(0.7))
+                                        Spacer()
+                                        if consoleSkin == .classic {
+                                            Text("ACTIVE")
+                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .foregroundColor(Color.green)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(A11y.Settings.skinClassic)
+                                .accessibilityHint(A11y.Settings.skinClassicHint(isActive: consoleSkin == .classic))
+                                .accessibilityAddTraits(consoleSkin == .classic ? [.isSelected] : [])
+                                // Tweed row
+                                Button(action: {
+                                    if tweedPurchased {
+                                        consoleSkinRawValue = ConsoleSkin.tweed.rawValue
+                                    } else if balancePoints >= 500 {
+                                        balancePoints -= 500
+                                        ConsoleSkin.purchaseTweed()
+                                        tweedPurchased = true
+                                    }
+                                }) {
+                                    HStack {
+                                        Text("Tweed")
+                                            .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                            .foregroundColor(tweedPurchased ? .white.opacity(0.7) : (balancePoints >= 500 ? gold : .white.opacity(0.3)))
+                                        Spacer()
+                                        if consoleSkin == .tweed {
+                                            Text("ACTIVE")
+                                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                .foregroundColor(Color.green)
+                                        } else if tweedPurchased {
+                                            Text("owned")
+                                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                                .foregroundColor(.white.opacity(0.4))
+                                        } else {
+                                            Text("$500")
+                                                .font(.system(size: 15, weight: .bold, design: .monospaced))
+                                                .foregroundColor(balancePoints >= 500 ? gold : .red)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!tweedPurchased && balancePoints < 500)
+                                .accessibilityLabel(A11y.Settings.skinTweed)
+                                .accessibilityHint(A11y.Settings.skinTweedHint(purchased: tweedPurchased, canAfford: balancePoints >= 500, isActive: consoleSkin == .tweed))
+                                .accessibilityAddTraits(consoleSkin == .tweed ? [.isSelected] : [])
+                            }
+
+                        case .learn:
+                            MenuSection(title: "LESSON SETUP", gold: gold) {
+                                if layoutMode == .beginner {
+                                    GoldPickerRow(
+                                        label: "Style",
+                                        options: [
+                                            (label: "Sequential", value: "sequential"),
+                                            (label: "Chord", value: "chord")
+                                        ],
+                                        selection: $lessonStyleRawValue
+                                    )
+                                }
+
+                                Stepper("Repetitions: \(repetitionDisplay)", value: $repetitions, in: 1...8)
+                                    .disabled(infiniteRepetitions)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.repetitionsStepper)
+                                    .accessibilityValue(A11y.Settings.repetitionsValue(repetitions))
+
+                                Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.infiniteRepsToggle)
+                                    .accessibilityHint(A11y.Settings.infiniteRepsHint)
+
+                                Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(highFretsPurchased && enableHighFrets ? 19 : 12))
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 15, weight: .regular, design: .monospaced))
+                                    .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.startingFretStepper)
+                                    .accessibilityValue(A11y.Settings.startingFretValue(startingFret))
+                                    .onChange(of: startingFret) { _, newValue in
+                                        if newValue == 0 {
+                                            directionRawValue = LessonDirection.ascending.rawValue
+                                        } else if newValue >= (highFretsPurchased && enableHighFrets ? 19 : 12) {
+                                            directionRawValue = LessonDirection.descending.rawValue
+                                        }
+                                    }
+
+                                let upperBound = highFretsPurchased && enableHighFrets ? 19 : 12
+                                let descendingLocked = startingFret == 0
+                                let ascendingLocked = startingFret >= upperBound
+                                GoldPickerRow(
+                                    label: "Direction",
+                                    options: [
+                                        (label: "Ascending", value: LessonDirection.ascending.rawValue),
+                                        (label: "Descending", value: LessonDirection.descending.rawValue)
+                                    ],
+                                    selection: Binding(
+                                        get: { directionRawValue },
+                                        set: { newValue in
+                                            let isDescending = newValue == LessonDirection.descending.rawValue
+                                            if isDescending && descendingLocked { return }
+                                            if !isDescending && ascendingLocked { return }
+                                            directionRawValue = newValue
+                                        }
+                                    )
+                                )
+
+                                let progressionLocked = layoutMode == .beginner && lessonStyleRawValue == "chord"
+                                GoldPickerRow(
+                                    label: "Progression",
+                                    options: [
+                                        (label: "High → Low", value: "highToLow"),
+                                        (label: "Low → High", value: "lowToHigh")
+                                    ],
+                                    selection: $progressionRawValue,
+                                    disabled: progressionLocked
+                                )
+
+                            }
+
+                            MenuSection(title: "CONSOLE", gold: gold) {
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                                        isButtonPressed = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        if layoutMode == .beginner {
+                                            layoutMode = .maestro
+                                        } else {
+                                            layoutMode = .beginner
+                                        }
+                                        dismiss()
+                                    }
+                                } label: {
+                                    Text(layoutMode == .beginner ? "SWITCH TO MAESTRO" : "SWITCH TO BEGINNER")
+                                        .font(.system(size: 15, weight: .black, design: .monospaced))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(Color.black.opacity(0.65))
+                                        .cornerRadius(10)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .strokeBorder(
+                                                    LinearGradient(
+                                                        colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    ),
+                                                    lineWidth: 1.5
+                                                )
+                                        )
+                                }
+                                .scaleEffect(isButtonPressed ? 1.04 : 1.0)
+                                .animation(.spring(response: 0.25, dampingFraction: 0.4), value: isButtonPressed)
+                                .accessibilityLabel(layoutMode == .beginner ? "Switch to Maestro mode" : "Switch to Beginner mode")
+                                .accessibilityHint(layoutMode == .beginner ? "Switches to the advanced Maestro console" : "Switches to the Beginner console")
+                            }
+
+                        case .guide:
+                            MenuSection(title: "THE GAME", gold: gold) {
+                                MenuTextRow("ReFret drills you on note names across the guitar neck. Each round covers one fret — from open strings (round 0) through fret 19. Complete all strings on a fret to advance.")
+                            }
+                            MenuSection(title: "CONSOLES", gold: gold) {
+                                MenuTextRow("BEGINNER — Six buttons appear, one per string, each showing a note name. Tap the correct note for the highlighted string. Notes are shown before each round.")
+                                MenuTextRow("MAESTRO — No labels. Recall the correct note name from memory and tap it.")
+                            }
+                            MenuSection(title: "LESSON STYLES", gold: gold) {
+                                MenuTextRow("SEQUENTIAL — Notes are revealed string by string before each round. Answer each in order.")
+                                MenuTextRow("CHORD — All string positions are active at once. Answer the highlighted string.")
+                            }
+                            MenuSection(title: "TOOLBAR BUTTONS", gold: gold) {
+                                MenuTextRow("FRETBOARD — Shows all note names at the current fret position for reference.")
+                                MenuTextRow("AUTO — Plays correct answers automatically. Use to listen and learn. Tap again to stop.")
+                                MenuTextRow("REV — Reverses the play direction between ascending and descending frets mid-round.")
+                            }
+                            MenuSection(title: "SCORING", gold: gold) {
+                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between sessions.")
+                            }
+
+                        case .audio:
+                            MenuSection(title: "AUDIO", gold: gold) {
+                                MenuTextRow("Use the AUDIO tab to select guitar sound preset and tempo settings.")
                             }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .scaleEffect(isButtonPressed ? 1.08 : 1.0)
-                        .animation(.spring(response: 0.25, dampingFraction: 0.4), value: isButtonPressed)
                     }
-                case .guide:
-                    Section("Controls") {
-                        Text("FRETBOARD: Toggles a visual guide showing all notes at current fret position.")
-                        Text("AUTO: Toggles autoplay mode (automatically plays correct notes).")
-                    }
-                    Section("Modes") {
-                        Text("Choose Beginner Modes to familiarize yourself with fretboard.")
-                        Text("Choose Maestro mode to test your knowledge.")
-                        Text("Sequential teaches Fret Notes by repetition. Choose progression from high to low or low to high.")
-                        Text("Chord teaches chords formed from Fret notes.")
-                    }
-                case .audio:
-                    Section("Audio") {
-                        Text("Use the in-game AUDIO page for backing track and instrument mix settings.")
-                    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
                 }
             }
             .onAppear { directionLockActive = false }
             .navigationTitle(option.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.black.opacity(0.85), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(gold)
+                        .accessibilityLabel(A11y.Settings.doneButton)
+                        .accessibilityHint(A11y.Settings.doneHint)
                 }
             }
         }

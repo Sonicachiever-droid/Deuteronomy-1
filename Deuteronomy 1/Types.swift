@@ -22,6 +22,43 @@ enum GameConstants {
     static let rightColumnStrings: [Int] = [3, 2, 1]
 }
 
+// MARK: - Animation Durations
+
+enum AnimationDurations {
+    /// Eased transition for launch/round-start screen wipe
+    static let launchTransition: TimeInterval = 0.4725
+    /// Quick beat-flash for the startup sequence armed state
+    static let beatFlash: TimeInterval = 0.08
+    /// Short delay before a reset takes effect
+    static let resetDelay: TimeInterval = 0.3
+    /// Flash period for the "armed" banner in the startup sequence
+    static let armedFlashPeriod: TimeInterval = 1.0
+}
+
+// MARK: - Audio Constants
+
+enum AudioVelocity {
+    /// Standard full-strength note velocity
+    static let full: Float = 0.98
+    /// Softer velocity used when force-playing prompted notes
+    static let soft: Float = 0.82
+}
+
+// MARK: - UI Dimensions
+
+enum UIMetrics {
+    /// Font size for the startup sequence label
+    static let startupFontSize: CGFloat = 29.6
+    /// Maximum fraction of row height for the banner
+    static let bannerHeightFraction: CGFloat = 0.66
+    /// Maximum banner height in points
+    static let bannerMaxHeight: CGFloat = 50
+    /// Minimum banner height in points
+    static let bannerMinHeight: CGFloat = 40
+    /// Font scale applied to MiniTVFrame banners
+    static let bannerFontScale: CGFloat = 0.82
+}
+
 // MARK: - Core Enums (unchanged from Exodus-5)
 
 enum GameplayMenuOption: String, CaseIterable, Identifiable {
@@ -86,6 +123,38 @@ enum ThumbGlowState: CaseIterable {
 enum Orientation: String, CaseIterable {
     case portrait
     case landscape
+}
+
+// MARK: - Console Skin System
+
+enum ConsoleSkin: String, CaseIterable {
+    case classic
+    case tweed
+
+    var rawValue: String {
+        switch self {
+        case .classic: return "classic"
+        case .tweed: return "tweed"
+        }
+    }
+
+    var price: Int {
+        switch self {
+        case .classic: return 0
+        case .tweed: return 500
+        }
+    }
+
+    var isPurchased: Bool {
+        switch self {
+        case .classic: return true
+        case .tweed: return UserDefaults.standard.bool(forKey: "numbers3.purchased.tweed")
+        }
+    }
+
+    static func purchaseTweed() {
+        UserDefaults.standard.set(true, forKey: "numbers3.purchased.tweed")
+    }
 }
 
 // MARK: - Core Types
@@ -159,4 +228,33 @@ func resolvedNeckTopY(
         return nutTargetY
     }
     return highlightCenterY - activeMidpoint
+}
+
+// MARK: - Beginner Scale / Reward Types (moved from BeginnerGameplayView, Step 5)
+
+struct BeginnerStageTemplate {
+    let root: String
+    let titleSuffix: String
+    let intervals: [Int]
+    let bassSemitoneTarget: Int
+    let endsCycle: Bool
+}
+
+struct BeginnerScaleStage {
+    let title: String
+    let notes: [String]
+    let bassSemitoneTarget: Int
+    let endsCycle: Bool
+}
+
+struct BeginnerRewardPolicyKey: Hashable {
+    let stageIndex: Int
+    let fret: Int?
+}
+
+struct BeginnerRewardPolicy {
+    let isRewardEnabled: Bool
+    let delayBeats: Double
+    let sustainMultiplier: Double
+    let preferredStrings: [Int]?
 }
