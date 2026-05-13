@@ -189,7 +189,7 @@ struct ScrewHeadView: View {
                 .fill(
                     RadialGradient(
                         colors: consoleSkin == .tweed ? [
-                            .chromeLight, .chromeBase
+                            .chromeHighlight, .chromeLight, .chromeMid, .chromeDark
                         ] : [
                             .goldLight, .goldDark
                         ],
@@ -222,10 +222,12 @@ struct ThumbButtonView: View {
         case .neutral:
             if consoleSkin == .tweed {
                 return [
-                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.0),
-                    .init(color: Color(white: 1.0, opacity: 1.0), location: 0.12),
-                    .init(color: .chromeLight, location: 0.34),
-                    .init(color: .chromeMid, location: 0.54),
+                    .init(color: .chromeHighlight, location: 0.0),
+                    .init(color: .chromeHighlight, location: 0.10),
+                    .init(color: .chromeLight, location: 0.28),
+                    .init(color: .chromeMid, location: 0.48),
+                    .init(color: .chromeDark, location: 0.68),
+                    .init(color: .chromeLow, location: 0.84),
                     .init(color: .chromeShadow, location: 1.0)
                 ]
             } else {
@@ -278,7 +280,8 @@ struct ThumbButtonView: View {
                     .fill(
                         LinearGradient(
                             colors: consoleSkin == .tweed ? [
-                                .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
+                                .chromeHighlight, .chromeLight, .chromeMid,
+                                .chromeDark, .chromeLow, .chromeShadow
                             ] : [
                                 .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],
@@ -335,7 +338,7 @@ struct ThumbButtonView: View {
                     .fill(
                         RadialGradient(
                             colors: consoleSkin == .tweed ? [
-                                .white, Color(red: 0.75, green: 0.75, blue: 0.75), Color(red: 0.30, green: 0.30, blue: 0.30)
+                                .chromeHighlight, .chromeLight, .chromeMid, .chromeDark
                             ] : [
                                 .goldLight, .goldMid, .goldDark
                             ],
@@ -394,12 +397,9 @@ struct ThumbButtonView: View {
     private var ringMetalStops: [Color] {
         if consoleSkin == .tweed {
             return [
-                Color(red: 1.0, green: 1.0, blue: 1.0),
-                Color(red: 0.95, green: 0.95, blue: 0.95),
-                Color(red: 0.55, green: 0.55, blue: 0.55),
-                Color(red: 0.20, green: 0.20, blue: 0.20),
-                Color(red: 0.65, green: 0.65, blue: 0.65),
-                Color(red: 1.0, green: 1.0, blue: 1.0)
+                .chromeHighlight, .chromeLight,
+                .chromeMid, .chromeDark,
+                .chromeLow, .chromeHighlight
             ]
         } else {
             return [

@@ -72,7 +72,8 @@ struct GameplayControlPlateShell: View {
                 .fill(
                     LinearGradient(
                         colors: consoleSkin == .tweed ? [
-                            .white, .chromeLight, .chromeBase, .chromeShadow, Color(red: 0.65, green: 0.65, blue: 0.65)
+                            .chromeHighlight, .chromeLight, .chromeMid,
+                            .chromeDark, .chromeLow, .chromeShadow
                         ] : [
                             .goldLight, .goldMid, .goldDark, .goldMidtone
                         ],
@@ -106,7 +107,8 @@ struct GameplayControlPlateShell: View {
                     .fill(
                         LinearGradient(
                             colors: consoleSkin == .tweed ? [
-                                .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, .chromeMid
+                                .chromeHighlight, .chromeLight, .chromeMid,
+                                .chromeDark, .chromeLow, .chromeShadow
                             ] : [
                                 .goldLight, .goldMid, .goldDark, .goldMidtone
                             ],

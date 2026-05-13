@@ -1321,7 +1321,7 @@ struct MaestroGameplayView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(LinearGradient(
                         colors: consoleSkin == .tweed
-                            ? [.white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)]
+                            ? [.chromeHighlight, .chromeLight, .chromeMid, .chromeDark, .chromeLow, .chromeShadow]
                             : [.goldLight, .goldMid, .goldDark, .goldMidtone],
                         startPoint: .top, endPoint: .bottom
                     ))
