@@ -192,3 +192,32 @@ func resolvedNeckTopY(
     }
     return highlightCenterY - activeMidpoint
 }
+
+// MARK: - Beginner Scale / Reward Types (moved from BeginnerGameplayView, Step 5)
+
+struct BeginnerStageTemplate {
+    let root: String
+    let titleSuffix: String
+    let intervals: [Int]
+    let bassSemitoneTarget: Int
+    let endsCycle: Bool
+}
+
+struct BeginnerScaleStage {
+    let title: String
+    let notes: [String]
+    let bassSemitoneTarget: Int
+    let endsCycle: Bool
+}
+
+struct BeginnerRewardPolicyKey: Hashable {
+    let stageIndex: Int
+    let fret: Int?
+}
+
+struct BeginnerRewardPolicy {
+    let isRewardEnabled: Bool
+    let delayBeats: Double
+    let sustainMultiplier: Double
+    let preferredStrings: [Int]?
+}
