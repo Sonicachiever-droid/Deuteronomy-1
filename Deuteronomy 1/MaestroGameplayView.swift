@@ -2,73 +2,7 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-private struct MaestroStartupSequenceView: View {
-    enum Phase {
-        case armed
-    }
-
-    let elapsed: TimeInterval
-
-    var body: some View {
-        let state = MaestroStartupSequenceView.state(for: elapsed)
-        let fontSize: CGFloat = 29.6
-        let fontWeight: Font.Weight = .black
-
-        Text(state.text)
-            .font(.system(size: fontSize, weight: fontWeight, design: .monospaced))
-            .foregroundStyle(state.color)
-            .multilineTextAlignment(.center)
-            .opacity(state.isVisible ? 1 : 0)
-            .animation(.easeInOut(duration: 0.08), value: state.isVisible)
-    }
-
-    static func state(for elapsed: TimeInterval) -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
-        let armedFlashPeriod: TimeInterval = 1.0
-        let isVisible = Int(elapsed / armedFlashPeriod).isMultiple(of: 2)
-        return ("Memorization Sequence Armed", Color.green.opacity(0.98), isVisible, .armed)
-    }
-}
-
-private typealias MaestroStartupState = MaestroStartupSequenceView.Phase// Thumb button glow states
-
-// LED-style thumb button matching the exhibit styling
-
-
-
-
-
-private struct RowOneIdentifierOverlay: View {
-    let leftLabel: String
-    let rightLabel: String
-    let size: CGSize
-    let rowHeight: CGFloat
-    var consoleSkin: ConsoleSkin = .classic
-
-    var body: some View {
-        let bannerFont = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        let measuredWidth = max(
-            textWidth(for: leftLabel, font: bannerFont),
-            textWidth(for: rightLabel, font: bannerFont),
-            textWidth(for: "Open Strings", font: bannerFont)
-        )
-        let bannerWidth = measuredWidth + 32
-        let bannerHeight = max(min(rowHeight * 0.66, 50), 40)
-
-        return HStack(spacing: 16) {
-            MiniTVFrame(text: leftLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
-            MiniTVFrame(text: rightLabel, width: bannerWidth, height: bannerHeight, fontScale: 0.82, consoleSkin: consoleSkin)
-        }
-        .frame(width: size.width, height: rowHeight)
-        .position(x: size.width / 2, y: rowHeight / 2)
-        .allowsHitTesting(false)
-    }
-
-    private func textWidth(for text: String, font: UIFont) -> CGFloat {
-        let attributes = [NSAttributedString.Key.font: font]
-        return ceil(text.size(withAttributes: attributes).width)
-    }
-}
-
+// MaestroStartupSequenceView, RowOneIdentifierOverlay — moved to MaestroSubviews.swift
 
 
 
@@ -1430,42 +1364,6 @@ struct MaestroGameplayView: View {
 
 }
 
-extension MaestroGameplayView {
-    func debugGridOverlay(size: CGSize, columns: Int, rows: Int) -> some View {
-        let cellWidth = size.width / CGFloat(columns)
-        let cellHeight = size.height / CGFloat(rows)
-
-        return ZStack {
-            Path { path in
-                for column in 0...columns {
-                    let x = CGFloat(column) * cellWidth
-                    path.move(to: CGPoint(x: x, y: 0))
-                    path.addLine(to: CGPoint(x: x, y: size.height))
-                }
-
-                for row in 0...rows {
-                    let y = CGFloat(row) * cellHeight
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: size.width, y: y))
-                }
-            }
-            .stroke(Color.red.opacity(0.45), lineWidth: 1)
-
-            ForEach(0..<rows, id: \.self) { row in
-                ForEach(0..<columns, id: \.self) { column in
-                    let index = row * columns + column + 1
-                    Text("\(index)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(Color.red.opacity(0.85))
-                        .position(
-                            x: CGFloat(column) * cellWidth + cellWidth / 2,
-                            y: CGFloat(row) * cellHeight + cellHeight / 2
-                        )
-                }
-            }
-        }
-    }
-}
 
 #Preview {
     MaestroGameplayView()
