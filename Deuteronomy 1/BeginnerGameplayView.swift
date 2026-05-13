@@ -1629,7 +1629,14 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.sequentialRevealCount = 0
         beginnerRuntime.sequentialRevealStartBeatBucket = nil
         beginnerRuntime.answerBoxReady = false
+        // Clear all answer-display state so the new repetition starts blank.
+        // Without this, activePickedStringNumbers and lastPickedNote leak from
+        // the just-completed repetition, causing every string to show the
+        // previous final answer when answeredNotesByStringAtCurrentFret is empty.
         answeredNotesByStringAtCurrentFret = [:]
+        activePickedStringNumbers = []
+        beginnerRuntime.lastPickedNote = nil
+        beginnerRuntime.rewardNoteTextByString = nil
 
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
         sequentialNoteGenerator.generateNoteSequence(

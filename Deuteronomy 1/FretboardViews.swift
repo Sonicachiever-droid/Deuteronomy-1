@@ -97,16 +97,16 @@ struct MapleSegmentedBackground: View {
 
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    let groupSize = 3
-                    ForEach(Array(stride(from: 0, to: segments.count, by: groupSize)), id: \.self) { start in
-                        let end = min(start + groupSize, segments.count)
-                        let groupHeight = (start..<end).reduce(CGFloat(0)) { acc, idx in
-                            acc + max((segments[idx].end - segments[idx].start) * neckHeight, 1)
-                        }
+                    // One texture per fret segment (matches REFRET TOO / REFRET THREE).
+                    // The previous group-of-3 approach produced visible image seams at
+                    // fret 3 / 6 / 9 — invisible on rosewood, but reads as a "silver nut"
+                    // on maple.
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, bounds in
+                        let segmentHeight = max((bounds.end - bounds.start) * neckHeight, 1)
                         mapleTexture
                             .resizable()
                             .scaledToFill()
-                            .frame(width: neckWidth, height: groupHeight)
+                            .frame(width: neckWidth, height: segmentHeight)
                             .clipped()
                     }
                 }
