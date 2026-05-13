@@ -432,14 +432,7 @@ extension MaestroGameplayView {
     // MARK: - Note helpers
 
     func noteName(forString string: Int, fret: Int, useFlats: Bool) -> String {
-        guard let openNote = openNoteByString[string],
-              let openIndex = chromaticSharps.firstIndex(of: openNote) else {
-            return "?"
-        }
-
-        let noteIndex = (openIndex + fret) % chromaticSharps.count
-        let scale = useFlats ? chromaticFlats : chromaticSharps
-        return scale[noteIndex]
+        guitarNoteName(forString: string, fret: fret, useFlats: useFlats)
     }
 
     func randomIncorrectNote(excluding correct: String, excludingLast lastCorrect: String?, useFlats: Bool) -> String {

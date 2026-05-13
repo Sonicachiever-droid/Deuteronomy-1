@@ -58,16 +58,7 @@ struct MaestroGameplayView: View {
             return 1.15
         }
     }
-    let chromaticSharps: [String] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    let chromaticFlats: [String] = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-    let openNoteByString: [Int: String] = [
-        6: "E",
-        5: "A",
-        4: "D",
-        3: "G",
-        2: "B",
-        1: "E"
-    ]
+    // chromaticSharps, chromaticFlats, openNoteByString — use module-level globals from GuitarHelpers.swift
     let codenameNemoEnabled: Bool = false
     let scaleLengthInches: Double = 25.5
     let debugGridRows: Int = 8
