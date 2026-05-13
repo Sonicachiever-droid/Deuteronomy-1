@@ -37,9 +37,16 @@ struct GameplayControlPlateShell: View {
                 HStack(spacing: 8) {
                     plateButton(title: "AUTOPLAY", action: onAutoplay, isActive: isAutoplayActive)
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.autoplay)
+                        .accessibilityHint(isAutoplayActive ? A11y.ControlPlate.autoplayHintOn : A11y.ControlPlate.autoplayHintOff)
+                        .accessibilityAddTraits(isAutoplayActive ? [.isSelected] : [])
                     plateButton(title: "FRETBOARD", action: onFretboard)
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.fretboard)
+                        .accessibilityHint(A11y.ControlPlate.fretboardHint)
                     plateButton(title: isMenuExpanded ? "CLOSE" : "MENU", action: onToggleMenu)
+                        .accessibilityLabel(isMenuExpanded ? A11y.ControlPlate.menuClose : A11y.ControlPlate.menuOpen)
+                        .accessibilityHint(isMenuExpanded ? A11y.ControlPlate.menuCloseHint : A11y.ControlPlate.menuOpenHint)
                 }
             }
 
@@ -50,6 +57,8 @@ struct GameplayControlPlateShell: View {
                             onSelectMenuOption(option)
                         }
                         .disabled(isStartupInputLockActive)
+                        .accessibilityLabel(A11y.ControlPlate.menuOption(option.title))
+                        .accessibilityHint(A11y.ControlPlate.menuOptionHint(option.title))
                     }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))

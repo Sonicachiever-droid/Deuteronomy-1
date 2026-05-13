@@ -276,6 +276,8 @@ private struct Deuteronomy1MenuSheet: View {
                                         .foregroundColor(.white)
                                         .font(.system(size: 15, weight: .regular, design: .monospaced))
                                         .tint(gold)
+                                        .accessibilityLabel(A11y.Settings.highFretsToggle)
+                                        .accessibilityHint(A11y.Settings.highFretsHint)
                                         .onChange(of: enableHighFrets) { _, isEnabled in
                                             if !isEnabled {
                                                 startingFret = min(startingFret, 12)
@@ -300,6 +302,8 @@ private struct Deuteronomy1MenuSheet: View {
                                     }
                                     .buttonStyle(.plain)
                                     .disabled(balancePoints < 500)
+                                    .accessibilityLabel(A11y.Settings.buyHighFrets)
+                                    .accessibilityHint(A11y.Settings.buyHighFretsHint(canAfford: balancePoints >= 500))
                                 }
                                 // Landscape row (Maestro only)
                                 if layoutMode == .maestro {
@@ -331,6 +335,8 @@ private struct Deuteronomy1MenuSheet: View {
                                         }
                                         .buttonStyle(.plain)
                                         .disabled(balancePoints < 500)
+                                        .accessibilityLabel(A11y.Settings.buyLandscape)
+                                        .accessibilityHint(A11y.Settings.buyLandscapeHint(canAfford: balancePoints >= 500))
                                     }
                                 }
                             }
@@ -350,6 +356,9 @@ private struct Deuteronomy1MenuSheet: View {
                                     }
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel(A11y.Settings.skinClassic)
+                                .accessibilityHint(A11y.Settings.skinClassicHint(isActive: consoleSkin == .classic))
+                                .accessibilityAddTraits(consoleSkin == .classic ? [.isSelected] : [])
                                 // Tweed row
                                 Button(action: {
                                     if tweedPurchased {
@@ -382,6 +391,9 @@ private struct Deuteronomy1MenuSheet: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(!tweedPurchased && balancePoints < 500)
+                                .accessibilityLabel(A11y.Settings.skinTweed)
+                                .accessibilityHint(A11y.Settings.skinTweedHint(purchased: tweedPurchased, canAfford: balancePoints >= 500, isActive: consoleSkin == .tweed))
+                                .accessibilityAddTraits(consoleSkin == .tweed ? [.isSelected] : [])
                             }
 
                         case .learn:
@@ -402,16 +414,22 @@ private struct Deuteronomy1MenuSheet: View {
                                     .foregroundColor(.white)
                                     .font(.system(size: 15, weight: .regular, design: .monospaced))
                                     .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.repetitionsStepper)
+                                    .accessibilityValue(A11y.Settings.repetitionsValue(repetitions))
 
                                 Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
                                     .foregroundColor(.white)
                                     .font(.system(size: 15, weight: .regular, design: .monospaced))
                                     .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.infiniteRepsToggle)
+                                    .accessibilityHint(A11y.Settings.infiniteRepsHint)
 
                                 Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(highFretsPurchased && enableHighFrets ? 19 : 12))
                                     .foregroundColor(.white)
                                     .font(.system(size: 15, weight: .regular, design: .monospaced))
                                     .tint(gold)
+                                    .accessibilityLabel(A11y.Settings.startingFretStepper)
+                                    .accessibilityValue(A11y.Settings.startingFretValue(startingFret))
                                     .onChange(of: startingFret) { _, newValue in
                                         if newValue == 0 {
                                             directionRawValue = LessonDirection.ascending.rawValue
@@ -488,6 +506,8 @@ private struct Deuteronomy1MenuSheet: View {
                                 }
                                 .scaleEffect(isButtonPressed ? 1.04 : 1.0)
                                 .animation(.spring(response: 0.25, dampingFraction: 0.4), value: isButtonPressed)
+                                .accessibilityLabel(layoutMode == .beginner ? "Switch to Maestro mode" : "Switch to Beginner mode")
+                                .accessibilityHint(layoutMode == .beginner ? "Switches to the advanced Maestro console" : "Switches to the Beginner console")
                             }
 
                         case .guide:
@@ -532,6 +552,8 @@ private struct Deuteronomy1MenuSheet: View {
                     Button("Done") { dismiss() }
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(gold)
+                        .accessibilityLabel(A11y.Settings.doneButton)
+                        .accessibilityHint(A11y.Settings.doneHint)
                 }
             }
         }

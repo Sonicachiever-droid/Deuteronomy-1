@@ -1019,6 +1019,8 @@ struct MaestroGameplayView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(A11y.Maestro.leftThumb)
+                    .accessibilityHint(A11y.Maestro.leftThumbHint)
 
                     Button(action: { submitAnswer(.right) }) {
                         ThumbButtonView(
@@ -1029,6 +1031,8 @@ struct MaestroGameplayView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(A11y.Maestro.rightThumb)
+                    .accessibilityHint(A11y.Maestro.rightThumbHint)
                 }
                 .frame(maxWidth: .infinity)
                 .position(x: proxy.size.width / 2, y: buttonCenterY)
@@ -1341,6 +1345,8 @@ struct MaestroGameplayView: View {
             .buttonStyle(.plain)
             .position(x: leftGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
+            .accessibilityLabel(A11y.Maestro.leftThumb)
+            .accessibilityHint(A11y.Maestro.leftThumbHint)
 
             Button(action: { submitAnswer(.right) }) {
                 ThumbButtonView(diameter: thumbDiameter, label: "", state: effectiveRightThumbState, consoleSkin: consoleSkin)
@@ -1348,6 +1354,8 @@ struct MaestroGameplayView: View {
             .buttonStyle(.plain)
             .position(x: rightGapCenter, y: screenCenterY)
             .opacity(initialGameplayDimOpacity)
+            .accessibilityLabel(A11y.Maestro.rightThumb)
+            .accessibilityHint(A11y.Maestro.rightThumbHint)
 
             // Gold perimeter
             if consoleSkin == .tweed {
@@ -1364,6 +1372,8 @@ struct MaestroGameplayView: View {
                 Button("START") { handleMaestroStartButton() }
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .background(transportButtonBackground(fill: startButtonBlinkOn ? Color.green.opacity(0.9) : Color.clear))
+                    .accessibilityLabel(A11y.Transport.start)
+                    .accessibilityHint(A11y.Transport.startHint)
                 Button(isRoundPaused ? "RESUME" : "PAUSE") {
                     if isRoundPaused { handleMaestroStartButton() }
                     else { handleMaestroStopButton() }
@@ -1371,8 +1381,12 @@ struct MaestroGameplayView: View {
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
                     .disabled(isCodeScreensaverMode && !isRoundPaused)
                     .background(transportButtonBackground(fill: isRoundPaused ? Color.orange.opacity(0.85) : Color.clear))
+                    .accessibilityLabel(isRoundPaused ? A11y.Transport.resume : A11y.Transport.pause)
+                    .accessibilityHint(isRoundPaused ? A11y.Transport.resumeHint : A11y.Transport.pauseHint)
                 Button("RESET") { handleMaestroResetButton() }
                     .frame(minWidth: UIConstants.transportButtonMinWidth, minHeight: UIConstants.transportButtonHeight, maxHeight: UIConstants.transportButtonHeight)
+                    .accessibilityLabel(A11y.Transport.reset)
+                    .accessibilityHint(A11y.Transport.resetHint)
                     .background(transportButtonBackground(fill: resetButtonPressed ? Color.green.opacity(0.8) : Color.clear))
             }
             .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -1849,6 +1863,8 @@ struct MaestroGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(A11y.Transport.start)
+                .accessibilityHint(A11y.Transport.startHint)
             Button(isRoundPaused ? "RESUME" : "PAUSE") {
                 if isRoundPaused { handleMaestroStartButton() }
                 else { handleMaestroStopButton() }
@@ -1863,6 +1879,8 @@ struct MaestroGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(isRoundPaused ? A11y.Transport.resume : A11y.Transport.pause)
+                .accessibilityHint(isRoundPaused ? A11y.Transport.resumeHint : A11y.Transport.pauseHint)
             Button("RESET") { handleMaestroResetButton() }
                 .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
                 .background(
@@ -1873,6 +1891,8 @@ struct MaestroGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(A11y.Transport.reset)
+                .accessibilityHint(A11y.Transport.resetHint)
         }
         .font(.system(size: 12, weight: .bold, design: .monospaced))
         .foregroundStyle(Color.black.opacity(0.92))

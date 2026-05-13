@@ -2409,6 +2409,8 @@ struct BeginnerGameplayView: View {
             }
             .buttonStyle(.plain)
             .disabled(isResolvingAnswer)
+            .accessibilityLabel(A11y.Beginner.leftThumb)
+            .accessibilityHint(A11y.Beginner.leftThumbHint)
 
             Button(action: { submitAnswer(.right) }) {
                 ThumbButtonView(
@@ -2419,6 +2421,8 @@ struct BeginnerGameplayView: View {
             }
             .buttonStyle(.plain)
             .disabled(isResolvingAnswer)
+            .accessibilityLabel(A11y.Beginner.rightThumb)
+            .accessibilityHint(A11y.Beginner.rightThumbHint)
         }
         .frame(maxWidth: .infinity)
         .position(x: proxyWidth / 2, y: buttonCenterY)
@@ -2445,6 +2449,8 @@ struct BeginnerGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(A11y.Transport.start)
+                .accessibilityHint(A11y.Transport.startHint)
             Button(isRoundPaused ? "RESUME" : "PAUSE") {
                 if isRoundPaused { resumeRoundFromTransportStop(forceIfPaused: true) }
                 else { handleRoundStopButton() }
@@ -2459,6 +2465,8 @@ struct BeginnerGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(isRoundPaused ? A11y.Transport.resume : A11y.Transport.pause)
+                .accessibilityHint(isRoundPaused ? A11y.Transport.resumeHint : A11y.Transport.pauseHint)
             Button("RESET") { handleRoundResetButton() }
                 .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
                 .background(
@@ -2469,6 +2477,8 @@ struct BeginnerGameplayView: View {
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
                         )
                 )
+                .accessibilityLabel(A11y.Transport.reset)
+                .accessibilityHint(A11y.Transport.resetHint)
         }
         .font(.system(size: 12, weight: .bold, design: .monospaced))
         .foregroundStyle(Color.black.opacity(0.92))
@@ -2552,6 +2562,8 @@ struct BeginnerGameplayView: View {
                 }
                 .buttonStyle(.plain)
                 .position(x: leftButtonX, y: rowYs[idx])
+                .accessibilityLabel(A11y.Beginner.consoleButton(note: buttonNote, stringNumber: selectedString))
+                .accessibilityHint(A11y.Beginner.consoleButtonHint(note: buttonNote))
             }
 
             ForEach(Array(0..<3), id: \.self) { idx in
@@ -2581,6 +2593,8 @@ struct BeginnerGameplayView: View {
                 }
                 .buttonStyle(.plain)
                 .position(x: rightButtonX, y: rowYs[idx])
+                .accessibilityLabel(A11y.Beginner.consoleButton(note: buttonNote, stringNumber: selectedString))
+                .accessibilityHint(A11y.Beginner.consoleButtonHint(note: buttonNote))
             }
 
             Circle()
