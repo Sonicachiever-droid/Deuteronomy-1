@@ -9,6 +9,14 @@ import AVFoundation
 
 extension MaestroGameplayView {
 
+    // MARK: - Tempo
+
+    func applyTempoForRound(_ round: Int) {
+        let increase = audioSettings.tempoIncreasePerRound.rawValue
+        let effective = max(audioSettings.startingBPM + round * increase, 40)
+        SharedAudioEngine.shared.setTempo(bpm: Double(effective))
+    }
+
     // MARK: - Navigation helpers
 
     func shiftFretSpan(by delta: Int) {
@@ -64,6 +72,7 @@ extension MaestroGameplayView {
 
     func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
         currentRound = playStartingFret
+        applyTempoForRound(currentRound)
         roundStringIndex = 0
         repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
         isDescendingPhase = isPhaseDescending
@@ -357,6 +366,7 @@ extension MaestroGameplayView {
                     }
                     // Immediate bass transpose
                     midiEngine.setBassTransposeSemitones(max(currentRound, 0) % 12)
+                    applyTempoForRound(currentRound)
                     // Immediate neck shift with animation
                     withAnimation(.easeInOut(duration: 0.9)) {
                         currentFretStart = max(currentRound, 0)

@@ -155,6 +155,7 @@ extension BeginnerGameplayView {
             beginnerRuntime.currentRound = isPhaseDescending ? 12 : 0
             beginnerRuntime.isDescendingPhase = isPhaseDescending
         }
+        applyTempoForRound(beginnerRuntime.currentRound)
         if animateNeckSlideFromStartup {
             startupNeckVisualsHidden = true
             beginnerRuntime.currentFretStart = beginnerRuntime.isDescendingPhase ? maxFretOffset : minFretOffset

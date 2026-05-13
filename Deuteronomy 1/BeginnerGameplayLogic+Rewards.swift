@@ -249,6 +249,8 @@ extension BeginnerGameplayView {
             }
         }
 
+        applyTempoForRound(beginnerRuntime.currentRound)
+
         // Generate new sequence for new fret and apply bass transpose
         let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
         sequentialNoteGenerator.generateNoteSequence(for: max(beginnerRuntime.currentRound, 0), useFlats: useFlats, lowToHigh: isProgressionLowToHigh)
@@ -338,6 +340,7 @@ extension BeginnerGameplayView {
         beginnerRuntime.roundRevealLastTickDate = nil
         beginnerRuntime.answerBoxReady = false
         beginnerRuntime.lastPickedNote = nil
+        applyTempoForRound(beginnerRuntime.currentRound)
         applyBeginnerBassTransposeForCurrentStage()
         if playTransitionNote {
             playGuitarNote(forString: selectedString, fret: max(beginnerRuntime.currentRound, 0), velocity: AudioVelocity.full)

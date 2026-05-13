@@ -31,6 +31,11 @@ struct AudioPageView: View {
                         }
 
                         MenuSection(title: "TEMPO", gold: gold) {
+                            Stepper("Starting BPM: \(audioSettings.startingBPM)", value: $audioSettings.startingBPM, in: 40...200, step: 5)
+                                .foregroundColor(.white)
+                                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                .tint(gold)
+
                             GoldPickerRow(
                                 label: "Increase Per Round",
                                 options: TempoIncreasePerRound.allCases.map { (label: $0.title, value: $0) },

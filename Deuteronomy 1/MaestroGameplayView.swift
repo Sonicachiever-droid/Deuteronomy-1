@@ -11,7 +11,7 @@ import AVFoundation
 struct MaestroGameplayView: View {
     let onMenuSelection: ((GameplayMenuOption) -> Void)?
     let selectedMode: RefretMode
-    let beatBPM: Int
+    var beatBPM: Int { audioSettings.startingBPM }
     let beatVolume: Double
     let stringVolume: Double
     @Binding var playStartingFret: Int
@@ -137,7 +137,6 @@ struct MaestroGameplayView: View {
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
         selectedMode: RefretMode = .freestyle,
-        beatBPM: Int = 80,
         beatVolume: Double = 0.8,
         stringVolume: Double = 0.8,
         playStartingFret: Binding<Int> = .constant(0),
@@ -155,7 +154,6 @@ struct MaestroGameplayView: View {
         self.orientation = orientation
         self.onMenuSelection = onMenuSelection
         self.selectedMode = selectedMode
-        self.beatBPM = beatBPM
         self.beatVolume = beatVolume
         self.stringVolume = stringVolume
         self._playStartingFret = playStartingFret

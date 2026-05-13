@@ -92,6 +92,12 @@ extension BeginnerGameplayView {
 
     // beginnerButtonState — moved to BeginnerSubviews.swift
 
+    func applyTempoForRound(_ round: Int) {
+        let increase = audioSettings.tempoIncreasePerRound.rawValue
+        let effective = max(audioSettings.startingBPM + round * increase, 40)
+        SharedAudioEngine.shared.setTempo(bpm: Double(effective))
+    }
+
     func syncBackingTrackPlayback(allowResumeFromPause: Bool = false) {
         guard !availableBackingTracks.isEmpty else {
             midiEngine.stop()
