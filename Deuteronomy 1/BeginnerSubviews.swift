@@ -221,8 +221,8 @@ extension BeginnerGameplayView {
         topStatusOuterHeight: CGFloat
     ) -> some View {
         let currentTargetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
-        let promptStrings = currentPromptStrings.isEmpty ? [currentTargetString] : currentPromptStrings
-        let fretStatusLabel = "FRET \(currentRound)"
+        let promptStrings = beginnerRuntime.currentPromptStrings.isEmpty ? [currentTargetString] : beginnerRuntime.currentPromptStrings
+        let fretStatusLabel = "FRET \(beginnerRuntime.currentRound)"
         let stringStatusLabel = promptStrings.count > 1
             ? "STRINGS \(promptStrings.map(String.init).joined(separator: "+"))"
             : "STRING \(promptStrings[0])"
@@ -242,7 +242,7 @@ extension BeginnerGameplayView {
             roundTitle: roundStatusLabel,
             fretTitle: displayedFretStatusLabel,
             stringTitle: displayedStringStatusLabel,
-            bankText: "$\(displayedBankDollars)",
+            bankText: "$\(beginnerRuntime.displayedBankDollars)",
             scaleRepetitionText: beginnerRuntime.scaleRepetitionsRemaining >= Int.max / 2 ? "∞X" : "\(beginnerRuntime.scaleRepetitionsRemaining)X",
             promptText: developerPromptText,
             startupElapsed: startupSequenceElapsed,
@@ -252,7 +252,7 @@ extension BeginnerGameplayView {
             beginnerRoundStatusText: beginnerRoundStatusText,
             centeredStatusMessage: beginnerCenteredStatusMessage,
             centeredStatusColor: Color.green.opacity(0.98),
-            currentRound: currentRound,
+            currentRound: beginnerRuntime.currentRound,
             repetitionCountColor: getRepetitionCountColor(),
             walletColor: getWalletColor(),
             hideRoundLabel: false,
@@ -294,7 +294,7 @@ extension BeginnerGameplayView {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(isResolvingAnswer)
+            .disabled(beginnerRuntime.isResolvingAnswer)
             .accessibilityLabel(A11y.Beginner.leftThumb)
             .accessibilityHint(A11y.Beginner.leftThumbHint)
 
@@ -306,7 +306,7 @@ extension BeginnerGameplayView {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(isResolvingAnswer)
+            .disabled(beginnerRuntime.isResolvingAnswer)
             .accessibilityLabel(A11y.Beginner.rightThumb)
             .accessibilityHint(A11y.Beginner.rightThumbHint)
         }
@@ -423,7 +423,7 @@ extension BeginnerGameplayView {
         ZStack {
             ForEach(Array(0..<3), id: \.self) { idx in
                 let selectedString: Int = leftStrings[idx]
-                let buttonNote: String = guitarNoteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let buttonNote: String = guitarNoteName(forString: leftStrings[idx], fret: max(beginnerRuntime.currentRound, 0), useFlats: beginnerUsesFlats)
                 let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
                 let buttonIndex: Int = idx
                 MiniTVFrame(
@@ -454,7 +454,7 @@ extension BeginnerGameplayView {
 
             ForEach(Array(0..<3), id: \.self) { idx in
                 let selectedString: Int = rightStrings[idx]
-                let buttonNote: String = guitarNoteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
+                let buttonNote: String = guitarNoteName(forString: rightStrings[idx], fret: max(beginnerRuntime.currentRound, 0), useFlats: beginnerUsesFlats)
                 let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
                 let buttonIndex: Int = idx + 3
                 MiniTVFrame(
