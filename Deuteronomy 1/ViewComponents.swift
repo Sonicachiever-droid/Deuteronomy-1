@@ -448,6 +448,8 @@ struct GoldPickerRow<T: Hashable>: View {
                             )
                     }
                     .disabled(disabled)
+                    .accessibilityLabel(option.label)
+                    .accessibilityHint(isSelected ? "Currently selected" : "Select \(option.label)")
                 }
             }
         }

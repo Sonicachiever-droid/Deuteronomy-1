@@ -62,11 +62,15 @@ struct WelcomeScreenView: View {
                             subtitle: "6-button note training",
                             action: onSelectBeginner
                         )
+                        .accessibilityLabel(A11y.Welcome.beginnerButton)
+                        .accessibilityHint(A11y.Welcome.beginnerHint)
                         WelcomeConsoleButton(
                             title: "MAESTRO CONSOLE",
                             subtitle: "Memory-based recall",
                             action: onSelectMaestro
                         )
+                        .accessibilityLabel(A11y.Welcome.maestroButton)
+                        .accessibilityHint(A11y.Welcome.maestroHint)
 
                         Button(action: { showOverview = true }) {
                             HStack(spacing: 9) {
@@ -79,6 +83,8 @@ struct WelcomeScreenView: View {
                             .foregroundColor(.goldBorderMid)
                             .padding(.vertical, 15)
                         }
+                        .accessibilityLabel(A11y.Welcome.overviewButton)
+                        .accessibilityHint(A11y.Welcome.overviewHint)
                     }
                     .padding(.horizontal, 32)
                     .padding(.bottom, max(proxy.safeAreaInsets.bottom + 24, 40))
