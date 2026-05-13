@@ -357,7 +357,7 @@ extension BeginnerGameplayView {
                 .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
                 .background(
                     RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                        .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
+                        .fill(beginnerRuntime.resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                                 .stroke(Color.black.opacity(0.34), lineWidth: 1.0)

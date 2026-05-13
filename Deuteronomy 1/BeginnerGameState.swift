@@ -66,6 +66,35 @@ final class BeginnerGameState {
     // MARK: MIDI Stop
     var pendingMidiStopDate: Date? = nil
 
+    // MARK: Beat timing (moved from BeginnerGameplayView @State — Step 2)
+    var beatCountInRemaining: Int = 0
+    var nextBeatTickDate: Date? = nil
+
+    // MARK: Round reveal timing (moved from BeginnerGameplayView @State — Step 2)
+    var roundRevealElapsedBeats: Double = 0
+    var roundRevealLastTickDate: Date? = nil
+
+    // MARK: Question box animation (moved from BeginnerGameplayView @State — Step 2)
+    var questionBoxIntroProgress: CGFloat = 0
+
+    // MARK: Streak meter (moved from BeginnerGameplayView @State — Step 2)
+    var streakMeterLitColumns: Int = 0
+    var streakMeterFailureActive: Bool = false
+    var streakMeterFailureVisibleColumns: Int = 0
+
+    // MARK: Last resolved note (moved from BeginnerGameplayView @State — Step 2)
+    var lastResolvedCorrectNote: String? = nil
+    var lastResolvedCorrectString: Int? = nil
+
+    // MARK: Last prompted note (moved from BeginnerGameplayView @State — Step 2)
+    var lastPromptedCorrectNote: String? = nil
+    var lastPromptedStringHalf: AnswerSide? = nil
+    var lastPromptedStringNumber: Int? = nil
+    var recentPromptedCorrectNotes: [String] = []
+
+    // MARK: Transport UI state (moved from BeginnerGameplayView @State — Step 2)
+    var resetButtonPressed: Bool = false
+
     // MARK: Reset
 
     func reset() {

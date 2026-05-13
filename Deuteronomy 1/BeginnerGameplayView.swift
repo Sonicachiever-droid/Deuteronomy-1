@@ -145,16 +145,16 @@ struct BeginnerGameplayView: View {
     @State private var gameplayMenuExpanded: Bool = false
     @State var developerPromptText: String = ""
     @State private var currentCorrectNote: String = ""
-    @State private var lastResolvedCorrectNote: String? = nil
-    @State private var lastResolvedCorrectString: Int? = nil
+    // beginnerRuntime.lastResolvedCorrectNote/String, beginnerRuntime.roundRevealElapsedBeats/LastTickDate,
+    // beginnerRuntime.beatCountInRemaining, beginnerRuntime.nextBeatTickDate, beginnerRuntime.questionBoxIntroProgress,
+    // streakMeter*, beginnerRuntime.lastPromptedCorrectNote/StringHalf/StringNumber,
+    // beginnerRuntime.recentPromptedCorrectNotes, beginnerRuntime.resetButtonPressed — moved to BeginnerGameState (Step 2)
     @State var currentPromptStrings: [Int] = [1]
     @State private var beatQuestionDeadline: Date? = nil
     @State private var showFretboardGuide: Bool = false
     @State private var isRoundArmed: Bool = true
     @State var isRoundPaused: Bool = false
     @State private var transportStoppedForResume: Bool = false
-    @State private var roundRevealElapsedBeats: Double = 0
-    @State private var roundRevealLastTickDate: Date? = nil
     @State private var isBackingTrackPlaying: Bool = false
     @State private var isLaunchTransitionAnimating: Bool = false
     @State private var launchTileScale: CGFloat = 1
@@ -163,18 +163,7 @@ struct BeginnerGameplayView: View {
     @State var startupStartButtonBlinkOn: Bool = false
     @State private var startupStartButtonNextBlinkDate: Date? = nil
     @State var beatPulseActive: Bool = false
-    @State private var beatCountInRemaining: Int = 0
-    @State private var nextBeatTickDate: Date? = nil
-    @State private var questionBoxIntroProgress: CGFloat = 0
-    @State private var streakMeterLitColumns: Int = 0
-    @State private var streakMeterFailureActive: Bool = false
-    @State private var streakMeterFailureVisibleColumns: Int = 0
-    @State private var lastPromptedCorrectNote: String? = nil
-    @State private var lastPromptedStringHalf: AnswerSide? = nil
-    @State private var lastPromptedStringNumber: Int? = nil
-    @State private var recentPromptedCorrectNotes: [String] = []
     @State var beginnerRuntime = BeginnerGameState()
-    @State var resetButtonPressed: Bool = false
 
     private enum StartupSpeechPhase {
         case idle
@@ -420,7 +409,7 @@ struct BeginnerGameplayView: View {
             return .inactive
         }
 
-        let currentBeatBucket = Int(floor(roundRevealElapsedBeats))
+        let currentBeatBucket = Int(floor(beginnerRuntime.roundRevealElapsedBeats))
         let startBeatBucket = beginnerRuntime.introStartBeatBucket ?? currentBeatBucket
         let elapsedBeatBuckets = max(currentBeatBucket - startBeatBucket, 0)
 
@@ -911,10 +900,10 @@ struct BeginnerGameplayView: View {
                     topStatusOuterHeight: topStatusOuterHeight
                 )
 
-                let introScale = max(questionBoxIntroProgress, 0.001)
-                let introOffsetY = (1 - questionBoxIntroProgress) * ((proxy.size.height / 2) - topScreenY)
-                let questionBoxOffsetY = (1 - questionBoxIntroProgress) * ((proxy.size.height / 2) - orangeGreenUnitCenterY)
-                let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && questionBoxIntroProgress > 0.0
+                let introScale = max(beginnerRuntime.questionBoxIntroProgress, 0.001)
+                let introOffsetY = (1 - beginnerRuntime.questionBoxIntroProgress) * ((proxy.size.height / 2) - topScreenY)
+                let questionBoxOffsetY = (1 - beginnerRuntime.questionBoxIntroProgress) * ((proxy.size.height / 2) - orangeGreenUnitCenterY)
+                let shouldShowQuestionUI = !isCodeScreensaverMode && !startupSequenceActivated && beginnerRuntime.questionBoxIntroProgress > 0.0
                 let hasBeginnerSelectedNote = !(beginnerRuntime.lastPickedNote?.isEmpty ?? true)
                     || !(beginnerRuntime.rewardNoteTextByString?.isEmpty ?? true)
                 let shouldShowWhiteAnswerBox = shouldShowQuestionUI && {
@@ -951,7 +940,7 @@ struct BeginnerGameplayView: View {
                         )
                     }
                     .scaleEffect(introScale)
-                    .animation(.easeInOut(duration: 0.5), value: questionBoxIntroProgress)
+                    .animation(.easeInOut(duration: 0.5), value: beginnerRuntime.questionBoxIntroProgress)
                     .offset(y: introOffsetY)
                     .frame(width: proxy.size.width, height: screenBannerHeight)
                     .position(x: proxy.size.width / 2, y: topScreenY)
@@ -1219,17 +1208,17 @@ struct BeginnerGameplayView: View {
 
         if isRoundArmed || isRoundPaused {
             beginnerRuntime.beatLightFlashOn = false
-            roundRevealLastTickDate = nil
+            beginnerRuntime.roundRevealLastTickDate = nil
             return
         }
 
-        if roundRevealLastTickDate == nil {
-            roundRevealLastTickDate = date
-        } else if let lastTick = roundRevealLastTickDate {
+        if beginnerRuntime.roundRevealLastTickDate == nil {
+            beginnerRuntime.roundRevealLastTickDate = date
+        } else if let lastTick = beginnerRuntime.roundRevealLastTickDate {
             let delta = max(date.timeIntervalSince(lastTick), 0)
             let beatsPerSecond = Double(max(beatBPM, 60)) / 60.0
-            roundRevealElapsedBeats += delta * beatsPerSecond
-            roundRevealLastTickDate = date
+            beginnerRuntime.roundRevealElapsedBeats += delta * beatsPerSecond
+            beginnerRuntime.roundRevealLastTickDate = date
         }
 
         handlePendingBeginnerRewardPlaybackIfNeeded()
@@ -1326,12 +1315,12 @@ struct BeginnerGameplayView: View {
         bankDollars = max(walletDollars, 0)
         displayedBankDollars = bankDollars
         showDeveloperPrompt("MODE: \(selectedMode.rawValue.uppercased())")
-        questionBoxIntroProgress = isCodeScreensaverMode ? 0 : 1
+        beginnerRuntime.questionBoxIntroProgress = isCodeScreensaverMode ? 0 : 1
         beginnerRuntime.answerBoxReady = layoutMode == .beginner ? false : !isCodeScreensaverMode
         isRoundArmed = layoutMode == .beginner
         isRoundPaused = false
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealElapsedBeats = 0
+        beginnerRuntime.roundRevealLastTickDate = nil
     }
 
     private func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
@@ -1363,27 +1352,27 @@ struct BeginnerGameplayView: View {
         currentPromptStrings = [1]
         activePickedStringNumbers = [1]
         answeredNotesByStringAtCurrentFret = [:]
-        beatCountInRemaining = modeVariant == .beat ? 4 : 0
-        nextBeatTickDate = nil
+        beginnerRuntime.beatCountInRemaining = modeVariant == .beat ? 4 : 0
+        beginnerRuntime.nextBeatTickDate = nil
         leftThumbState = .neutral
         rightThumbState = .neutral
         activeAnswerFeedback = nil
         isResolvingAnswer = false
         isRoundPaused = false
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealElapsedBeats = 0
+        beginnerRuntime.roundRevealLastTickDate = nil
         gameplayMenuExpanded = false
         developerPromptText = ""
         currentCorrectNote = ""
-        lastResolvedCorrectNote = nil
-        streakMeterLitColumns = 0
-        streakMeterFailureActive = false
-        streakMeterFailureVisibleColumns = 0
+        beginnerRuntime.lastResolvedCorrectNote = nil
+        beginnerRuntime.streakMeterLitColumns = 0
+        beginnerRuntime.streakMeterFailureActive = false
+        beginnerRuntime.streakMeterFailureVisibleColumns = 0
         beginnerRuntime.correctAnswersAtCurrentFret = 0
-        lastPromptedCorrectNote = nil
-        lastPromptedStringHalf = nil
-        lastPromptedStringNumber = nil
-        recentPromptedCorrectNotes = []
+        beginnerRuntime.lastPromptedCorrectNote = nil
+        beginnerRuntime.lastPromptedStringHalf = nil
+        beginnerRuntime.lastPromptedStringNumber = nil
+        beginnerRuntime.recentPromptedCorrectNotes = []
         beginnerRuntime.lastPickedNote = nil
         beginnerRuntime.rewardNoteTextByString = nil
         beginnerRuntime.answerBoxReady = layoutMode != .beginner
@@ -1512,7 +1501,7 @@ struct BeginnerGameplayView: View {
 
         beginnerRuntime.pendingRewardStageAdvance = true
         beginnerRuntime.rewardSelectedString = selectedString
-        beginnerRuntime.rewardTargetBeatPosition = roundRevealElapsedBeats + policy.delayBeats
+        beginnerRuntime.rewardTargetBeatPosition = beginnerRuntime.roundRevealElapsedBeats + policy.delayBeats
         beginnerRuntime.rewardScheduledStrings = rewardPayload.strings
         beginnerRuntime.rewardScheduledMIDINotes = rewardPayload.midiNotes
         beginnerRuntime.rewardScheduledNoteTextByString = rewardPayload.notesByString
@@ -1550,7 +1539,7 @@ struct BeginnerGameplayView: View {
               let targetBeatPosition = beginnerRuntime.rewardTargetBeatPosition,
               let selectedString = beginnerRuntime.rewardSelectedString else { return }
 
-        let currentBeatPosition = roundRevealElapsedBeats
+        let currentBeatPosition = beginnerRuntime.roundRevealElapsedBeats
         guard currentBeatPosition >= targetBeatPosition else { return }
 
         beginnerRuntime.rewardTargetBeatPosition = nil
@@ -1593,7 +1582,7 @@ struct BeginnerGameplayView: View {
         guard lessonStyle == .sequential,
               let targetBeatPosition = beginnerRuntime.pendingSequentialRepeatResetBeatPosition else { return }
 
-        guard roundRevealElapsedBeats >= targetBeatPosition else { return }
+        guard beginnerRuntime.roundRevealElapsedBeats >= targetBeatPosition else { return }
 
         beginnerRuntime.pendingSequentialRepeatResetBeatPosition = nil
         sequentialNoteGenerator.resetForNewFret()
@@ -1626,7 +1615,7 @@ struct BeginnerGameplayView: View {
         guard lessonStyle == .sequential,
               let targetBeatPosition = beginnerRuntime.pendingRoundShiftBeatPosition else { return }
 
-        let currentBeatPosition = roundRevealElapsedBeats
+        let currentBeatPosition = beginnerRuntime.roundRevealElapsedBeats
         guard currentBeatPosition >= targetBeatPosition else { return }
 
         // 2-beat delay has passed - clear the pending shift and execute
@@ -1702,7 +1691,7 @@ struct BeginnerGameplayView: View {
                 beginnerRuntime.pentatonicRevealCount = 0
                 beginnerRuntime.roundOneIntroActive = true
                 beginnerRuntime.roundOneSequenceStartDate = Date()
-                roundRevealElapsedBeats = 0
+                beginnerRuntime.roundRevealElapsedBeats = 0
                 if lessonStyle == .chord {
                     beginnerRuntime.showRoundZeroIntroSequence = true
                     beginnerRuntime.introStartBeatBucket = 0
@@ -1748,12 +1737,12 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.pentatonicRevealCount = 0
         beginnerRuntime.roundOneIntroActive = true
         beginnerRuntime.roundOneSequenceStartDate = Date()
-        roundRevealElapsedBeats = 0
+        beginnerRuntime.roundRevealElapsedBeats = 0
         if lessonStyle == .chord {
             beginnerRuntime.showRoundZeroIntroSequence = true
             beginnerRuntime.introStartBeatBucket = 0
         }
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealLastTickDate = nil
         beginnerRuntime.answerBoxReady = false
         beginnerRuntime.lastPickedNote = nil
         applyBeginnerBassTransposeForCurrentStage()
@@ -1802,7 +1791,7 @@ struct BeginnerGameplayView: View {
               !isCodeScreensaverMode,
               !startupSequenceActivated,
               lessonStyle == .chord,
-              questionBoxIntroProgress > 0,
+              beginnerRuntime.questionBoxIntroProgress > 0,
               beginnerRuntime.roundOneSequenceStartDate == nil,
               beginnerRuntime.pentatonicRevealCount == 0,
               !beginnerRuntime.answerBoxReady,
@@ -1813,7 +1802,7 @@ struct BeginnerGameplayView: View {
         beginnerRuntime.roundOneSequenceStartDate = currentDate
         beginnerRuntime.pentatonicRevealCount = 0
         beginnerRuntime.revealStartBeatBucket = nil
-        beginnerRuntime.introStartBeatBucket = Int(floor(roundRevealElapsedBeats))
+        beginnerRuntime.introStartBeatBucket = Int(floor(beginnerRuntime.roundRevealElapsedBeats))
         beginnerRuntime.showRoundZeroIntroSequence = lessonStyle == .chord ? true : shouldShowLegacyRoundZeroIntro
         beginnerRuntime.lastPickedNote = nil
         beginnerRuntime.answerBoxReady = false
@@ -1829,7 +1818,7 @@ struct BeginnerGameplayView: View {
         else { return }
 
         guard beginnerRoundZeroIntroDisplayPhase == .noteReveal else { return }
-        let currentBeatBucket = Int(floor(roundRevealElapsedBeats))
+        let currentBeatBucket = Int(floor(beginnerRuntime.roundRevealElapsedBeats))
         if beginnerRuntime.revealStartBeatBucket == nil {
             beginnerRuntime.revealStartBeatBucket = currentBeatBucket
         }
@@ -1862,7 +1851,7 @@ struct BeginnerGameplayView: View {
               !startupSequenceActivated
         else { return }
 
-        let currentBeatBucket = Int(floor(roundRevealElapsedBeats))
+        let currentBeatBucket = Int(floor(beginnerRuntime.roundRevealElapsedBeats))
         if beginnerRuntime.revealStartBeatBucket == nil {
             beginnerRuntime.revealStartBeatBucket = currentBeatBucket
         }
@@ -1904,7 +1893,7 @@ struct BeginnerGameplayView: View {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
             }
-            let revealElapsed = Int(floor(roundRevealElapsedBeats)) - (beginnerRuntime.revealStartBeatBucket ?? Int(floor(roundRevealElapsedBeats)))
+            let revealElapsed = Int(floor(beginnerRuntime.roundRevealElapsedBeats)) - (beginnerRuntime.revealStartBeatBucket ?? Int(floor(beginnerRuntime.roundRevealElapsedBeats)))
             guard revealElapsed >= GameConstants.maxRevealCount + 1 else {
                 beginnerRuntime.autoPlayNextDate = nil
                 return
@@ -2014,7 +2003,7 @@ struct BeginnerGameplayView: View {
                 startupSequenceStartDate = .now
                 startupSequenceElapsed = 0
                 startupSpeechPhase = layoutMode == .beginner ? .pendingArmed : .pendingSystem
-                questionBoxIntroProgress = 0
+                beginnerRuntime.questionBoxIntroProgress = 0
                 return
             }
 
@@ -2045,7 +2034,7 @@ struct BeginnerGameplayView: View {
                 launchTileScale = 1
                 launchTileOpacity = 1
                 withAnimation(.easeOut(duration: 0.6)) {
-                    questionBoxIntroProgress = 1
+                    beginnerRuntime.questionBoxIntroProgress = 1
                 }
             }
             return
@@ -2072,8 +2061,8 @@ struct BeginnerGameplayView: View {
                 rightThumbState = .green
             }
             activeAnswerFeedback = .green
-            lastResolvedCorrectNote = currentCorrectNote
-            lastResolvedCorrectString = currentPromptStrings.first
+            beginnerRuntime.lastResolvedCorrectNote = currentCorrectNote
+            beginnerRuntime.lastResolvedCorrectString = currentPromptStrings.first
         } else {
             if side == .left {
                 leftThumbState = .red
@@ -2200,9 +2189,9 @@ struct BeginnerGameplayView: View {
         }
         correctAnswerSide = correctOnLeft ? .left : .right
         currentPromptStrings = [nextString]
-        lastPromptedCorrectNote = correctNote
-        lastPromptedStringHalf = .left
-        lastPromptedStringNumber = nextString
+        beginnerRuntime.lastPromptedCorrectNote = correctNote
+        beginnerRuntime.lastPromptedStringHalf = .left
+        beginnerRuntime.lastPromptedStringNumber = nextString
         withAnimation(.easeInOut(duration: 1.3)) {
             currentFretStart = max(currentRound, 0)
         }
@@ -2224,7 +2213,7 @@ struct BeginnerGameplayView: View {
         }
 
         currentPromptStrings = [targetString]
-        lastPromptedCorrectNote = correctNote
+        beginnerRuntime.lastPromptedCorrectNote = correctNote
         withAnimation(.easeInOut(duration: 1.3)) {
             currentFretStart = fret
         }
@@ -2406,14 +2395,14 @@ struct BeginnerGameplayView: View {
         if sequentialNoteGenerator.isSequenceComplete() {
             if beginnerRuntime.scaleRepetitionsRemaining <= 1 {
                 if beginnerRuntime.pendingRoundShiftBeatPosition == nil {
-                    beginnerRuntime.pendingRoundShiftBeatPosition = roundRevealElapsedBeats + 2.0
+                    beginnerRuntime.pendingRoundShiftBeatPosition = beginnerRuntime.roundRevealElapsedBeats + 2.0
                 }
             } else {
                 beginnerRuntime.scaleRepetitionsRemaining -= 1
                 beginnerRuntime.pendingSequentialRepeatDisplayText = sequentialNoteGenerator.currentNoteSequence
                     .map(guitarNoteDisplayText)
                     .joined(separator: " ")
-                beginnerRuntime.pendingSequentialRepeatResetBeatPosition = roundRevealElapsedBeats + 2.0
+                beginnerRuntime.pendingSequentialRepeatResetBeatPosition = beginnerRuntime.roundRevealElapsedBeats + 2.0
             }
         }
 
@@ -2558,7 +2547,7 @@ struct BeginnerGameplayView: View {
                 isLaunchTransitionAnimating = false
                 launchTileScale = 1
                 launchTileOpacity = 1
-                questionBoxIntroProgress = 1
+                beginnerRuntime.questionBoxIntroProgress = 1
                 handleRoundStartButton(animateNeckSlideFromStartup: true)
             }
             return
@@ -2571,12 +2560,12 @@ struct BeginnerGameplayView: View {
         startupSequenceActivated = false
         startupSequenceElapsed = 0
         startupSpeechPhase = .idle
-        questionBoxIntroProgress = 1
+        beginnerRuntime.questionBoxIntroProgress = 1
         isRoundPaused = false
         transportStoppedForResume = false
         isRoundArmed = false
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealElapsedBeats = 0
+        beginnerRuntime.roundRevealLastTickDate = nil
 
         // Ensure reveal beat-buckets are always fresh for the active style at START
         if lessonStyle == .sequential {
@@ -2600,7 +2589,7 @@ struct BeginnerGameplayView: View {
             startupSequenceStartDate = .now
             startupSequenceElapsed = 0
             startupSpeechPhase = .pendingArmed
-            questionBoxIntroProgress = 0
+            beginnerRuntime.questionBoxIntroProgress = 0
             return
         }
 
@@ -2627,7 +2616,7 @@ struct BeginnerGameplayView: View {
 
         isRoundPaused = true
         transportStoppedForResume = true
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealLastTickDate = nil
         midiEngine.pause()
         isBackingTrackPlaying = midiEngine.isPlaying
         beginnerRuntime.beatLightFlashOn = false
@@ -2641,7 +2630,7 @@ struct BeginnerGameplayView: View {
 
         transportStoppedForResume = false
         isRoundPaused = false
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealLastTickDate = nil
         midiEngine.resume()
         beginnerRuntime.beatLightFlashOn = false
         beginnerRuntime.beatLightLastProcessedBeat = nil
@@ -2650,9 +2639,9 @@ struct BeginnerGameplayView: View {
     }
 
     func handleRoundResetButton() {
-        resetButtonPressed = true
+        beginnerRuntime.resetButtonPressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            resetButtonPressed = false
+            beginnerRuntime.resetButtonPressed = false
         }
 
         if layoutMode == .beginner {
@@ -2663,15 +2652,15 @@ struct BeginnerGameplayView: View {
         startupSequenceStartDate = .now
         startupSequenceElapsed = 0
         startupSpeechPhase = .pendingArmed
-        questionBoxIntroProgress = 0
+        beginnerRuntime.questionBoxIntroProgress = 0
         isLaunchTransitionAnimating = false
         launchTileScale = 1
         launchTileOpacity = 1
         isRoundPaused = false
         transportStoppedForResume = false
         isRoundArmed = true
-        roundRevealElapsedBeats = 0
-        roundRevealLastTickDate = nil
+        beginnerRuntime.roundRevealElapsedBeats = 0
+        beginnerRuntime.roundRevealLastTickDate = nil
         syncBackingTrackPlayback()
         startGameFromBeginning()
         developerPromptText = ""
