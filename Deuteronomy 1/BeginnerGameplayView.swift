@@ -26,16 +26,16 @@ struct BeginnerGameplayView: View {
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
     let consoleSkin: ConsoleSkin
-    @AppStorage("numbers3.runtime.directionLockActive") private var directionLockActive: Bool = false
+    @AppStorage("numbers3.runtime.directionLockActive") var directionLockActive: Bool = false
 
     @State var audioSettings = AudioSettings()
     @State var showAudioPage: Bool = false
     let layoutMode: LayoutMode = .beginner
 
     @Environment(\.displayScale) private var displayScale
-    private let totalFrets: Int = 20
-    private var maxFretOffset: Int { totalFrets }
-    private var minFretOffset: Int { -totalFrets }
+    let totalFrets: Int = 20
+    var maxFretOffset: Int { totalFrets }
+    var minFretOffset: Int { -totalFrets }
     var modeVariant: GameplayModeVariant {
         if layoutMode == .beginner {
             return lessonStyle == .chord ? .chord : .freestyle
@@ -60,7 +60,7 @@ struct BeginnerGameplayView: View {
         }
     }
 
-    private var isPhaseDescending: Bool {
+    var isPhaseDescending: Bool {
         beginnerRuntime.isDescendingPhase
     }
 
@@ -68,7 +68,7 @@ struct BeginnerGameplayView: View {
         layoutMode == .maestro
     }
 
-    private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+    var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
     var activeStringOrder: [Int] {
         let baseOrder: [Int] = {
@@ -112,8 +112,8 @@ struct BeginnerGameplayView: View {
     // beginnerRuntime.activePickedStringNumbers, beginnerRuntime.answeredNotesByStringAtCurrentFret,
     // beginnerRuntime.autoPlayLastStringByNote, beginnerRuntime.activeAnswerFeedback — moved to BeginnerGameState (Step 3)
     // (Step 2 vars also live in BeginnerGameState)
-    @State private var leftThumbState: ThumbGlowState = .neutral
-    @State private var rightThumbState: ThumbGlowState = .neutral
+    @State var leftThumbState: ThumbGlowState = .neutral
+    @State var rightThumbState: ThumbGlowState = .neutral
     @State var beginnerPressedButtonIndex: Int? = nil
     @State var beginnerPressedButtonCorrect: Bool = false
     @State var roundStringIndex: Int = 0
@@ -123,20 +123,20 @@ struct BeginnerGameplayView: View {
     // Sequential style integration
     @StateObject var sequentialNoteGenerator = SequentialNoteGenerator()
     // Unified generator access — no more if/else chains at callsites
-    private var currentGenerator: any NoteSequenceGenerator {
+    var currentGenerator: any NoteSequenceGenerator {
         sequentialNoteGenerator
     }
-    @State private var introWindowBlack: Bool = true
-    @State private var introDidRun: Bool = false
+    @State var introWindowBlack: Bool = true
+    @State var introDidRun: Bool = false
     @State var isCodeScreensaverMode: Bool = true
     @State var startupSequenceStartDate: Date = .now
     @State var startupSequenceElapsed: TimeInterval = 0
     @State var startupSequenceActivated: Bool = false
-    @State private var assetToNutBottomDelta: CGFloat? = nil
-    @State private var questionBoxAssistActive: Bool = false
+    @State var assetToNutBottomDelta: CGFloat? = nil
+    @State var questionBoxAssistActive: Bool = false
     @State var gameplayMenuExpanded: Bool = false
     @State var developerPromptText: String = ""
-    @State private var beatQuestionDeadline: Date? = nil
+    @State var beatQuestionDeadline: Date? = nil
     @State var showFretboardGuide: Bool = false
     @State var isRoundPaused: Bool = false
     @State var isBackingTrackPlaying: Bool = false
@@ -145,7 +145,7 @@ struct BeginnerGameplayView: View {
     @State var launchTileOpacity: Double = 1
     @State var startupNeckVisualsHidden: Bool = false
     @State var startupStartButtonBlinkOn: Bool = false
-    @State private var startupStartButtonNextBlinkDate: Date? = nil
+    @State var startupStartButtonNextBlinkDate: Date? = nil
     @State var beatPulseActive: Bool = false
     @State var beginnerRuntime = BeginnerGameState()
 
@@ -162,13 +162,13 @@ struct BeginnerGameplayView: View {
     @State var startupSpeechPhase: StartupSpeechPhase = .idle
     @State var availableBackingTracks: [BackingTrack] = []
 
-    private let gameplayAudioEngine = SpeechEngine()
-    private let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
+    let gameplayAudioEngine = SpeechEngine()
+    let guitarNoteEngine: GuitarNotePlaying = SharedAudioEngine.shared
     let midiEngine: BackingTrackPlaying = SharedAudioEngine.shared
-    private let audioEngineEnabled: Bool = false
-    private let speakBeatTicks: Bool = false
-    private let speakGameplayPrompts: Bool = false
-    private let beginnerScaleTemplates: [BeginnerStageTemplate] = [
+    let audioEngineEnabled: Bool = false
+    let speakBeatTicks: Bool = false
+    let speakGameplayPrompts: Bool = false
+    let beginnerScaleTemplates: [BeginnerStageTemplate] = [
         BeginnerStageTemplate(root: "E", titleSuffix: "m Pentatonic", intervals: [0, 3, 5, 7, 10, 12], bassSemitoneTarget: 0, endsCycle: false),
         BeginnerStageTemplate(root: "E", titleSuffix: "MINOR", intervals: [0, 3, 7], bassSemitoneTarget: 0, endsCycle: false),
         BeginnerStageTemplate(root: "E", titleSuffix: "MINOR 7", intervals: [0, 3, 7, 10], bassSemitoneTarget: 0, endsCycle: false),
