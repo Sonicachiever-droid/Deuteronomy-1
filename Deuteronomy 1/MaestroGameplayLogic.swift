@@ -497,3 +497,12 @@ extension MaestroGameplayView {
         }
     }
 }
+
+// MARK: - MaestroGameplayView UI Helpers
+
+extension MaestroGameplayView {
+    func textWidth(for text: String, font: UIFont) -> CGFloat {
+        let attributes = [NSAttributedString.Key.font: font]
+        return ceil(text.size(withAttributes: attributes).width)
+    }
+}
