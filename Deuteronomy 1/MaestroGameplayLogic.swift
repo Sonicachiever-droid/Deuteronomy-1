@@ -477,7 +477,11 @@ extension MaestroGameplayView {
         activeAnswerFeedback = nil
         isResolvingAnswer = false
         streakMeterFailureActive = true
-        streakMeterLitSegments = 0
+        streakMeterLitSegments = 12
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+            self.streakMeterFailureActive = false
+            self.streakMeterLitSegments = 0
+        }
         prepareCurrentQuestion()
     }
 
