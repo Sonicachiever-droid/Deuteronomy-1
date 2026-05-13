@@ -5,7 +5,7 @@ import AVFoundation
 // MARK: - Types and components from extracted files
 // Types.swift contains: GameplayMenuOption, RefretMode, GameplayModeVariant, AnswerSide, LayoutMode, BeginnerCoursePhase, BeginnerRoundZeroIntroDisplayPhase, HighlightWindowShape, FretMath, GuitarStringLayout, baselineNutTargetY, resolvedNeckTopY
 // ViewComponents.swift contains: StringLineOverlay, MiniTVFrame, ThumbButtonView
-// BeginnerSubviews.swift contains: WhiteNoteBoxOverlay, StartupSequenceView
+// BeginnerSubviews.swift contains: WhiteNoteBoxOverlay, StartupSequenceView, + BeginnerGameplayView extension (fretIndicatorOverlay, beatPulseOverlay, developerConsoleFrame, maestroThumbOverlay, transportButtonPanelOverlay, beginnerButtonPanelOverlay, beginnerButtonState)
 // DeveloperViews.swift contains: DeveloperCodeRunnerView, DeveloperConsoleFrame, DeveloperTVStreakMeterView
 
 
@@ -21,7 +21,7 @@ struct BeginnerGameplayView: View {
     @Binding var playDirectionRawValue: String
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
-    private var lessonStyle: LessonStyle { LessonStyle(rawValue: playLessonStyle) ?? .chord }
+    var lessonStyle: LessonStyle { LessonStyle(rawValue: playLessonStyle) ?? .chord }
     @Binding var playProgression: String
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
@@ -30,13 +30,13 @@ struct BeginnerGameplayView: View {
 
     @State private var audioSettings = AudioSettings()
     @State private var showAudioPage: Bool = false
-    private let layoutMode: LayoutMode = .beginner
+    let layoutMode: LayoutMode = .beginner
 
     @Environment(\.displayScale) private var displayScale
     private let totalFrets: Int = 20
     private var maxFretOffset: Int { totalFrets }
     private var minFretOffset: Int { -totalFrets }
-    private var modeVariant: GameplayModeVariant {
+    var modeVariant: GameplayModeVariant {
         if layoutMode == .beginner {
             return lessonStyle == .chord ? .chord : .freestyle
         }
@@ -64,13 +64,13 @@ struct BeginnerGameplayView: View {
         isDescendingPhase
     }
 
-    private var showMaestroOverlays: Bool {
+    var showMaestroOverlays: Bool {
         layoutMode == .maestro
     }
 
     private var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
-    private var activeStringOrder: [Int] {
+    var activeStringOrder: [Int] {
         let baseOrder: [Int] = {
             let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
             return (modeVariant == .freestyle && isProgressionLowToHigh) ? base.reversed() : base
@@ -101,7 +101,7 @@ struct BeginnerGameplayView: View {
         }
     }
     // chromaticSharps, chromaticFlats, openNoteByString — use module-level globals from GuitarHelpers.swift
-    private let codenameNemoEnabled: Bool = false
+    let codenameNemoEnabled: Bool = false
     private let scaleLengthInches: Double = 25.5
     private let debugGridRows: Int = 8
     private var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
@@ -109,10 +109,10 @@ struct BeginnerGameplayView: View {
     @State private var currentWindowRow: Int = 2
     @State private var leftThumbState: ThumbGlowState = .neutral
     @State private var rightThumbState: ThumbGlowState = .neutral
-    @State private var beginnerPressedButtonIndex: Int? = nil
-    @State private var beginnerPressedButtonCorrect: Bool = false
-    @State private var currentRound: Int = 0
-    @State private var roundStringIndex: Int = 0
+    @State var beginnerPressedButtonIndex: Int? = nil
+    @State var beginnerPressedButtonCorrect: Bool = false
+    @State var currentRound: Int = 0
+    @State var roundStringIndex: Int = 0
     @State private var isDescendingPhase: Bool = false
     @State private var leftChoiceNote: String = ""
     @State private var rightChoiceNote: String = ""
@@ -120,13 +120,13 @@ struct BeginnerGameplayView: View {
     // Chord system integration
     @StateObject private var chordGenerator = ChordGenerator()
     // Sequential style integration
-    @StateObject private var sequentialNoteGenerator = SequentialNoteGenerator()
+    @StateObject var sequentialNoteGenerator = SequentialNoteGenerator()
     // Unified generator access — no more if/else chains at callsites
     private var currentGenerator: any NoteSequenceGenerator {
         sequentialNoteGenerator
     }
     @State private var correctAnswerSide: AnswerSide = .left
-    @State private var isResolvingAnswer: Bool = false
+    @State var isResolvingAnswer: Bool = false
     @State private var activePickedStringNumbers: [Int] = [1]
     @State private var answeredNotesByStringAtCurrentFret: [Int: String] = [:]
     @State private var autoPlayLastStringByNote: [String: Int] = [:]
@@ -134,24 +134,24 @@ struct BeginnerGameplayView: View {
     @State private var currentQuestionIsAccidental: Bool = false
     @State private var introWindowBlack: Bool = true
     @State private var introDidRun: Bool = false
-    @State private var isCodeScreensaverMode: Bool = true
+    @State var isCodeScreensaverMode: Bool = true
     @State private var bankDollars: Int = 0
-    @State private var displayedBankDollars: Int = 0
+    @State var displayedBankDollars: Int = 0
     @State private var startupSequenceStartDate: Date = .now
-    @State private var startupSequenceElapsed: TimeInterval = 0
-    @State private var startupSequenceActivated: Bool = false
+    @State var startupSequenceElapsed: TimeInterval = 0
+    @State var startupSequenceActivated: Bool = false
     @State private var assetToNutBottomDelta: CGFloat? = nil
     @State private var questionBoxAssistActive: Bool = false
     @State private var gameplayMenuExpanded: Bool = false
-    @State private var developerPromptText: String = ""
+    @State var developerPromptText: String = ""
     @State private var currentCorrectNote: String = ""
     @State private var lastResolvedCorrectNote: String? = nil
     @State private var lastResolvedCorrectString: Int? = nil
-    @State private var currentPromptStrings: [Int] = [1]
+    @State var currentPromptStrings: [Int] = [1]
     @State private var beatQuestionDeadline: Date? = nil
     @State private var showFretboardGuide: Bool = false
     @State private var isRoundArmed: Bool = true
-    @State private var isRoundPaused: Bool = false
+    @State var isRoundPaused: Bool = false
     @State private var transportStoppedForResume: Bool = false
     @State private var roundRevealElapsedBeats: Double = 0
     @State private var roundRevealLastTickDate: Date? = nil
@@ -160,9 +160,9 @@ struct BeginnerGameplayView: View {
     @State private var launchTileScale: CGFloat = 1
     @State private var launchTileOpacity: Double = 1
     @State private var startupNeckVisualsHidden: Bool = false
-    @State private var startupStartButtonBlinkOn: Bool = false
+    @State var startupStartButtonBlinkOn: Bool = false
     @State private var startupStartButtonNextBlinkDate: Date? = nil
-    @State private var beatPulseActive: Bool = false
+    @State var beatPulseActive: Bool = false
     @State private var beatCountInRemaining: Int = 0
     @State private var nextBeatTickDate: Date? = nil
     @State private var questionBoxIntroProgress: CGFloat = 0
@@ -173,8 +173,8 @@ struct BeginnerGameplayView: View {
     @State private var lastPromptedStringHalf: AnswerSide? = nil
     @State private var lastPromptedStringNumber: Int? = nil
     @State private var recentPromptedCorrectNotes: [String] = []
-    @State private var beginnerRuntime = BeginnerGameState()
-    @State private var resetButtonPressed: Bool = false
+    @State var beginnerRuntime = BeginnerGameState()
+    @State var resetButtonPressed: Bool = false
 
     private enum StartupSpeechPhase {
         case idle
@@ -277,7 +277,7 @@ struct BeginnerGameplayView: View {
         return beginnerScaleStages[clampedIndex]
     }
 
-    private var beginnerCurrentScaleNotes: [String] {
+    var beginnerCurrentScaleNotes: [String] {
         beginnerCurrentScaleStage.notes
     }
 
@@ -285,7 +285,7 @@ struct BeginnerGameplayView: View {
         beginnerCurrentScaleStage.title
     }
 
-    private var chordNoteStringMap: [Int] {
+    var chordNoteStringMap: [Int] {
         let notes = beginnerCurrentScaleNotes
         let fret = max(currentRound, 0)
         var map: [Int] = []
@@ -338,15 +338,15 @@ struct BeginnerGameplayView: View {
         beginnerRoundOneStartingFret == 0
     }
 
-    private func getWalletColor() -> Color {
+    func getWalletColor() -> Color {
         .green
     }
 
-    private func getRepetitionCountColor() -> Color {
+    func getRepetitionCountColor() -> Color {
         .pink
     }
 
-    private var beginnerRoundStatusText: String? {
+    var beginnerRoundStatusText: String? {
         guard layoutMode == .beginner else { return nil }
 
         // Sequential style: show revealed notes one by one
@@ -387,7 +387,7 @@ struct BeginnerGameplayView: View {
         return "\(guitarNoteDisplayText(beginnerCurrentScaleTitle))\n\(guitarNoteDisplayText(progressLine))"
     }
 
-    private var beginnerCenteredStatusMessage: String? {
+    var beginnerCenteredStatusMessage: String? {
         guard layoutMode == .beginner else { return nil }
 
         // Sequential style: show intro message during startup
@@ -476,7 +476,7 @@ struct BeginnerGameplayView: View {
         playDirection == .descending
     }
 
-    private var beginnerUsesFlats: Bool {
+    var beginnerUsesFlats: Bool {
         guard layoutMode == .beginner else { return false }
         return isDescendingPhase
     }
@@ -487,7 +487,7 @@ struct BeginnerGameplayView: View {
         return true
     }
 
-    private var startupStartButtonAttentionActive: Bool {
+    var startupStartButtonAttentionActive: Bool {
         guard layoutMode == .beginner else { return false }
         guard isCodeScreensaverMode else { return false }
         guard !isLaunchTransitionAnimating else { return false }
@@ -504,7 +504,7 @@ struct BeginnerGameplayView: View {
         return startupState.phase == .armed
     }
 
-    private var canPressStopButton: Bool {
+    var canPressStopButton: Bool {
         !isRoundArmed && !isCodeScreensaverMode && !isRoundPaused
     }
 
@@ -513,7 +513,7 @@ struct BeginnerGameplayView: View {
         return !isRoundArmed
     }
 
-    private var beginnerStartupArmedText: String {
+    var beginnerStartupArmedText: String {
         if layoutMode == .beginner {
             if lessonStyle == .sequential { return "SEQUENTIAL MODE ARMED" }
             return "CHORD MODE ARMED"
@@ -1190,37 +1190,8 @@ struct BeginnerGameplayView: View {
         case .red: return .neutral
         }
     }
-    private func fretIndicatorOverlay(leftX: CGFloat, rightX: CGFloat, centerY: CGFloat, text: String, isHidden: Bool) -> some View {
-        Group {
-            if !isHidden {
-                Text(text)
-                    .font(.system(size: 24, weight: .black, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.96))
-                    .shadow(color: Color.black.opacity(0.72), radius: 3, x: 0, y: 1)
-                    .position(x: leftX, y: centerY)
-
-                Text(text)
-                    .font(.system(size: 24, weight: .black, design: .monospaced))
-                    .foregroundStyle(Color.white.opacity(0.96))
-                    .shadow(color: Color.black.opacity(0.72), radius: 3, x: 0, y: 1)
-                    .position(x: rightX, y: centerY)
-            }
-        }
-        .allowsHitTesting(false)
-    }
-
-    private func beatPulseOverlay(centerX: CGFloat, centerY: CGFloat, isHidden: Bool) -> some View {
-        Group {
-            if !isHidden && modeVariant == .beat {
-                Circle()
-                    .fill(Color.green.opacity(beatPulseActive ? 0.86 : 0.22))
-                    .frame(width: beatPulseActive ? 30 : 18, height: beatPulseActive ? 30 : 18)
-                    .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
-                    .position(x: centerX, y: centerY)
-                    .animation(.easeInOut(duration: 0.16), value: beatPulseActive)
-            }
-        }
-    }
+    // fretIndicatorOverlay — moved to BeginnerSubviews.swift
+    // beatPulseOverlay — moved to BeginnerSubviews.swift
 
     private func handleMainTimerTick(_ date: Date) {
         let shouldBlinkStartupStartButton = startupStartButtonAttentionActive && !startupSequenceActivated
@@ -2029,7 +2000,7 @@ struct BeginnerGameplayView: View {
         return lowToHigh
     }
 
-    private func submitAnswer(_ side: AnswerSide, force: Bool = false) {
+    func submitAnswer(_ side: AnswerSide, force: Bool = false) {
         if layoutMode == .beginner && isRoundArmed {
             handleRoundStartButton()
             return
@@ -2307,67 +2278,7 @@ struct BeginnerGameplayView: View {
         }
     }
 
-    private func developerConsoleFrame(
-        proxyWidth: CGFloat,
-        topStatusCenterY: CGFloat,
-        topStatusOuterWidth: CGFloat,
-        topStatusOuterHeight: CGFloat
-    ) -> some View {
-        let currentTargetString = activeStringOrder[min(max(roundStringIndex, 0), activeStringOrder.count - 1)]
-        let promptStrings = currentPromptStrings.isEmpty ? [currentTargetString] : currentPromptStrings
-        let fretStatusLabel = "FRET \(currentRound)"
-        let stringStatusLabel = promptStrings.count > 1
-            ? "STRINGS \(promptStrings.map(String.init).joined(separator: "+"))"
-            : "STRING \(promptStrings[0])"
-        let isGameplayStarted = !isCodeScreensaverMode
-        let displayedFretStatusLabel = isGameplayStarted ? fretStatusLabel : ""
-        let displayedStringStatusLabel: String = {
-            if lessonStyle == .sequential { return "SEQUENTIAL MODE" }
-            return isGameplayStarted ? stringStatusLabel : ""
-        }()
-        let roundStatusLabel = fretStatusLabel
-
-        return DeveloperConsoleFrame(
-            width: topStatusOuterWidth,
-            height: topStatusOuterHeight,
-            isScreensaverMode: isCodeScreensaverMode,
-            layoutMode: layoutMode,
-            roundTitle: roundStatusLabel,
-            fretTitle: displayedFretStatusLabel,
-            stringTitle: displayedStringStatusLabel,
-            bankText: "$\(displayedBankDollars)",
-            scaleRepetitionText: beginnerRuntime.scaleRepetitionsRemaining >= Int.max / 2 ? "∞X" : "\(beginnerRuntime.scaleRepetitionsRemaining)X",
-            promptText: developerPromptText,
-            startupElapsed: startupSequenceElapsed,
-            showStartupSequence: startupSequenceActivated,
-            startupShowFullSequence: layoutMode != .beginner,
-            startupArmedText: beginnerStartupArmedText,
-            beginnerRoundStatusText: beginnerRoundStatusText,
-            centeredStatusMessage: beginnerCenteredStatusMessage,
-            centeredStatusColor: Color.green.opacity(0.98),
-            currentRound: currentRound,
-            repetitionCountColor: getRepetitionCountColor(),
-            walletColor: getWalletColor(),
-            hideRoundLabel: false,
-            pentatonicRevealComplete: beginnerRuntime.answerBoxReady || beginnerRuntime.pendingRewardStageAdvance,
-            noteHighlightIndex: lessonStyle == .sequential ? sequentialNoteGenerator.sequenceProgressIndex : beginnerRuntime.scaleSequenceIndex,
-            sequentialSlots: (layoutMode == .beginner && lessonStyle == .sequential && !sequentialNoteGenerator.currentNoteSequence.isEmpty)
-                ? zip(sequentialNoteGenerator.currentNoteSequence, sequentialNoteGenerator.noteStringMap).map { (note: $0, stringNumber: $1) }
-                : nil,
-            sequentialRevealCount: min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count),
-            sequentialAnsweredCount: sequentialNoteGenerator.sequenceProgressIndex,
-            chordSlots: (layoutMode == .beginner && lessonStyle == .chord && !beginnerCurrentScaleNotes.isEmpty)
-                ? zip(beginnerCurrentScaleNotes, chordNoteStringMap).map { (note: $0, stringNumber: $1) }
-                : nil,
-            chordRevealCount: min(beginnerRuntime.pentatonicRevealCount, beginnerCurrentScaleNotes.count),
-            chordAnsweredCount: beginnerRuntime.scaleSequenceIndex,
-            rewardNoteTextByString: beginnerRuntime.rewardNoteTextByString,
-            consoleSkin: consoleSkin
-        )
-        .position(x: proxyWidth / 2, y: topStatusCenterY)
-        .allowsHitTesting(false)
-        .opacity(codenameNemoEnabled ? 0 : 1)
-    }
+    // developerConsoleFrame — moved to BeginnerSubviews.swift
 
     private func handleStartupSpeech(for phase: StartupSequenceView.Phase) {
         guard audioEngineEnabled else { return }
@@ -2390,253 +2301,15 @@ struct BeginnerGameplayView: View {
         }
     }
 
-    @ViewBuilder
-    private func maestroThumbOverlay(
-        proxyWidth: CGFloat,
-        buttonCenterY: CGFloat,
-        thumbDiameter: CGFloat,
-        leftThumbState: ThumbGlowState,
-        rightThumbState: ThumbGlowState,
-        dimOpacity: CGFloat
-    ) -> some View {
-        HStack(spacing: 28) {
-            Button(action: { submitAnswer(.left) }) {
-                ThumbButtonView(
-                    diameter: thumbDiameter,
-                    label: "",
-                    state: leftThumbState
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(isResolvingAnswer)
-            .accessibilityLabel(A11y.Beginner.leftThumb)
-            .accessibilityHint(A11y.Beginner.leftThumbHint)
+    // maestroThumbOverlay — moved to BeginnerSubviews.swift
 
-            Button(action: { submitAnswer(.right) }) {
-                ThumbButtonView(
-                    diameter: thumbDiameter,
-                    label: "",
-                    state: rightThumbState
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(isResolvingAnswer)
-            .accessibilityLabel(A11y.Beginner.rightThumb)
-            .accessibilityHint(A11y.Beginner.rightThumbHint)
-        }
-        .frame(maxWidth: .infinity)
-        .position(x: proxyWidth / 2, y: buttonCenterY)
-        .allowsHitTesting(showMaestroOverlays)
-        .accessibilityHidden(!showMaestroOverlays)
-        .opacity(codenameNemoEnabled ? 0 : (showMaestroOverlays ? dimOpacity : 0))
-    }
+    // transportButtonPanelOverlay — moved to BeginnerSubviews.swift
 
-    @ViewBuilder
-    private func transportButtonPanelOverlay(
-        proxyWidth: CGFloat,
-        transportCenterY: CGFloat,
-        startupState: (text: String, color: Color, isVisible: Bool, phase: StartupSequenceView.Phase)
-    ) -> some View {
-        let startButtonShouldHighlight: Bool = startupStartButtonAttentionActive && (!startupSequenceActivated ? startupStartButtonBlinkOn : startupState.isVisible)
-        HStack(spacing: 6) {
-            Button("START") { handleStartButtonPress() }
-                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                        .fill(startButtonShouldHighlight ? Color.green.opacity(0.9) : Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                        )
-                )
-                .accessibilityLabel(A11y.Transport.start)
-                .accessibilityHint(A11y.Transport.startHint)
-            Button(isRoundPaused ? "RESUME" : "PAUSE") {
-                if isRoundPaused { resumeRoundFromTransportStop(forceIfPaused: true) }
-                else { handleRoundStopButton() }
-            }
-                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
-                .disabled(!canPressStopButton && !isRoundPaused)
-                .background(
-                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                        .fill(isRoundPaused ? Color.orange.opacity(0.85) : Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                        )
-                )
-                .accessibilityLabel(isRoundPaused ? A11y.Transport.resume : A11y.Transport.pause)
-                .accessibilityHint(isRoundPaused ? A11y.Transport.resumeHint : A11y.Transport.pauseHint)
-            Button("RESET") { handleRoundResetButton() }
-                .frame(minWidth: 58, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                        .fill(resetButtonPressed ? Color.green.opacity(0.8) : Color.clear)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
-                                .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
-                        )
-                )
-                .accessibilityLabel(A11y.Transport.reset)
-                .accessibilityHint(A11y.Transport.resetHint)
-        }
-        .font(.system(size: 12, weight: .bold, design: .monospaced))
-        .foregroundStyle(Color.black.opacity(0.92))
-        .buttonStyle(.plain)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: consoleSkin == .tweed ? [
-                            .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
-                        ] : [
-                            .goldLight, .goldMid, .goldDark, .goldMidtone
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
-                )
-        )
-        .frame(width: min((proxyWidth - 24) * 0.88, 370) * 0.72, height: 50)
-        .position(x: proxyWidth / 2, y: transportCenterY - 22)
-        .opacity(codenameNemoEnabled ? 0 : 1)
-    }
+    // beginnerButtonPanelOverlay — moved to BeginnerSubviews.swift
 
-    @ViewBuilder
-    private func beginnerButtonPanelOverlay(
-        proxyWidth: CGFloat,
-        proxyHeight: CGFloat,
-        buttonCenterY: CGFloat,
-        lowerScreenHeight: CGFloat,
-        transportCenterY: CGFloat,
-        dimOpacity: Double,
-        startupState: (text: String, color: Color, isVisible: Bool, phase: StartupSequenceView.Phase)
-    ) -> some View {
-        let beginnerButtonDiameter: CGFloat = min(max(proxyWidth * 0.18, 66), 84) * 0.85
-        let beginnerButtonSpacing: CGFloat = beginnerButtonDiameter * 1.62
-        let row0Y: CGFloat = buttonCenterY - beginnerButtonSpacing
-        let row1Y: CGFloat = buttonCenterY
-        let row2Y: CGFloat = buttonCenterY + beginnerButtonSpacing
-        let rowYs: [CGFloat] = [row0Y, row1Y, row2Y]
-        let leftButtonX: CGFloat = proxyWidth * 0.2335
-        let rightButtonX: CGFloat = proxyWidth * 0.7665
-        let beginnerScreenHeight: CGFloat = lowerScreenHeight * 0.76 * 1.2
-        let beginnerScreenWidth: CGFloat = beginnerScreenHeight * 1.6
-        let noteScreenCenterYOffset: CGFloat = -beginnerButtonDiameter * 0.13
-        let screenInset: CGFloat = beginnerButtonDiameter * 0.88
-        let leftScreenX: CGFloat = leftButtonX + screenInset
-        let rightScreenX: CGFloat = rightButtonX - screenInset
-        let leftStrings: [Int] = [4, 5, 6]
-        let rightStrings: [Int] = [3, 2, 1]
-        ZStack {
-            ForEach(Array(0..<3), id: \.self) { idx in
-                let selectedString: Int = leftStrings[idx]
-                let buttonNote: String = guitarNoteName(forString: leftStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
-                let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
-                let buttonIndex: Int = idx
-                MiniTVFrame(
-                    text: displayButtonNote,
-                    width: beginnerScreenWidth,
-                    height: beginnerScreenHeight,
-                    fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(buttonNote),
-                    consoleSkin: consoleSkin
-                )
-                .position(x: leftScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
+    // beginnerButtonState — moved to BeginnerSubviews.swift
 
-                Button(action: {
-                    handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
-                }) {
-                    ThumbButtonView(
-                        diameter: beginnerButtonDiameter,
-                        label: "",
-                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible),
-                        consoleSkin: consoleSkin
-                    )
-                }
-                .buttonStyle(.plain)
-                .position(x: leftButtonX, y: rowYs[idx])
-                .accessibilityLabel(A11y.Beginner.consoleButton(note: buttonNote, stringNumber: selectedString))
-                .accessibilityHint(A11y.Beginner.consoleButtonHint(note: buttonNote))
-            }
-
-            ForEach(Array(0..<3), id: \.self) { idx in
-                let selectedString: Int = rightStrings[idx]
-                let buttonNote: String = guitarNoteName(forString: rightStrings[idx], fret: max(currentRound, 0), useFlats: beginnerUsesFlats)
-                let displayButtonNote: String = guitarNoteDisplayText(buttonNote)
-                let buttonIndex: Int = idx + 3
-                MiniTVFrame(
-                    text: displayButtonNote,
-                    width: beginnerScreenWidth,
-                    height: beginnerScreenHeight,
-                    fontScale: 1.0,
-                    isDarkScreen: guitarNoteContainsAccidental(buttonNote),
-                    consoleSkin: consoleSkin
-                )
-                .position(x: rightScreenX, y: rowYs[idx] + noteScreenCenterYOffset)
-
-                Button(action: {
-                    handleBeginnerConsoleButtonPress(selectedNote: buttonNote, selectedString: selectedString, buttonIndex: buttonIndex)
-                }) {
-                    ThumbButtonView(
-                        diameter: beginnerButtonDiameter,
-                        label: "",
-                        state: beginnerButtonState(for: buttonIndex, startupPhase: startupState.phase, startupIsVisible: startupState.isVisible),
-                        consoleSkin: consoleSkin
-                    )
-                }
-                .buttonStyle(.plain)
-                .position(x: rightButtonX, y: rowYs[idx])
-                .accessibilityLabel(A11y.Beginner.consoleButton(note: buttonNote, stringNumber: selectedString))
-                .accessibilityHint(A11y.Beginner.consoleButtonHint(note: buttonNote))
-            }
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color(red: 0.62, green: 0.86, blue: 1.0),
-                            Color(red: 0.09, green: 0.45, blue: 1.0)
-                        ],
-                        center: .center,
-                        startRadius: 0.5,
-                        endRadius: 10
-                    )
-                )
-                .frame(width: 18, height: 18)
-                .shadow(color: Color.highlightBlue.opacity(0.95), radius: 12)
-                .shadow(color: Color.white.opacity(0.45), radius: 5)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white.opacity(0.75), lineWidth: 1)
-                )
-                .position(x: proxyWidth / 2, y: proxyHeight / 2)
-                .opacity(beginnerRuntime.beatLightFlashOn ? 1 : 0)
-                .animation(.easeOut(duration: 0.08), value: beginnerRuntime.beatLightFlashOn)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .allowsHitTesting(true)
-        .opacity(codenameNemoEnabled ? 0 : dimOpacity)
-        .accessibilityHidden(false)
-    }
-
-    private func beginnerButtonState(for buttonIndex: Int, startupPhase: StartupSequenceView.Phase, startupIsVisible: Bool) -> ThumbGlowState {
-        if let pressedIndex = beginnerPressedButtonIndex, pressedIndex == buttonIndex {
-            return beginnerPressedButtonCorrect ? .green : .red
-        }
-        if isCodeScreensaverMode && startupPhase == .armed && startupIsVisible {
-            return .green
-        }
-        return .neutral
-    }
-
-    private func handleBeginnerConsoleButtonPress(selectedNote: String, selectedString: Int, buttonIndex: Int) {
+    func handleBeginnerConsoleButtonPress(selectedNote: String, selectedString: Int, buttonIndex: Int) {
         guard layoutMode == .beginner else { return }
         if isRoundArmed {
             handleRoundStartButton()
@@ -2918,7 +2591,7 @@ struct BeginnerGameplayView: View {
         }
     }
 
-    private func handleStartButtonPress() {
+    func handleStartButtonPress() {
         if startupStartButtonAttentionActive,
            layoutMode == .beginner,
            isCodeScreensaverMode,
@@ -2949,7 +2622,7 @@ struct BeginnerGameplayView: View {
         handleRoundStartButton()
     }
 
-    private func handleRoundStopButton() {
+    func handleRoundStopButton() {
         guard canPressStopButton else { return }
 
         isRoundPaused = true
@@ -2963,7 +2636,7 @@ struct BeginnerGameplayView: View {
         updateDirectionLockState()
     }
 
-    private func resumeRoundFromTransportStop(forceIfPaused: Bool = false) {
+    func resumeRoundFromTransportStop(forceIfPaused: Bool = false) {
         guard transportStoppedForResume || (forceIfPaused && isRoundPaused) else { return }
 
         transportStoppedForResume = false
@@ -2976,7 +2649,7 @@ struct BeginnerGameplayView: View {
         updateDirectionLockState()
     }
 
-    private func handleRoundResetButton() {
+    func handleRoundResetButton() {
         resetButtonPressed = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             resetButtonPressed = false
