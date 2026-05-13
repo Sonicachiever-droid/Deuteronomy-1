@@ -533,7 +533,7 @@ private struct Deuteronomy1MenuSheet: View {
 
                         case .audio:
                             MenuSection(title: "AUDIO", gold: gold) {
-                                MenuTextRow("Use the AUDIO tab to select guitar sound preset and tempo settings.")
+                                MenuTextRow("Use the AUDIO tab to select guitar tone preset and tempo settings.")
                             }
                         }
                     }

@@ -22,7 +22,7 @@ struct AudioPageView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        MenuSection(title: "GUITAR SOUND", gold: gold) {
+                        MenuSection(title: "GUITAR TONE", gold: gold) {
                             GoldPickerRow(
                                 label: "Preset",
                                 options: GuitarTonePreset.allCases.map { (label: $0.rawValue, value: $0) },
