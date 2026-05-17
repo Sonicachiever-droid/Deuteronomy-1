@@ -21,7 +21,7 @@ struct BeginnerGameplayView: View {
     @Binding var playDirectionRawValue: String
     @Binding var playEnableHighFrets: Bool
     @Binding var playLessonStyle: String
-    var lessonStyle: LessonStyle { LessonStyle(rawValue: playLessonStyle) ?? .chord }
+    var lessonStyle: LessonStyle { LessonStyle(rawValue: playLessonStyle) ?? .sequential }
     @Binding var playProgression: String
     @Binding var walletDollars: Int
     @Binding var balanceDollars: Int
@@ -100,29 +100,18 @@ struct BeginnerGameplayView: View {
             return 1.15
         }
     }
-    // chromaticSharps, chromaticFlats, openNoteByString — use module-level globals from GuitarHelpers.swift
     let codenameNemoEnabled: Bool = false
     private let scaleLengthInches: Double = 25.5
     private let debugGridRows: Int = 8
-    private var maxWindowRow: Int { (debugGridRows - 1) * 2 } // half-step increments across rows
-    // beginnerRuntime.currentFretStart, beginnerRuntime.currentWindowRow, beginnerRuntime.currentRound, beginnerRuntime.isDescendingPhase,
-    // beginnerRuntime.leftChoiceNote, beginnerRuntime.rightChoiceNote, beginnerRuntime.correctAnswerSide, beginnerRuntime.currentCorrectNote,
-    // beginnerRuntime.currentQuestionIsAccidental, beginnerRuntime.currentPromptStrings, beginnerRuntime.bankDollars, beginnerRuntime.displayedBankDollars,
-    // beginnerRuntime.isRoundArmed, beginnerRuntime.transportStoppedForResume, beginnerRuntime.isResolvingAnswer,
-    // beginnerRuntime.activePickedStringNumbers, beginnerRuntime.answeredNotesByStringAtCurrentFret,
-    // beginnerRuntime.autoPlayLastStringByNote, beginnerRuntime.activeAnswerFeedback — moved to BeginnerGameState (Step 3)
-    // (Step 2 vars also live in BeginnerGameState)
+    private var maxWindowRow: Int { (debugGridRows - 1) * 2 }
     @State var leftThumbState: ThumbGlowState = .neutral
     @State var rightThumbState: ThumbGlowState = .neutral
     @State var beginnerPressedButtonIndex: Int? = nil
     @State var beginnerPressedButtonCorrect: Bool = false
     @State var roundStringIndex: Int = 0
 
-    // Chord system integration
     @StateObject private var chordGenerator = ChordGenerator()
-    // Sequential style integration
     @StateObject var sequentialNoteGenerator = SequentialNoteGenerator()
-    // Unified generator access — no more if/else chains at callsites
     var currentGenerator: any NoteSequenceGenerator {
         sequentialNoteGenerator
     }
@@ -156,9 +145,6 @@ struct BeginnerGameplayView: View {
         case pendingArmed
     }
 
-    // BeginnerStageTemplate, BeginnerScaleStage, BeginnerRewardPolicyKey, BeginnerRewardPolicy
-    // — moved to Types.swift (Step 5)
-
     @State var startupSpeechPhase: StartupSpeechPhase = .idle
     @State var availableBackingTracks: [BackingTrack] = []
 
@@ -184,17 +170,6 @@ struct BeginnerGameplayView: View {
         BeginnerStageTemplate(root: "D", titleSuffix: "SUS 4", intervals: [0, 7, 5], bassSemitoneTarget: 10, endsCycle: true)
     ]
 
-    // beginnerChordSuffixDisplay, beginnerScaleStages, beginnerCurrentScaleStage, beginnerCurrentScaleNotes,
-    // beginnerCurrentScaleTitle, chordNoteStringMap, beginnerCurrentBassSemitoneTarget,
-    // beginnerRewardPolicies, beginnerPentatonicProgressText, shouldShowLegacyRoundZeroIntro,
-    // getWalletColor, getRepetitionCountColor, beginnerRoundStatusText, beginnerCenteredStatusMessage,
-    // beginnerCenteredStatusColor, beginnerRoundZeroIntroDisplayPhase, beginnerAcceptsGameplayAnswers,
-    // playDirection, effectivePlayRepetitions, beginnerRoundTwoStartsDescending, beginnerLowerFretBoundary,
-    // beginnerUpperFretBoundary, clampedBeginnerStartingFret, beginnerRoundOneStartingFret,
-    // beginnerRoundTwoStartingFret, beginnerRoundOneStartsDescending, beginnerUsesFlats,
-    // backingTrackShouldPlayInGameplay, startupStartButtonAttentionActive, canPressStopButton,
-    // shouldLockPlayDirection, beginnerStartupArmedText
-    // — moved to BeginnerGameplayLogic.swift (Step 5)
     init(
         onMenuSelection: ((GameplayMenuOption) -> Void)? = nil,
         selectedMode: RefretMode = .freestyle,
@@ -205,7 +180,7 @@ struct BeginnerGameplayView: View {
         playInfiniteRepetitions: Binding<Bool> = .constant(false),
         playDirectionRawValue: Binding<String> = .constant(LessonDirection.ascending.rawValue),
         playEnableHighFrets: Binding<Bool> = .constant(false),
-        playLessonStyle: Binding<String> = .constant("chord"),
+        playLessonStyle: Binding<String> = .constant("sequential"),
         playProgression: Binding<String> = .constant("highToLow"),
         walletDollars: Binding<Int> = .constant(0),
         balanceDollars: Binding<Int> = .constant(0),
@@ -307,8 +282,6 @@ struct BeginnerGameplayView: View {
             let whitePipingGap = max(gridRowHeight * 0.32, 14)
             let upperWhitePipingY = buttonTopY - whitePipingGap
             let lowerWhitePipingY = buttonBottomY + whitePipingGap - (gridRowHeight * GuitarConstants.gridRowHeightRatio)
-            let transportHeight: CGFloat = UIConstants.controlPlateButtonHeight
-            let transportCenterY = buttonBottomY + (proxy.size.height - buttonBottomY) / 2 + 43
             let whitePipingWidth = max(proxy.size.width - 7, 0)
             let noteChoiceY = upperWhitePipingY - (lowerScreenHeight / 2) - 2
             let windowTopY = holeCenterY - highlightHeight / 2
@@ -382,11 +355,12 @@ struct BeginnerGameplayView: View {
             let effectiveRightThumbState = isCodeScreensaverMode ? screensaverThumbState : rightThumbState
             let initialGameplayDimOpacity: CGFloat = (isCodeScreensaverMode && !startupSequenceActivated) ? 0.42 : 1.0
 
+            let transportCenterY = buttonBottomY + (proxy.size.height - buttonBottomY) / 2 + 43
+
             ZStack {
                 if consoleSkin == .tweed {
                     FullScreenTweedBackground()
                         .ignoresSafeArea()
-                    // Black fill so the window hole reveals a dark background, not more tweed
                     RoundedRectangle(cornerRadius: highlightCornerRadius, style: .continuous)
                         .fill(Color.black)
                         .frame(width: highlightWidth, height: highlightHeight)
@@ -524,7 +498,6 @@ struct BeginnerGameplayView: View {
                     let guideTileWidth = max(minGuideSpacing * 0.82, 18)
                     let guideTileHeight = guideBoxHeight * 0.86
                     ZStack {
-                        // Six individual translucent backgrounds matching each note box
                         ForEach(Array(fretboardStrings.enumerated()), id: \.offset) { index, _ in
                             RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                                 .fill(Color.black.opacity(0.42))
@@ -587,11 +560,9 @@ struct BeginnerGameplayView: View {
                     || !(beginnerRuntime.rewardNoteTextByString?.isEmpty ?? true)
                 let shouldShowWhiteAnswerBox = shouldShowQuestionUI && {
                     if layoutMode != .beginner { return true }
-                    // Show answer box when note is selected, regardless of game state
                     if hasBeginnerSelectedNote && beginnerRuntime.answerBoxReady {
                         return true
                     }
-                    // Chord mode: need pentatonic reveal complete
                     return beginnerRuntime.answerBoxReady
                         && beginnerRuntime.pentatonicRevealCount >= beginnerCurrentScaleNotes.count
                         && hasBeginnerSelectedNote
@@ -682,67 +653,66 @@ struct BeginnerGameplayView: View {
                         .offset(y: -globalContentShiftY)
                         .zIndex(100)
                 }
-            }
-            .overlay(alignment: .bottom) {
-                GameplayControlPlateShell(
-                    isMenuExpanded: gameplayMenuExpanded,
-                    isStartupInputLockActive: false,
-                    isAutoplayActive: beginnerRuntime.autoPlayEnabled,
-                    onAutoplay: {
-                        beginnerRuntime.autoPlayEnabled.toggle()
-                    },
-                    onFretboard: {
-                        handleFretboardButtonPress()
-                    },
-                    onToggleMenu: {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            gameplayMenuExpanded.toggle()
-                        }
-                    },
-                    onSelectMenuOption: { option in
-                        handleGameplayMenuSelection(option)
-                    },
-                    consoleSkin: consoleSkin
-                )
-                    .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
-                    .padding(.bottom, 12)
-                    .opacity(codenameNemoEnabled ? 0 : 1)
-            }
-            .overlay(alignment: .topLeading) {
-                // No AUTO button overlay
-            }
-            .overlay(alignment: .topLeading) {
-                maestroThumbOverlay(
-                    proxyWidth: proxy.size.width,
-                    buttonCenterY: buttonCenterY,
-                    thumbDiameter: thumbDiameter,
-                    leftThumbState: effectiveLeftThumbState,
-                    rightThumbState: effectiveRightThumbState,
-                    dimOpacity: initialGameplayDimOpacity
-                )
-            }
-            .overlay(alignment: .topLeading) {
-                if layoutMode == .beginner {
-                    beginnerButtonPanelOverlay(
+
+                // Dedicated control layer with all components restored
+                ZStack(alignment: .bottom) {
+                    // Buttons (thumb + beginner panel)
+                    maestroThumbOverlay(
                         proxyWidth: proxy.size.width,
-                        proxyHeight: proxy.size.height,
                         buttonCenterY: buttonCenterY,
-                        lowerScreenHeight: lowerScreenHeight,
+                        thumbDiameter: thumbDiameter,
+                        leftThumbState: effectiveLeftThumbState,
+                        rightThumbState: effectiveRightThumbState,
+                        dimOpacity: initialGameplayDimOpacity
+                    )
+                    .zIndex(0)
+
+                    if layoutMode == .beginner {
+                        beginnerButtonPanelOverlay(
+                            proxyWidth: proxy.size.width,
+                            proxyHeight: proxy.size.height,
+                            buttonCenterY: buttonCenterY,
+                            lowerScreenHeight: lowerScreenHeight,
+                            transportCenterY: transportCenterY,
+                            dimOpacity: initialGameplayDimOpacity,
+                            startupState: startupState
+                        )
+                        .zIndex(0)
+                    }
+
+                    // Transport
+                    transportButtonPanelOverlay(
+                        proxyWidth: proxy.size.width,
                         transportCenterY: transportCenterY,
-                        dimOpacity: initialGameplayDimOpacity,
                         startupState: startupState
                     )
+                    .zIndex(1)
+
+                    // Menu - always on top when expanded
+                    GameplayControlPlateShell(
+                        isMenuExpanded: gameplayMenuExpanded,
+                        isStartupInputLockActive: false,
+                        isAutoplayActive: beginnerRuntime.autoPlayEnabled,
+                        onAutoplay: {
+                            beginnerRuntime.autoPlayEnabled.toggle()
+                        },
+                        onFretboard: {
+                            handleFretboardButtonPress()
+                        },
+                        onToggleMenu: {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                gameplayMenuExpanded.toggle()
+                            }
+                        },
+                        onSelectMenuOption: { option in
+                            handleGameplayMenuSelection(option)
+                        },
+                        consoleSkin: consoleSkin
+                    )
+                    .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
+                    .padding(.bottom, 12)
+                    .zIndex(gameplayMenuExpanded ? 2 : 0)
                 }
-            }
-            .overlay {
-                transportButtonPanelOverlay(
-                    proxyWidth: proxy.size.width,
-                    transportCenterY: transportCenterY,
-                    startupState: startupState
-                )
-            }
-            .overlay {
-                EmptyView()
             }
             .onAppear(perform: handleContentOnAppear)
             .onDisappear {
@@ -778,6 +748,12 @@ struct BeginnerGameplayView: View {
                     delayLevel: newValue
                 )
             }
+            .onChange(of: audioSettings.guitarVolume) { _, newValue in
+                guitarNoteEngine.setGuitarVolume(newValue)
+            }
+            .onChange(of: audioSettings.backingTrackVolume) { _, newValue in
+                midiEngine.setBackingTrackVolume(newValue)
+            }
             .onChange(of: audioSettings.selectedBackingTrackID) { _, _ in
                 syncBackingTrackPlayback()
             }
@@ -802,6 +778,8 @@ struct BeginnerGameplayView: View {
             .onChange(of: beginnerRuntime.currentRound) { _, newValue in
                 _ = newValue
                 applyBeginnerBassTransposeForCurrentStage()
+                beginnerRuntime.rewardNoteTextByString?.removeAll()
+                beginnerRuntime.lastPickedNote = nil
             }
             .onChange(of: playRepetitions) { _, _ in
                 guard layoutMode == .beginner else { return }

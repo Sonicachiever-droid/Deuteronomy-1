@@ -38,11 +38,14 @@ struct WhiteNoteBoxOverlay: View {
         let maxBoxWidthFromSpacing = max(minCenterSpacing - spacingGap, 0)
         let boxWidth = min(clampedBoxHeight * 1.8, maxBoxWidthFromSpacing)
         let activeSet = Set(activeStringNumbers)
+        let shouldHideBoxesOnIncorrect = answerFeedback == .red
         return ZStack {
             // Six individual translucent backgrounds for each answer box
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
+                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
+                let hasNoteToDisplay = displayedNoteText != nil && !displayedNoteText!.isEmpty
+                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect && hasNoteToDisplay
                 RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                     .fill(Color.black.opacity(0.42))
                     .frame(width: boxWidth, height: clampedBoxHeight)
@@ -52,8 +55,9 @@ struct WhiteNoteBoxOverlay: View {
 
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
-                let isActive = activeSet.contains(stringNumber)
                 let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
+                let hasNoteToDisplay = displayedNoteText != nil && !displayedNoteText!.isEmpty
+                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect && hasNoteToDisplay
                 let displayText = displayedNoteText.map(guitarNoteDisplayText)
                 let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
                 let shouldUseAccidentalStyle = noteIsAccidental

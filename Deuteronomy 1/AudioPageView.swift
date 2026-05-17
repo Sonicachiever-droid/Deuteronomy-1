@@ -1,5 +1,26 @@
 import SwiftUI
 
+private struct VolumeSliderRow: View {
+    let label: String
+    @Binding var value: Float
+    private let gold = Color.goldBorderMid
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.system(size: 15, weight: .medium, design: .monospaced))
+                .foregroundColor(.white)
+                .frame(width: 110, alignment: .leading)
+            Slider(value: $value, in: 0.0...1.0)
+                .tint(gold)
+            Text("\(Int(value * 100))%")
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .foregroundColor(gold)
+                .frame(width: 40, alignment: .trailing)
+        }
+    }
+}
+
 struct AudioPageView: View {
     @Bindable var audioSettings: AudioSettings
     let availableBackingTracks: [BackingTrack]
@@ -28,6 +49,19 @@ struct AudioPageView: View {
                                 options: GuitarTonePreset.allCases.map { (label: $0.rawValue, value: $0) },
                                 selection: $audioSettings.guitarTonePreset
                             )
+                        }
+
+                        MenuSection(title: "VOLUME", gold: gold) {
+                            VStack(spacing: 14) {
+                                VolumeSliderRow(
+                                    label: "Guitar",
+                                    value: $audioSettings.guitarVolume
+                                )
+                                VolumeSliderRow(
+                                    label: "Backing Track",
+                                    value: $audioSettings.backingTrackVolume
+                                )
+                            }
                         }
 
                         MenuSection(title: "TEMPO", gold: gold) {

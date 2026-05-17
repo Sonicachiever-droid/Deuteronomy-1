@@ -51,6 +51,8 @@ final class AudioSettings {
     var selectedBackingTrackID: String? = nil
     var startingBPM: Int = 120
     var tempoIncreasePerRound: TempoIncreasePerRound = .off
+    var guitarVolume: Float = 1.0
+    var backingTrackVolume: Float = 1.0
 
     func selectInitialBackingTrackIfNeeded(from tracks: [BackingTrack]) {
         if let selectedBackingTrackID,

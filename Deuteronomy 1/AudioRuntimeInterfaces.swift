@@ -9,6 +9,7 @@ protocol BackingTrackPlaying {
     func stop()
     func currentBeatPosition() -> Double
     func setBassTransposeSemitones(_ semitones: Int)
+    func setBackingTrackVolume(_ volume: Float)
 }
 
 protocol GuitarNotePlaying {
@@ -21,6 +22,7 @@ protocol GuitarNotePlaying {
     func play(string: Int, fret: Int, velocity: Float)
     @discardableResult
     func playChord(midiNotes: [Int], velocity: Float, sustainMultiplier: Double) -> TimeInterval
+    func setGuitarVolume(_ volume: Float)
 }
 
 extension SharedAudioEngine: BackingTrackPlaying {}

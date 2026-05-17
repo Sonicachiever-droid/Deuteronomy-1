@@ -275,8 +275,8 @@ extension BeginnerGameplayView {
         beginnerRuntime.lastPickedNote = lessonStyle == .sequential ? nil : selectedNote
         if lessonStyle != .sequential {
             beginnerRuntime.answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
+            beginnerRuntime.answerBoxReady = true
         }
-        beginnerRuntime.answerBoxReady = true
         beginnerRuntime.activeAnswerFeedback = nil
         questionBoxAssistActive = false
 
@@ -301,6 +301,13 @@ extension BeginnerGameplayView {
         guard !sequentialNoteGenerator.isSequenceComplete() else { return }
 
         guard sequentialNoteGenerator.isValidAnswer(note: selectedNote, string: selectedString) else {
+            // Flash the pressed button red
+            beginnerPressedButtonIndex = buttonIndex
+            beginnerPressedButtonCorrect = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                beginnerPressedButtonIndex = nil
+                beginnerPressedButtonCorrect = false
+            }
             // Wrong answer — restart the sequence
             let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
             sequentialNoteGenerator.resetForNewFret()

@@ -5,6 +5,7 @@ struct WelcomeScreenView: View {
     let onSelectMaestro: () -> Void
 
     @State private var showOverview: Bool = false
+    @State private var learnBlinkOn: Bool = true
 
     var body: some View {
         GeometryReader { proxy in
@@ -51,9 +52,49 @@ struct WelcomeScreenView: View {
 
                 // Gold perimeter piping
                 GoldPipingBorder(bottomInset: 0)
+                    .allowsHitTesting(false)
 
-                // Bottom content: console buttons + learn link
+                // Bottom content: learn button + console buttons
                 VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: tileCenterY + tileHeight / 2 + 12)
+
+                    Button(action: { showOverview = true }) {
+                        HStack(spacing: 9) {
+                            Text("LEARN THE GAME")
+                                .font(.system(size: 22, weight: .black, design: .monospaced))
+                                .tracking(1.5)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 18, weight: .black))
+                        }
+                        .foregroundColor(.goldBorderMid)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(Color.black.opacity(0.65))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1.5
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(learnBlinkOn ? 1.0 : 0.25)
+                    .padding(.horizontal, 32)
+                    .accessibilityLabel(A11y.Welcome.overviewButton)
+                    .accessibilityHint(A11y.Welcome.overviewHint)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                            learnBlinkOn = false
+                        }
+                    }
+
                     Spacer()
 
                     VStack(spacing: 16) {
@@ -73,21 +114,6 @@ struct WelcomeScreenView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(A11y.Welcome.maestroButton)
                         .accessibilityHint(A11y.Welcome.maestroHint)
-
-                        Button(action: { showOverview = true }) {
-                            HStack(spacing: 9) {
-                                Text("LEARN THE GAME")
-                                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                    .tracking(1.5)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 17, weight: .bold))
-                            }
-                            .foregroundColor(.goldBorderMid)
-                            .padding(.vertical, 15)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(A11y.Welcome.overviewButton)
-                        .accessibilityHint(A11y.Welcome.overviewHint)
                     }
                     .padding(.horizontal, 32)
                     .padding(.bottom, max(proxy.safeAreaInsets.bottom + 24, 40))

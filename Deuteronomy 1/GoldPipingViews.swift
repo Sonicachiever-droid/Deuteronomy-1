@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Gold Horizontal Piping Line
 
@@ -38,6 +39,70 @@ struct GoldHorizontalPipingLine: View {
 
 }
 
+// MARK: - Device-specific helpers (local)
+private func isProblematicRoundedCornerDevice() -> Bool {
+    let bounds = UIScreen.main.nativeBounds
+    let short = min(bounds.width, bounds.height)
+    let long = max(bounds.width, bounds.height)
+    // iPhone XR/11 native resolution: 828 x 1792
+    if short == 828 && long == 1792 { return true }
+    return false
+}
+
+// MARK: - Perimeter border helpers (composed views)
+@ViewBuilder
+private func perimeterOuterBorder() -> some View {
+    if isProblematicRoundedCornerDevice() {
+        RoundedRectangle(cornerRadius: 44, style: .continuous)
+            .inset(by: 1.75)
+            .strokeBorder(
+                LinearGradient(
+                    colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 3.5
+            )
+    } else {
+        ContainerRelativeShape()
+            .inset(by: 1.75)
+            .strokeBorder(
+                LinearGradient(
+                    colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 3.5
+            )
+    }
+}
+
+@ViewBuilder
+private func perimeterInnerBorder() -> some View {
+    if isProblematicRoundedCornerDevice() {
+        RoundedRectangle(cornerRadius: 44, style: .continuous)
+            .inset(by: 3.5)
+            .stroke(Color.black.opacity(0.6), lineWidth: 1.5)
+    } else {
+        ContainerRelativeShape()
+            .inset(by: 3.5)
+            .stroke(Color.black.opacity(0.6), lineWidth: 1.5)
+    }
+}
+
+@ViewBuilder
+private func perimeterWhiteBorder() -> some View {
+    if isProblematicRoundedCornerDevice() {
+        RoundedRectangle(cornerRadius: 44, style: .continuous)
+            .inset(by: 1.75)
+            .strokeBorder(Color.white, lineWidth: 3.5)
+    } else {
+        ContainerRelativeShape()
+            .inset(by: 1.75)
+            .strokeBorder(Color.white, lineWidth: 3.5)
+    }
+}
+
 // MARK: - Gold Piping Border
 
 struct GoldPipingBorder: View {
@@ -45,23 +110,12 @@ struct GoldPipingBorder: View {
 
     var body: some View {
         ZStack {
-            ContainerRelativeShape()
-                .inset(by: 1.75)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [.goldBorderMid, .goldBorderDark, .goldBorderLight],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 3.5
-                )
+            perimeterOuterBorder()
                 .shadow(color: Color.black.opacity(0.45), radius: 12, x: 0, y: 8)
 
-            ContainerRelativeShape()
-                .inset(by: 3.5)
-                .stroke(Color.black.opacity(0.6), lineWidth: 1.5)
+            perimeterInnerBorder()
         }
-        .padding(.bottom, bottomInset)
+        .padding(Edge.Set.bottom, bottomInset)
         .ignoresSafeArea()
     }
 }
@@ -114,11 +168,10 @@ struct WhitePipingBorder: View {
     let bottomInset: CGFloat
 
     var body: some View {
-        ContainerRelativeShape()
-            .inset(by: 1.75)
-            .strokeBorder(Color.white, lineWidth: 3.5)
+        perimeterWhiteBorder()
             .shadow(color: Color.black.opacity(0.45), radius: 12, x: 0, y: 8)
-            .padding(.bottom, bottomInset)
+            .padding(Edge.Set.bottom, bottomInset)
             .ignoresSafeArea()
     }
 }
+

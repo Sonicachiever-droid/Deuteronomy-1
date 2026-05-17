@@ -239,6 +239,12 @@ struct MaestroGameplayView: View {
                 delayLevel: newValue
             )
         }
+        .onChange(of: audioSettings.guitarVolume) { _, newValue in
+            guitarNoteEngine.setGuitarVolume(newValue)
+        }
+        .onChange(of: audioSettings.backingTrackVolume) { _, newValue in
+            midiEngine.setBackingTrackVolume(newValue)
+        }
         .onChange(of: autoPlayEnabled) { _, isEnabled in
             guard isEnabled else {
                 autoPlayNextDate = nil

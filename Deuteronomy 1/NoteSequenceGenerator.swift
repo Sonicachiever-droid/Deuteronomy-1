@@ -59,6 +59,7 @@ final class SequentialNoteGenerator: ObservableObject, NoteSequenceGenerator {
     func isValidAnswer(note: String, string: Int) -> Bool {
         guard sequenceProgressIndex < currentNoteSequence.count else { return false }
         guard note == currentNoteSequence[sequenceProgressIndex] else { return false }
+        guard string == noteStringMap[sequenceProgressIndex] else { return false }
         return !usedStringLocations.contains("\(note)-\(string)")
     }
 

@@ -1,4 +1,5 @@
 import CoreGraphics
+import UIKit
 
 // MARK: - UI Constants
 
@@ -45,4 +46,26 @@ enum UIConstants {
 
     // MARK: - Progress Bar
     static let progressBarRadius: CGFloat       = 1.5
+
+    // MARK: - Device Corner Radius
+    /// Returns an estimated device screen corner radius in points.
+    /// Uses known values for certain devices (e.g., iPhone XR ~44pt) and falls back to a reasonable default.
+    static var deviceScreenCornerRadius: CGFloat {
+        // Detect via screen native bounds to avoid model checks.
+        let nativeBounds = UIScreen.main.nativeBounds
+        let width = Int(nativeBounds.width)
+        let height = Int(nativeBounds.height)
+        let short = min(width, height)
+        let long = max(width, height)
+        // iPhone XR / iPhone 11 native resolution: 828 x 1792
+        if (short == 828 && long == 1792) {
+            return 44
+        }
+        // iPhone 12/13 non‑Pro (1170 x 2532) approx 47–50pt
+        if (short == 1170 && long == 2532) {
+            return 47
+        }
+        // Generic notch devices default
+        return 40
+    }
 }

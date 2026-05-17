@@ -22,7 +22,7 @@ struct Deuteronomy_1App: App {
     @AppStorage("numbers3.setup.infiniteRepetitions") private var infiniteRepetitions: Bool = false
     @AppStorage("numbers3.setup.direction") private var directionRawValue: String = LessonDirection.ascending.rawValue
     @AppStorage("numbers3.setup.enableHighFrets") private var enableHighFrets: Bool = false
-    @AppStorage("numbers3.setup.lessonStyle") private var lessonStyleRawValue: String = "chord"
+    @AppStorage("numbers3.setup.lessonStyle") private var lessonStyleRawValue: String = "sequential"
     @AppStorage("numbers3.setup.selectedMode") private var selectedModeRawValue: String = "beginner"
     @AppStorage("numbers3.setup.progression") private var progressionRawValue: String = "highToLow"
     @AppStorage("numbers3.setup.orientation") private var orientationRawValue: String = Orientation.portrait.rawValue

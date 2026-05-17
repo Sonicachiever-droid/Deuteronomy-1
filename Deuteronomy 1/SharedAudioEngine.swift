@@ -108,6 +108,19 @@ final class SharedAudioEngine: ObservableObject {
         startEngineIfNeeded()
     }
 
+    // MARK: - Volume controls
+
+    func setGuitarVolume(_ volume: Float) {
+        guitarSampler.volume = max(0.0, min(1.0, volume))
+    }
+
+    func setBackingTrackVolume(_ volume: Float) {
+        let clamped = max(0.0, min(1.0, volume))
+        keysSampler.volume = AudioConstants.keysVolume * clamped
+        bassSampler.volume = AudioConstants.bassVolume * clamped
+        drumsSampler.volume = AudioConstants.drumsVolume * clamped
+    }
+
     // MARK: - Guitar Note API (matches GuitarNoteEngine interface)
 
     func stopAll() {

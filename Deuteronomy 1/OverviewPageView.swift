@@ -63,12 +63,12 @@ struct OverviewPageView: View {
 
                     // Section: Rounds & Frets
                     OverviewSection(title: "ROUNDS & FRETS") {
-                        Text("One round covers all strings on one fret. Complete a round to advance to the next fret. Fret 0 is open strings. The game moves through all 12 frets by default, or up to fret 19 with High Frets enabled in PLAY settings.")
+                        Text("One round covers all strings on one fret. Complete a round to advance to the next fret. Fret 0 is open strings. The game moves through all 12 frets by default, or up to fret 19 if you have purchased High Frets from the HOME tab.")
                     }
 
                     // Section: Settings
                     OverviewSection(title: "SETTINGS") {
-                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression, high frets), GUIDE (quick reference), and AUDIO (guitar tone, tempo).")
+                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression), GUIDE (quick reference), and AUDIO (guitar tone, tempo).")
                     }
 
                     // Footer
