@@ -267,16 +267,14 @@ extension BeginnerGameplayView {
             && !beginnerRuntime.roundOneIntroActive
 
         if lessonStyle == .sequential {
+            // Sequential: only show strings already confirmed correct
             beginnerRuntime.activePickedStringNumbers = Array(beginnerRuntime.answeredNotesByStringAtCurrentFret.keys)
+            beginnerRuntime.lastPickedNote = nil
         } else {
+            // Chord: activePickedStringNumbers and lastPickedNote are set after validation
             beginnerRuntime.activePickedStringNumbers = [selectedString]
         }
         beginnerRuntime.rewardNoteTextByString = nil
-        beginnerRuntime.lastPickedNote = lessonStyle == .sequential ? nil : selectedNote
-        if lessonStyle != .sequential {
-            beginnerRuntime.answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
-            beginnerRuntime.answerBoxReady = true
-        }
         beginnerRuntime.activeAnswerFeedback = nil
         questionBoxAssistActive = false
 
@@ -376,6 +374,11 @@ extension BeginnerGameplayView {
         let expectedNote = currentScaleNotes[safeSequenceIndex]
         let expectedString = chordNoteStringMap[safeSequenceIndex]
         if selectedNote == expectedNote && selectedString == expectedString {
+            // Correct answer
+            beginnerRuntime.answeredNotesByStringAtCurrentFret[selectedString] = selectedNote
+            beginnerRuntime.activePickedStringNumbers = Array(beginnerRuntime.answeredNotesByStringAtCurrentFret.keys)
+            beginnerRuntime.lastPickedNote = selectedNote
+            beginnerRuntime.answerBoxReady = true
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
@@ -402,13 +405,14 @@ extension BeginnerGameplayView {
                 beginnerRuntime.scaleSequenceIndex += 1
             }
         } else {
+            // Wrong answer — flash red, no state changes
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                 beginnerPressedButtonIndex = nil
                 beginnerPressedButtonCorrect = false
             }
-            beginnerRuntime.scaleSequenceIndex = (selectedNote == currentScaleNotes[0]) ? 1 : 0
+            beginnerRuntime.activePickedStringNumbers = []
         }
     }
 
