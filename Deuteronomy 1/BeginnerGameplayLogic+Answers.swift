@@ -374,7 +374,8 @@ extension BeginnerGameplayView {
         }
 
         let expectedNote = currentScaleNotes[safeSequenceIndex]
-        if selectedNote == expectedNote {
+        let expectedString = chordNoteStringMap[safeSequenceIndex]
+        if selectedNote == expectedNote && selectedString == expectedString {
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
