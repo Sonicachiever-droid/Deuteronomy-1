@@ -68,7 +68,7 @@ struct OverviewPageView: View {
 
                     // Section: Settings
                     OverviewSection(title: "SETTINGS") {
-                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression), GUIDE (quick reference), and AUDIO (guitar tone, tempo).")
+                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression), GUIDE (quick reference), and AUDIO (guitar tone, tempo, volume).")
                     }
 
                     // Footer
