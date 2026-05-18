@@ -182,6 +182,8 @@ extension BeginnerGameplayView {
         leftThumbState = .neutral
         rightThumbState = .neutral
         beginnerRuntime.activeAnswerFeedback = nil
+        beginnerPressedButtonIndex = nil
+        beginnerPressedButtonCorrect = false
         beginnerRuntime.isResolvingAnswer = false
         isRoundPaused = false
         beginnerRuntime.roundRevealElapsedBeats = 0
