@@ -2,7 +2,7 @@
 
 ## Current Shipped Build
 - **Version**: 1.3
-- **Build**: 4
+- **Build**: 6
 - **Status**: Shipped (frozen)
 
 ## Next Build Target
