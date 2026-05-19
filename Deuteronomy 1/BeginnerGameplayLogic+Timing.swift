@@ -94,6 +94,7 @@ extension BeginnerGameplayView {
 
     func applyLivePlayRepetitionChangeIfNeeded() {
         guard layoutMode == .beginner,
+              lessonStyle != .chord,
               !beginnerRuntime.isRoundArmed,
               !isRoundPaused
         else { return }

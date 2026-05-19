@@ -277,7 +277,6 @@ extension BeginnerGameplayView {
         beginnerRuntime.rewardScheduledMIDINotes = []
         beginnerRuntime.rewardScheduledNoteTextByString = [:]
         beginnerRuntime.rewardSustainMultiplier = 3.0
-        beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
         if completedStageWasCycleEnd {
             beginnerRuntime.scaleRepetitionsRemaining -= 1
             if beginnerRuntime.scaleRepetitionsRemaining > 0 {
@@ -308,6 +307,7 @@ extension BeginnerGameplayView {
                 withAnimation(.easeInOut(duration: 1.3)) {
                     beginnerRuntime.currentFretStart = nextFret
                 }
+                beginnerRuntime.scaleRepetitionsRemaining = effectivePlayRepetitions
                 beginnerRuntime.scaleStageIndex = 0
                 beginnerRuntime.scaleSequenceIndex = 0
                 beginnerRuntime.pentatonicRevealCount = 0
