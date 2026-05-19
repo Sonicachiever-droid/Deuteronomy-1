@@ -107,6 +107,7 @@ final class SharedAudioEngine: ObservableObject {
         loadGuitarInstrument(for: toneConfiguration.preset)
         loadMIDISamplers()
         startEngineIfNeeded()
+        registerForAudioSessionInterruptions()
     }
 
     // MARK: - Volume controls
@@ -220,6 +221,7 @@ final class SharedAudioEngine: ObservableObject {
     // MARK: - MIDI / Backing Track API (matches SimpleMIDIEngine interface)
 
     func play(url: URL, title: String = "", loop: Bool = true) {
+        startEngineIfNeeded()
         stop()
 
         currentURL = url
@@ -276,6 +278,7 @@ final class SharedAudioEngine: ObservableObject {
     func resume() {
         guard !sequencer.isPlaying else { return }
         guard currentURL != nil else { return }
+        startEngineIfNeeded()
 
         do {
             if let pausedPositionInBeats {
@@ -553,7 +556,44 @@ final class SharedAudioEngine: ObservableObject {
         }
     }
 
+    // MARK: - Audio session interruption recovery
+
+    private func registerForAudioSessionInterruptions() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioSessionInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance()
+        )
+    }
+
+    @objc private func handleAudioSessionInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+
+        switch type {
+        case .began:
+            // iOS has taken audio away — sequencer will stop on its own
+            break
+        case .ended:
+            // iOS is handing audio back — restart the engine and resume if we were playing
+            let shouldResume = (info[AVAudioSessionInterruptionOptionKey] as? UInt)
+                .flatMap { AVAudioSession.InterruptionOptions(rawValue: $0) }
+                .map { $0.contains(.shouldResume) } ?? true
+            if shouldResume {
+                startEngineIfNeeded()
+                if currentURL != nil && !sequencer.isPlaying {
+                    resume()
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+
     deinit {
+        NotificationCenter.default.removeObserver(self)
         sequencer.stop()
         engine.stop()
     }
