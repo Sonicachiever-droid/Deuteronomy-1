@@ -270,10 +270,9 @@ extension BeginnerGameplayView {
             // Sequential: only show strings already confirmed correct
             beginnerRuntime.activePickedStringNumbers = Array(beginnerRuntime.answeredNotesByStringAtCurrentFret.keys)
             beginnerRuntime.lastPickedNote = nil
-        } else {
-            // Chord: activePickedStringNumbers and lastPickedNote are set after validation
-            beginnerRuntime.activePickedStringNumbers = [selectedString]
         }
+        // Chord: activePickedStringNumbers is set in handleBeginnerChordProgressionIfNeeded
+        // after validation — never pre-emptively, to avoid flicker on wrong answers.
         beginnerRuntime.rewardNoteTextByString = nil
         beginnerRuntime.activeAnswerFeedback = nil
         questionBoxAssistActive = false
@@ -405,14 +404,14 @@ extension BeginnerGameplayView {
                 beginnerRuntime.scaleSequenceIndex += 1
             }
         } else {
-            // Wrong answer — flash red, no state changes
+            // Wrong answer — flash red, restore boxes for already-correct strings
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
                 beginnerPressedButtonIndex = nil
                 beginnerPressedButtonCorrect = false
             }
-            beginnerRuntime.activePickedStringNumbers = []
+            beginnerRuntime.activePickedStringNumbers = Array(beginnerRuntime.answeredNotesByStringAtCurrentFret.keys)
         }
     }
 

@@ -5,10 +5,11 @@ import Foundation
 enum AudioConstants {
 
     // MARK: - Sampler Volumes
-    static let keysVolume: Float   = 0.65
-    static let bassVolume: Float   = 0.85
-    static let drumsVolume: Float  = 0.70
-    static let masterVolume: Float = 0.72
+    static let guitarVolume: Float  = 0.70
+    static let keysVolume: Float    = 0.65
+    static let bassVolume: Float    = 0.85
+    static let drumsVolume: Float   = 0.70
+    static let masterVolume: Float  = 0.72
 
     // MARK: - Guitar Note Velocity
     static let defaultNoteVelocity: Float      = 0.92

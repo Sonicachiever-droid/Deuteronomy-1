@@ -436,7 +436,16 @@ extension BeginnerGameplayView {
             beginnerRuntime.revealStartBeatBucket = nil
             beginnerRuntime.introStartBeatBucket = nil
             beginnerRuntime.showRoundZeroIntroSequence = false
-            beginnerRuntime.answerBoxReady = true
+            // Only run the transition once. This block fires on every timer tick
+            // once the reveal is complete, so guard on answerBoxReady to avoid
+            // wiping chord answers the user has already submitted.
+            if !beginnerRuntime.answerBoxReady {
+                // Clear pentatonic answer state before chord mode begins so stale
+                // boxes and notes don't bleed into the first chord question.
+                beginnerRuntime.answeredNotesByStringAtCurrentFret = [:]
+                beginnerRuntime.lastPickedNote = nil
+                beginnerRuntime.answerBoxReady = true
+            }
         }
     }
 

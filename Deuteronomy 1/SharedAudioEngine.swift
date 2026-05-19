@@ -94,7 +94,8 @@ final class SharedAudioEngine: ObservableObject {
         engine.connect(bassSampler, to: engine.mainMixerNode, format: nil)
         engine.connect(drumsSampler, to: engine.mainMixerNode, format: nil)
 
-        // FIX A2: Bass volume capped below unity. All samplers gain-staged safely.
+        // FIX A2: All samplers gain-staged below unity at init.
+        guitarSampler.volume = AudioConstants.guitarVolume
         keysSampler.volume = AudioConstants.keysVolume
         bassSampler.volume = AudioConstants.bassVolume
         drumsSampler.volume = AudioConstants.drumsVolume

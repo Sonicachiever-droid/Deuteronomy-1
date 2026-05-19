@@ -1,242 +1,304 @@
 import XCTest
+import CoreGraphics
 @testable import Deuteronomy_1
 
-// MARK: - Device Layout Tests
+// MARK: - UI Constants & Layout Tests
+//
+// Tests the real types that exist:
+//   - UIConstants      (flat enum with static CGFloat constants)
+//   - GameConstants    (enum with static game behavior values)
+//   - AnimationDurations (enum with static TimeInterval values)
+//   - UIMetrics        (enum with static CGFloat UI sizing values)
+//   - GuitarStringLayout (fretboard geometry)
+//   - FretMath         (fret position ratios)
 
-final class DeviceLayoutTests: XCTestCase {
-    
-    var deviceLayout: DeviceLayout!
-    
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-        deviceLayout = DeviceLayout()
+final class UIConstantsTests: XCTestCase {
+
+    // MARK: - Console Frame Radii (must be positive and in descending order outward→inward)
+
+    func testConsoleFrameRadiiArePositive() {
+        XCTAssertGreaterThan(UIConstants.consoleFrameRadius, 0)
+        XCTAssertGreaterThan(UIConstants.consoleInnerBorderRadius, 0)
+        XCTAssertGreaterThan(UIConstants.consoleContentRadius, 0)
+        XCTAssertGreaterThan(UIConstants.consoleInnerFrameRadius, 0)
     }
-    
-    override func tearDownWithError() throws {
-        deviceLayout = nil
-        try super.tearDownWithError()
+
+    func testConsoleFrameRadiiDescendingOutwardToInward() {
+        // Each layer is inset from the previous — radii should decrease
+        XCTAssertGreaterThan(UIConstants.consoleFrameRadius, UIConstants.consoleInnerBorderRadius,
+            "Outer frame radius must be greater than inner border radius")
+        XCTAssertGreaterThan(UIConstants.consoleInnerBorderRadius, UIConstants.consoleContentRadius,
+            "Inner border radius must be greater than content radius")
+        XCTAssertGreaterThan(UIConstants.consoleContentRadius, UIConstants.consoleInnerFrameRadius,
+            "Content radius must be greater than innermost frame radius")
     }
-    
-    // MARK: - Device Detection Tests
-    
-    func testDeviceLayoutInitialization() throws {
-        XCTAssertNotNil(deviceLayout, "Device layout should initialize successfully")
+
+    // MARK: - Control Plate
+
+    func testControlPlateConstantsArePositive() {
+        XCTAssertGreaterThan(UIConstants.controlPlateRadius, 0)
+        XCTAssertGreaterThan(UIConstants.controlPlateButtonRadius, 0)
+        XCTAssertGreaterThan(UIConstants.controlPlateButtonHeight, 0)
+        XCTAssertGreaterThan(UIConstants.controlPlatePaddingH, 0)
+        XCTAssertGreaterThan(UIConstants.controlPlatePaddingV, 0)
     }
-    
-    func testAdaptiveSpacing() throws {
-        XCTAssertGreaterThan(deviceLayout.adaptiveSpacing, 0, "Adaptive spacing should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.adaptiveSpacing, 50, "Adaptive spacing should be reasonable")
+
+    func testControlPlateButtonHeightIsReasonable() {
+        XCTAssertGreaterThan(UIConstants.controlPlateButtonHeight, 20,
+            "Button height should be at least 20pt for tap targets")
+        XCTAssertLessThan(UIConstants.controlPlateButtonHeight, 80,
+            "Button height should not exceed 80pt")
     }
-    
-    func testAdaptivePadding() throws {
-        XCTAssertGreaterThan(deviceLayout.adaptivePadding, 0, "Adaptive padding should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.adaptivePadding, 50, "Adaptive padding should be reasonable")
+
+    // MARK: - Transport Buttons
+
+    func testTransportButtonConstantsArePositive() {
+        XCTAssertGreaterThan(UIConstants.transportButtonHeight, 0)
+        XCTAssertGreaterThan(UIConstants.transportButtonMinWidth, 0)
     }
-    
-    func testFontScale() throws {
-        XCTAssertGreaterThan(deviceLayout.fontScale, 0, "Font scale should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.fontScale, 2, "Font scale should be reasonable")
+
+    func testTransportButtonMinWidthExceedsHeight() {
+        // Transport buttons should be wider than tall (landscape-ish)
+        XCTAssertGreaterThan(UIConstants.transportButtonMinWidth, UIConstants.transportButtonHeight,
+            "Transport buttons should be wider than they are tall")
     }
-    
-    func testAdaptiveButtonHeight() throws {
-        XCTAssertGreaterThan(deviceLayout.adaptiveButtonHeight, 30, "Button height should be at least 30")
-        XCTAssertLessThanOrEqual(deviceLayout.adaptiveButtonHeight, 80, "Button height should not exceed 80")
+
+    // MARK: - Answer Box
+
+    func testAnswerBoxRadiusIsPositive() {
+        XCTAssertGreaterThan(UIConstants.answerBoxRadius, 0)
+        XCTAssertLessThan(UIConstants.answerBoxRadius, 20,
+            "Answer box radius should be modest — not pill-shaped")
     }
-    
-    func testAdaptiveCornerRadius() throws {
-        XCTAssertGreaterThan(deviceLayout.adaptiveCornerRadius, 0, "Corner radius should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.adaptiveCornerRadius, 25, "Corner radius should be reasonable")
+
+    // MARK: - Power Indicator
+
+    func testPowerIndicatorDotSmallerThanContainer() {
+        XCTAssertGreaterThan(UIConstants.powerIndicatorDotDiameter, 0)
+        XCTAssertLessThan(UIConstants.powerIndicatorDotDiameter, UIConstants.powerIndicatorDiameter,
+            "Power indicator dot must be smaller than its container")
     }
-    
-    // MARK: - Layout Helper Tests
-    
-    func testFretboardWidthMultiplier() throws {
-        XCTAssertGreaterThan(deviceLayout.fretboardWidthMultiplier, 0, "Fretboard width multiplier should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.fretboardWidthMultiplier, 1, "Fretboard width multiplier should not exceed 1")
+
+    // MARK: - Indicator Dots
+
+    func testIndicatorDotSizesOrdered() {
+        XCTAssertGreaterThan(UIConstants.indicatorDotMedium, UIConstants.indicatorDotSmall,
+            "Medium indicator dot must be larger than small")
     }
-    
-    func testConsoleButtonColumns() throws {
-        XCTAssertGreaterThan(deviceLayout.consoleButtonColumns, 0, "Console button columns should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.consoleButtonColumns, 10, "Console button columns should be reasonable")
+
+    // MARK: - MiniTV Bezel
+
+    func testMiniTVBezelInsetsArePositive() {
+        XCTAssertGreaterThan(UIConstants.miniTVBezelInsetW, 0)
+        XCTAssertGreaterThan(UIConstants.miniTVBezelInsetH, 0)
     }
-    
-    func testTransportButtonSpacing() throws {
-        XCTAssertGreaterThan(deviceLayout.transportButtonSpacing, 0, "Transport button spacing should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.transportButtonSpacing, 30, "Transport button spacing should be reasonable")
+
+    // MARK: - Padding / Insets
+
+    func testConsolePaddingIsPositive() {
+        XCTAssertGreaterThan(UIConstants.consoleFramePadding, 0)
+        XCTAssertGreaterThan(UIConstants.consoleContentPadding, 0)
     }
-    
-    func testAnswerButtonWidth() throws {
-        XCTAssertGreaterThan(deviceLayout.answerButtonWidth, 50, "Answer button width should be at least 50")
-        XCTAssertLessThanOrEqual(deviceLayout.answerButtonWidth, 250, "Answer button width should not exceed 250")
+
+    // MARK: - Progress Bar
+
+    func testProgressBarRadiusIsSubpixelScale() {
+        // This is intentionally small (1.5pt) to be a thin bar
+        XCTAssertGreaterThan(UIConstants.progressBarRadius, 0)
+        XCTAssertLessThan(UIConstants.progressBarRadius, 5,
+            "Progress bar radius should be very small for a thin line appearance")
     }
-    
-    func testTVFrameScale() throws {
-        XCTAssertGreaterThan(deviceLayout.tvFrameScale, 0, "TV frame scale should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.tvFrameScale, 2, "TV frame scale should be reasonable")
+}
+
+// MARK: - Game Constants Tests
+
+final class GameConstantsTests: XCTestCase {
+
+    func testStringCountIsSix() {
+        XCTAssertEqual(GameConstants.stringCount, 6, "A guitar has 6 strings")
     }
-    
-    func testScoreDisplayScale() throws {
-        XCTAssertGreaterThan(deviceLayout.scoreDisplayScale, 0, "Score display scale should be positive")
-        XCTAssertLessThanOrEqual(deviceLayout.scoreDisplayScale, 2, "Score display scale should be reasonable")
+
+    func testMaxRevealCountIsPositive() {
+        XCTAssertGreaterThan(GameConstants.maxRevealCount, 0)
     }
-    
-    // MARK: - Constants Consistency Tests
-    
-    func testLayoutConstantsConsistency() throws {
-        // Test that adaptive spacing is greater than or equal to standard spacing
-        XCTAssertGreaterThanOrEqual(deviceLayout.adaptiveSpacing, LayoutConstants.Spacing.lg, "Adaptive spacing should be at least large spacing")
-        
-        // Test that adaptive padding is greater than or equal to standard padding
-        XCTAssertGreaterThanOrEqual(deviceLayout.adaptivePadding, LayoutConstants.Padding.lg, "Adaptive padding should be at least large padding")
-        
-        // Test that adaptive button height is reasonable
-        XCTAssertGreaterThanOrEqual(deviceLayout.adaptiveButtonHeight, LayoutConstants.Button.standardHeight, "Adaptive button height should be at least standard height")
+
+    func testLeftAndRightColumnStringsCoverAllSix() {
+        let allStrings = Set(GameConstants.leftColumnStrings + GameConstants.rightColumnStrings)
+        XCTAssertEqual(allStrings, Set([1, 2, 3, 4, 5, 6]),
+            "Left + right column strings must cover all 6 strings exactly once")
     }
-    
-    // MARK: - UI Constants Integration Tests
-    
-    func testUIConstantsDeviceIntegration() throws {
-        // Test device-specific constants
-        let isIPad = deviceLayout.isIPad
-        
-        let consoleFrameRadius = UIConstants.Device.consoleFrameRadius(isIPad: isIPad)
-        XCTAssertGreaterThan(consoleFrameRadius, 0, "Console frame radius should be positive")
-        
-        let transportButtonHeight = UIConstants.Device.transportButtonHeight(isIPad: isIPad)
-        XCTAssertGreaterThan(transportButtonHeight, 0, "Transport button height should be positive")
-        
-        let answerButtonWidth = UIConstants.Device.answerButtonWidth(isIPad: isIPad)
-        XCTAssertGreaterThan(answerButtonWidth, 0, "Answer button width should be positive")
-        
-        let consoleButtonSize = UIConstants.Device.consoleButtonSize(isIPad: isIPad)
-        XCTAssertGreaterThan(consoleButtonSize, 0, "Console button size should be positive")
-        
-        let gridColumns = UIConstants.Device.gridColumns(isIPad: isIPad)
-        XCTAssertGreaterThan(gridColumns, 0, "Grid columns should be positive")
+
+    func testLeftColumnStringsAreCorrect() {
+        // Left column: strings 4, 5, 6 (top→bottom)
+        XCTAssertEqual(Set(GameConstants.leftColumnStrings), Set([4, 5, 6]))
     }
-    
-    // MARK: - Performance Tests
-    
-    func testDeviceLayoutPerformance() throws {
-        measure {
-            for _ in 0..<1000 {
-                let layout = DeviceLayout()
-                _ = layout.adaptiveSpacing
-                _ = layout.adaptivePadding
-                _ = layout.fontScale
-                _ = layout.adaptiveButtonHeight
-                _ = layout.fretboardWidthMultiplier
-                _ = layout.consoleButtonColumns
-                _ = layout.transportButtonSpacing
-                _ = layout.answerButtonWidth
-            }
+
+    func testRightColumnStringsAreCorrect() {
+        // Right column: strings 3, 2, 1 (top→bottom)
+        XCTAssertEqual(Set(GameConstants.rightColumnStrings), Set([1, 2, 3]))
+    }
+
+    func testMinBPMIsPlayable() {
+        XCTAssertGreaterThanOrEqual(GameConstants.minBPM, 40,
+            "Min BPM should be at least 40 to be musically playable")
+        XCTAssertLessThanOrEqual(GameConstants.minBPM, 80,
+            "Min BPM should not be too fast — it's the minimum")
+    }
+
+    func testRevealGateBeatsIsPositive() {
+        XCTAssertGreaterThan(GameConstants.revealGateBeats, 0)
+    }
+
+    func testAutoPlayIntervalIsPositive() {
+        XCTAssertGreaterThan(GameConstants.autoPlayInterval, 0)
+        XCTAssertLessThan(GameConstants.autoPlayInterval, 1.0,
+            "Auto-play interval should be under 1 second for fluid playback")
+    }
+}
+
+// MARK: - Animation Duration Tests
+
+final class AnimationDurationTests: XCTestCase {
+
+    func testAllDurationsArePositive() {
+        XCTAssertGreaterThan(AnimationDurations.launchTransition, 0)
+        XCTAssertGreaterThan(AnimationDurations.beatFlash, 0)
+        XCTAssertGreaterThan(AnimationDurations.resetDelay, 0)
+        XCTAssertGreaterThan(AnimationDurations.armedFlashPeriod, 0)
+    }
+
+    func testBeatFlashIsShorterThanLaunchTransition() {
+        // Beat flash should be imperceptibly quick; launch is a visible animation
+        XCTAssertLessThan(AnimationDurations.beatFlash, AnimationDurations.launchTransition,
+            "Beat flash should be much shorter than the launch transition")
+    }
+
+    func testLaunchTransitionIsUnderOneSecond() {
+        XCTAssertLessThan(AnimationDurations.launchTransition, 1.0,
+            "Launch transition should feel snappy — under 1 second")
+    }
+
+    func testResetDelayIsShort() {
+        XCTAssertLessThan(AnimationDurations.resetDelay, 1.0,
+            "Reset delay should be brief")
+    }
+}
+
+// MARK: - UIMetrics Tests
+
+final class UIMetricsTests: XCTestCase {
+
+    func testBannerHeightBoundsAreConsistent() {
+        XCTAssertGreaterThan(UIMetrics.bannerMaxHeight, UIMetrics.bannerMinHeight,
+            "Max banner height must exceed min banner height")
+        XCTAssertGreaterThan(UIMetrics.bannerMinHeight, 0)
+    }
+
+    func testBannerHeightFractionIsBetweenZeroAndOne() {
+        XCTAssertGreaterThan(UIMetrics.bannerHeightFraction, 0)
+        XCTAssertLessThan(UIMetrics.bannerHeightFraction, 1.0,
+            "Banner height fraction should be less than 1.0 (less than full row height)")
+    }
+
+    func testBannerFontScaleIsReasonable() {
+        XCTAssertGreaterThan(UIMetrics.bannerFontScale, 0.5,
+            "Banner font scale should not be extremely small")
+        XCTAssertLessThanOrEqual(UIMetrics.bannerFontScale, 1.0,
+            "Banner font scale should be at most full size")
+    }
+
+    func testStartupFontSizeIsReadable() {
+        XCTAssertGreaterThan(UIMetrics.startupFontSize, 16,
+            "Startup font size should be at least 16pt for legibility")
+        XCTAssertLessThan(UIMetrics.startupFontSize, 60,
+            "Startup font size should not be excessively large")
+    }
+}
+
+// MARK: - Guitar String Layout Tests
+
+final class GuitarStringLayoutTests: XCTestCase {
+
+    func testTotalStringsIsSix() {
+        XCTAssertEqual(GuitarStringLayout.totalStrings, 6)
+    }
+
+    func testStringCentersCountMatchesTotalStrings() {
+        let centers = GuitarStringLayout.stringCenters(containerWidth: 375, neckWidth: 300)
+        XCTAssertEqual(centers.count, GuitarStringLayout.totalStrings,
+            "stringCenters must return exactly \(GuitarStringLayout.totalStrings) values")
+    }
+
+    func testStringCentersAreWithinContainerWidth() {
+        let containerWidth: CGFloat = 375
+        let neckWidth: CGFloat = 300
+        let centers = GuitarStringLayout.stringCenters(containerWidth: containerWidth, neckWidth: neckWidth)
+
+        for (i, center) in centers.enumerated() {
+            XCTAssertGreaterThanOrEqual(center, 0,
+                "String \(i+1) center should be >= 0")
+            XCTAssertLessThanOrEqual(center, containerWidth,
+                "String \(i+1) center should be <= container width")
         }
     }
-    
-    func testUIConstantsPerformance() throws {
-        measure {
-            for _ in 0..<1000 {
-                let isIPad = false
-                _ = UIConstants.Device.consoleFrameRadius(isIPad: isIPad)
-                _ = UIConstants.Device.transportButtonHeight(isIPad: isIPad)
-                _ = UIConstants.Device.answerButtonWidth(isIPad: isIPad)
-                _ = UIConstants.Device.consoleButtonSize(isIPad: isIPad)
-                _ = UIConstants.Device.gridColumns(isIPad: isIPad)
-            }
+
+    func testStringCentersAreMonotonicallyIncreasing() {
+        let centers = GuitarStringLayout.stringCenters(containerWidth: 375, neckWidth: 300)
+        for i in 0..<(centers.count - 1) {
+            XCTAssertLessThan(centers[i], centers[i + 1],
+                "String centers should increase left-to-right (string \(i+1) < string \(i+2))")
         }
     }
-    
-    // MARK: - Edge Cases Tests
-    
-    func testMultipleDeviceLayoutInstances() throws {
-        let layout1 = DeviceLayout()
-        let layout2 = DeviceLayout()
-        let layout3 = DeviceLayout()
-        
-        // All instances should have consistent values
-        XCTAssertEqual(layout1.adaptiveSpacing, layout2.adaptiveSpacing, "Multiple instances should have same adaptive spacing")
-        XCTAssertEqual(layout2.adaptiveSpacing, layout3.adaptiveSpacing, "Multiple instances should have same adaptive spacing")
-        
-        XCTAssertEqual(layout1.adaptivePadding, layout2.adaptivePadding, "Multiple instances should have same adaptive padding")
-        XCTAssertEqual(layout2.adaptivePadding, layout3.adaptivePadding, "Multiple instances should have same adaptive padding")
-        
-        XCTAssertEqual(layout1.fontScale, layout2.fontScale, "Multiple instances should have same font scale")
-        XCTAssertEqual(layout2.fontScale, layout3.fontScale, "Multiple instances should have same font scale")
+
+    func testStringCentersWithZeroContainerReturnsDefaults() {
+        // Edge case: zero container should not crash
+        let centers = GuitarStringLayout.stringCenters(containerWidth: 0, neckWidth: 0)
+        XCTAssertEqual(centers.count, GuitarStringLayout.totalStrings,
+            "Should return correct count even with zero dimensions")
     }
-    
-    // MARK: - Memory Tests
-    
-    func testDeviceLayoutMemoryUsage() throws {
-        weak var weakLayout: DeviceLayout?
-        
-        autoreleasepool {
-            let layout = DeviceLayout()
-            _ = layout.adaptiveSpacing
-            _ = layout.adaptivePadding
-            _ = layout.fontScale
-            
-            weakLayout = layout
+}
+
+// MARK: - FretMath Tests
+
+final class FretMathTests: XCTestCase {
+
+    func testFretPositionCountMatchesTotalFrets() {
+        let totalFrets = 20
+        let ratios = FretMath.fretPositionRatios(totalFrets: totalFrets, scaleLength: 25.5)
+        // Returns frets 0...totalFrets = totalFrets + 1 values
+        XCTAssertEqual(ratios.count, totalFrets + 1,
+            "fretPositionRatios must return totalFrets + 1 values (including nut at fret 0)")
+    }
+
+    func testFretZeroRatioIsZero() {
+        let ratios = FretMath.fretPositionRatios(totalFrets: 12, scaleLength: 25.5)
+        XCTAssertEqual(ratios[0], 0.0, accuracy: 0.001,
+            "Fret 0 (nut) should be at position 0")
+    }
+
+    func testFretRatiosAreStrictlyIncreasing() {
+        let ratios = FretMath.fretPositionRatios(totalFrets: 12, scaleLength: 25.5)
+        for i in 0..<(ratios.count - 1) {
+            XCTAssertLessThan(ratios[i], ratios[i + 1],
+                "Fret positions must increase from nut toward body (fret \(i) < fret \(i+1))")
         }
-        
-        XCTAssertNil(weakLayout, "DeviceLayout should be deallocated")
     }
-    
-    // MARK: - Validation Tests
-    
-    func testLayoutConstantsValidation() throws {
-        // Validate spacing constants
-        XCTAssertGreaterThan(LayoutConstants.Spacing.xs, 0, "XS spacing should be positive")
-        XCTAssertLessThan(LayoutConstants.Spacing.xs, LayoutConstants.Spacing.sm, "XS spacing should be less than SM")
-        XCTAssertLessThan(LayoutConstants.Spacing.sm, LayoutConstants.Spacing.md, "SM spacing should be less than MD")
-        XCTAssertLessThan(LayoutConstants.Spacing.md, LayoutConstants.Spacing.lg, "MD spacing should be less than LG")
-        XCTAssertLessThan(LayoutConstants.Spacing.lg, LayoutConstants.Spacing.xl, "LG spacing should be less than XL")
-        XCTAssertLessThan(LayoutConstants.Spacing.xl, LayoutConstants.Spacing.xxl, "XL spacing should be less than XXL")
-        XCTAssertLessThan(LayoutConstants.Spacing.xxl, LayoutConstants.Spacing.xxxl, "XXL spacing should be less than XXXL")
-        
-        // Validate button constants
-        XCTAssertGreaterThan(LayoutConstants.Button.heightXS, 0, "XS button height should be positive")
-        XCTAssertLessThan(LayoutConstants.Button.heightXS, LayoutConstants.Button.heightSM, "XS height should be less than SM")
-        XCTAssertLessThan(LayoutConstants.Button.heightSM, LayoutConstants.Button.heightMD, "SM height should be less than MD")
-        XCTAssertLessThan(LayoutConstants.Button.heightMD, LayoutConstants.Button.heightLG, "MD height should be less than LG")
-        XCTAssertLessThan(LayoutConstants.Button.heightLG, LayoutConstants.Button.heightXL, "LG height should be less than XL")
-        XCTAssertLessThan(LayoutConstants.Button.heightXL, LayoutConstants.Button.heightXXL, "XL height should be less than XXL")
-        XCTAssertLessThan(LayoutConstants.Button.heightXXL, LayoutConstants.Button.heightXXXL, "XXL height should be less than XXXL")
-        
-        // Validate typography constants
-        XCTAssertGreaterThan(LayoutConstants.Typography.fontSizeXS, 0, "XS font size should be positive")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeXS, LayoutConstants.Typography.fontSizeSM, "XS font size should be less than SM")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeSM, LayoutConstants.Typography.fontSizeMD, "SM font size should be less than MD")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeMD, LayoutConstants.Typography.fontSizeLG, "MD font size should be less than LG")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeLG, LayoutConstants.Typography.fontSizeXL, "LG font size should be less than XL")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeXL, LayoutConstants.Typography.fontSizeXXL, "XL font size should be less than XXL")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeXXL, LayoutConstants.Typography.fontSizeXXXL, "XXL font size should be less than XXXL")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeXXXL, LayoutConstants.Typography.fontSizeHuge, "XXXL font size should be less than Huge")
-        XCTAssertLessThan(LayoutConstants.Typography.fontSizeHuge, LayoutConstants.Typography.fontSizeMassive, "Huge font size should be less than Massive")
-        
-        // Validate guitar constants
-        XCTAssertEqual(LayoutConstants.Guitar.stringCount, 6, "Guitar should have 6 strings")
-        XCTAssertGreaterThan(LayoutConstants.Guitar.fretCount, 0, "Guitar should have positive fret count")
-        XCTAssertLessThanOrEqual(LayoutConstants.Guitar.visibleFrets, LayoutConstants.Guitar.fretCount, "Visible frets should not exceed total frets")
-        XCTAssertGreaterThanOrEqual(LayoutConstants.Guitar.startingFret, 0, "Starting fret should be non-negative")
-        XCTAssertGreaterThan(LayoutConstants.Guitar.maxFret, LayoutConstants.Guitar.fretCount, "Max fret should be greater than standard fret count")
-        
-        // Validate game constants
-        XCTAssertGreaterThan(LayoutConstants.Game.maxRounds, 0, "Max rounds should be positive")
-        XCTAssertGreaterThan(LayoutConstants.Game.maxScore, 0, "Max score should be positive")
-        XCTAssertGreaterThan(LayoutConstants.Game.maxStreak, 0, "Max streak should be positive")
-        XCTAssertEqual(LayoutConstants.Game.startingScore, 0, "Starting score should be 0")
-        XCTAssertEqual(LayoutConstants.Game.startingStreak, 0, "Starting streak should be 0")
-        
-        // Validate audio constants
-        XCTAssertGreaterThan(LayoutConstants.Audio.defaultTempo, 0, "Default tempo should be positive")
-        XCTAssertGreaterThan(LayoutConstants.Audio.minTempo, 0, "Min tempo should be positive")
-        XCTAssertGreaterThan(LayoutConstants.Audio.maxTempo, LayoutConstants.Audio.minTempo, "Max tempo should be greater than min tempo")
-        XCTAssertGreaterThan(LayoutConstants.Audio.tempoStep, 0, "Tempo step should be positive")
-        
-        XCTAssertGreaterThanOrEqual(LayoutConstants.Audio.defaultVolume, 0, "Default volume should be non-negative")
-        XCTAssertLessThanOrEqual(LayoutConstants.Audio.defaultVolume, 1, "Default volume should not exceed 1")
-        XCTAssertGreaterThanOrEqual(LayoutConstants.Audio.minVolume, 0, "Min volume should be non-negative")
-        XCTAssertLessThanOrEqual(LayoutConstants.Audio.maxVolume, 1, "Max volume should not exceed 1")
-        XCTAssertGreaterThan(LayoutConstants.Audio.volumeStep, 0, "Volume step should be positive")
+
+    func testFretRatiosAreAllLessThanOne() {
+        let ratios = FretMath.fretPositionRatios(totalFrets: 24, scaleLength: 25.5)
+        for (i, ratio) in ratios.enumerated() {
+            XCTAssertLessThan(ratio, 1.0,
+                "No fret position should reach the bridge (ratio < 1.0) — fret \(i) = \(ratio)")
+        }
+    }
+
+    func testFretMathWithZeroScaleLengthDoesNotCrash() {
+        // Should not crash or produce NaN/inf
+        let ratios = FretMath.fretPositionRatios(totalFrets: 5, scaleLength: 0)
+        XCTAssertEqual(ratios.count, 6)
+        for ratio in ratios {
+            XCTAssertFalse(ratio.isNaN, "Ratios should not be NaN with zero scale length")
+            XCTAssertFalse(ratio.isInfinite, "Ratios should not be infinite with zero scale length")
+        }
     }
 }
