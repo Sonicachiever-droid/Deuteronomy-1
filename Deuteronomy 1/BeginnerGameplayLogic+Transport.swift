@@ -2,12 +2,9 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-// MARK: - BeginnerGameplayView Logic: Transport Handlers (Step 4a)
-// Extracted from BeginnerGameplayView.swift.
-// These are methods on BeginnerGameplayView so they have full access to all
-// view state and can call sibling functions without any architectural changes.
+// MARK: - BeginnerGameEngine Logic: Transport Handlers (Step 4a)
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     // MARK: - Menu / Audio / Fretboard
 
@@ -61,16 +58,17 @@ extension BeginnerGameplayView {
                 launchTileOpacity = 0
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
-                isCodeScreensaverMode = false
-                startupSequenceActivated = false
-                startupSequenceElapsed = 0
-                startupSpeechPhase = .idle
-                isLaunchTransitionAnimating = false
-                launchTileScale = 1
-                launchTileOpacity = 1
-                beginnerRuntime.questionBoxIntroProgress = 1
-                handleRoundStartButton(animateNeckSlideFromStartup: true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) { [weak self] in
+                guard let self else { return }
+                self.isCodeScreensaverMode = false
+                self.startupSequenceActivated = false
+                self.startupSequenceElapsed = 0
+                self.startupSpeechPhase = .idle
+                self.isLaunchTransitionAnimating = false
+                self.launchTileScale = 1
+                self.launchTileOpacity = 1
+                self.beginnerRuntime.questionBoxIntroProgress = 1
+                self.handleRoundStartButton(animateNeckSlideFromStartup: true)
             }
             return
         }
@@ -141,8 +139,8 @@ extension BeginnerGameplayView {
         isRoundPaused = true
         beginnerRuntime.transportStoppedForResume = true
         beginnerRuntime.roundRevealLastTickDate = nil
-        midiEngine.pause()
-        isBackingTrackPlaying = midiEngine.isPlaying
+        audio.midiEngine.pause()
+        isBackingTrackPlaying = audio.midiEngine.isPlaying
         beginnerRuntime.beatLightFlashOn = false
         beginnerRuntime.beatLightLastProcessedBeat = nil
         beginnerRuntime.beatLightIntroMeasureSkipped = false
@@ -155,7 +153,7 @@ extension BeginnerGameplayView {
         beginnerRuntime.transportStoppedForResume = false
         isRoundPaused = false
         beginnerRuntime.roundRevealLastTickDate = nil
-        midiEngine.resume()
+        audio.midiEngine.resume()
         beginnerRuntime.beatLightFlashOn = false
         beginnerRuntime.beatLightLastProcessedBeat = nil
         beginnerRuntime.beatLightIntroMeasureSkipped = false
@@ -166,8 +164,8 @@ extension BeginnerGameplayView {
 
     func handleRoundResetButton() {
         beginnerRuntime.resetButtonPressed = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.resetDelay) {
-            beginnerRuntime.resetButtonPressed = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.resetDelay) { [weak self] in
+            self?.beginnerRuntime.resetButtonPressed = false
         }
 
         if layoutMode == .beginner {

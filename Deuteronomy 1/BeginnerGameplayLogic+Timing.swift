@@ -4,7 +4,7 @@ import AVFoundation
 
 // MARK: - BeginnerGameplayView Logic: Timer-Driven & Session Handlers (Step 4d)
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     func handleMainTimerTick(_ date: Date) {
         let shouldBlinkStartupStartButton = startupStartButtonAttentionActive && !startupSequenceActivated
@@ -53,14 +53,14 @@ extension BeginnerGameplayView {
         updateNoteRevealProgressionIfNeeded()
         handleBeginnerAutoPlayIfNeeded(currentDate: date)
 
-        let trackPlayingNow = midiEngine.isPlaying
+        let trackPlayingNow = audio.midiEngine.isPlaying
         if isBackingTrackPlaying != trackPlayingNow {
             isBackingTrackPlaying = trackPlayingNow
         }
 
         let shouldRunBeatLight = layoutMode == .beginner && !isCodeScreensaverMode && trackPlayingNow
         if shouldRunBeatLight {
-            let currentBeatBucket = Int(floor(midiEngine.currentBeatPosition()))
+            let currentBeatBucket = Int(floor(audio.midiEngine.currentBeatPosition()))
 
             if beginnerRuntime.beatLightLastProcessedBeat == nil {
                 beginnerRuntime.beatLightLastProcessedBeat = currentBeatBucket
@@ -81,8 +81,8 @@ extension BeginnerGameplayView {
                 }
 
                 beginnerRuntime.beatLightFlashOn = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.beatFlash) {
-                    beginnerRuntime.beatLightFlashOn = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.beatFlash) { [weak self] in
+                    self?.beginnerRuntime.beatLightFlashOn = false
                 }
             }
         } else {
@@ -122,7 +122,7 @@ extension BeginnerGameplayView {
         audioSettings = AudioSettings()
         availableBackingTracks = BackingTrack.discoverBundledTracks()
         audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
-        guitarNoteEngine.configure(
+        audio.guitarNoteEngine.configure(
             preset: audioSettings.guitarTonePreset,
             reverbLevel: audioSettings.reverbLevel,
             delayLevel: audioSettings.delayLevel
@@ -160,10 +160,11 @@ extension BeginnerGameplayView {
         if animateNeckSlideFromStartup {
             startupNeckVisualsHidden = true
             beginnerRuntime.currentFretStart = beginnerRuntime.isDescendingPhase ? maxFretOffset : minFretOffset
-            DispatchQueue.main.async {
-                startupNeckVisualsHidden = false
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.startupNeckVisualsHidden = false
                 withAnimation(.easeInOut(duration: 0.78)) {
-                    beginnerRuntime.currentFretStart = beginnerRuntime.currentRound
+                    self.beginnerRuntime.currentFretStart = self.beginnerRuntime.currentRound
                 }
             }
         } else {

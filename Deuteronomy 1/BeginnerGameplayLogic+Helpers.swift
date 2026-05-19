@@ -2,28 +2,28 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-// MARK: - BeginnerGameplayView Logic: Remaining Helpers (Step 5)
+// MARK: - BeginnerGameEngine Logic: Remaining Helpers (Step 5)
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     func shiftFretSpan(by delta: Int) {
         guard delta != 0 else { return }
         withAnimation(.easeInOut(duration: 1.3)) {
-            beginnerRuntime.currentFretStart = min(max(beginnerRuntime.currentFretStart + delta, minFretOffset), maxFretOffset)
+            state.currentFretStart = min(max(state.currentFretStart + delta, minFretOffset), maxFretOffset)
         }
     }
 
     func shiftWindow(by delta: Int) {
-        let proposed = beginnerRuntime.currentWindowRow + delta
+        let proposed = state.currentWindowRow + delta
         let clamped = min(max(proposed, 0), 7)
-        guard clamped != beginnerRuntime.currentWindowRow else { return }
+        guard clamped != state.currentWindowRow else { return }
         withAnimation(.easeInOut(duration: 0.45)) {
-            beginnerRuntime.currentWindowRow = clamped
+            state.currentWindowRow = clamped
         }
     }
 
-    func nextThumbState(after state: ThumbGlowState) -> ThumbGlowState {
-        switch state {
+    func nextThumbState(after thumbState: ThumbGlowState) -> ThumbGlowState {
+        switch thumbState {
         case .neutral: return .green
         case .orange: return .green
         case .green: return .red
@@ -68,17 +68,17 @@ extension BeginnerGameplayView {
         switch phase {
         case .systemOnline:
             if startupSpeechPhase == .pendingSystem {
-                gameplayAudioEngine.speakStartupAlert("SYSTEM ONLINE", volume: stringVolume)
+                audio.gameplayAudioEngine.speakStartupAlert("SYSTEM ONLINE", volume: stringVolume)
                 startupSpeechPhase = .pendingPhase
             }
         case .phaseOne:
             if startupSpeechPhase == .pendingPhase {
-                gameplayAudioEngine.speakStartupAlert("PHASE ONE", volume: stringVolume)
+                audio.gameplayAudioEngine.speakStartupAlert("PHASE ONE", volume: stringVolume)
                 startupSpeechPhase = .pendingArmed
             }
         case .armed:
             if startupSpeechPhase == .pendingArmed {
-                gameplayAudioEngine.speakStartupAlert(layoutMode == .beginner ? beginnerStartupArmedText : "MEMORIZATION SEQUENCE ARMED", volume: stringVolume)
+                audio.gameplayAudioEngine.speakStartupAlert(layoutMode == .beginner ? beginnerStartupArmedText : "MEMORIZATION SEQUENCE ARMED", volume: stringVolume)
                 startupSpeechPhase = .idle
             }
         }
@@ -105,10 +105,10 @@ extension BeginnerGameplayView {
     func nextOnAndThreeBeatDate(after date: Date, waitForDownbeat: Bool = false) -> Date {
         let bpm = Double(max(audioSettings.startingBPM, 40))
         let secondsPerBeat = 60.0 / bpm
-        guard midiEngine.isPlaying else {
+        guard audio.midiEngine.isPlaying else {
             return date.addingTimeInterval(secondsPerBeat * 2)
         }
-        let currentBeat = midiEngine.currentBeatPosition()
+        let currentBeat = audio.midiEngine.currentBeatPosition()
         let currentBeatFloor = floor(currentBeat)
         let beatInMeasure = Int(currentBeatFloor) % 4   // 0,1,2,3
         let fractionalRemaining = (currentBeatFloor + 1.0) - currentBeat
@@ -136,19 +136,19 @@ extension BeginnerGameplayView {
 
     func syncBackingTrackPlayback(allowResumeFromPause: Bool = false) {
         guard !availableBackingTracks.isEmpty else {
-            midiEngine.stop()
+            audio.midiEngine.stop()
             isBackingTrackPlaying = false
             return
         }
 
         audioSettings.selectInitialBackingTrackIfNeeded(from: availableBackingTracks)
         guard backingTrackShouldPlayInGameplay else {
-            midiEngine.stop()
+            audio.midiEngine.stop()
             isBackingTrackPlaying = false
             return
         }
 
-        guard !beginnerRuntime.transportStoppedForResume else {
+        guard !state.transportStoppedForResume else {
             isBackingTrackPlaying = false
             return
         }
@@ -156,7 +156,7 @@ extension BeginnerGameplayView {
         guard let selectedTrackID = audioSettings.selectedBackingTrackID,
               let selectedTrack = availableBackingTracks.first(where: { $0.id == selectedTrackID }),
               let trackURL = selectedTrack.resourceURL() else {
-            midiEngine.stop()
+            audio.midiEngine.stop()
             isBackingTrackPlaying = false
             return
         }
@@ -165,19 +165,19 @@ extension BeginnerGameplayView {
         
         // If allowed and same track was paused, resume from that position
         if allowResumeFromPause {
-            midiEngine.resume()
-            isBackingTrackPlaying = midiEngine.isPlaying
+            audio.midiEngine.resume()
+            isBackingTrackPlaying = audio.midiEngine.isPlaying
             return
         }
 
         // Skip restart if the same URL is already playing — avoids mid-beat click
-        if midiEngine.isPlaying, midiEngine.activeURL == trackURL {
+        if audio.midiEngine.isPlaying, audio.midiEngine.activeURL == trackURL {
             isBackingTrackPlaying = true
             return
         }
 
-        midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
-        isBackingTrackPlaying = midiEngine.isPlaying
+        audio.midiEngine.play(url: trackURL, title: selectedTrack.title, loop: true)
+        isBackingTrackPlaying = audio.midiEngine.isPlaying
     }
 
     // handleFretboardButtonPress, handleRoundStartButton, handleStartButtonPress,
@@ -192,9 +192,10 @@ extension BeginnerGameplayView {
 
     func showDeveloperPrompt(_ text: String) {
         developerPromptText = text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            if developerPromptText == text {
-                developerPromptText = ""
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
+            guard let self else { return }
+            if self.developerPromptText == text {
+                self.developerPromptText = ""
             }
         }
     }
@@ -215,9 +216,9 @@ extension BeginnerGameplayView {
     }
 }
 
-// MARK: - BeginnerGameplayView Computed Properties (Step 5)
+// MARK: - BeginnerGameEngine Computed Properties (Step 5)
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     func beginnerChordSuffixDisplay(_ rawSuffix: String) -> String {
         switch rawSuffix {
@@ -240,23 +241,23 @@ extension BeginnerGameplayView {
 
     var beginnerScaleStages: [BeginnerScaleStage] {
         beginnerScaleTemplates.map { template in
-            let root = transposedNote(template.root, by: beginnerRuntime.scaleCycleSemitoneOffset, useFlats: beginnerUsesFlats)
+            let root = transposedNote(template.root, by: state.scaleCycleSemitoneOffset, useFlats: beginnerUsesFlats)
             let notes = template.intervals.map { interval in
-                transposedNote(template.root, by: beginnerRuntime.scaleCycleSemitoneOffset + interval, useFlats: beginnerUsesFlats)
+                transposedNote(template.root, by: state.scaleCycleSemitoneOffset + interval, useFlats: beginnerUsesFlats)
             }
             let stageTitle = "\(root)\(beginnerChordSuffixDisplay(template.titleSuffix))"
 
             return BeginnerScaleStage(
                 title: stageTitle,
                 notes: notes,
-                bassSemitoneTarget: template.bassSemitoneTarget + beginnerRuntime.scaleCycleSemitoneOffset,
+                bassSemitoneTarget: template.bassSemitoneTarget + state.scaleCycleSemitoneOffset,
                 endsCycle: template.endsCycle
             )
         }
     }
 
     var beginnerCurrentScaleStage: BeginnerScaleStage {
-        let clampedIndex = min(max(beginnerRuntime.scaleStageIndex, 0), max(beginnerScaleStages.count - 1, 0))
+        let clampedIndex = min(max(state.scaleStageIndex, 0), max(beginnerScaleStages.count - 1, 0))
         return beginnerScaleStages[clampedIndex]
     }
 
@@ -270,7 +271,7 @@ extension BeginnerGameplayView {
 
     var chordNoteStringMap: [Int] {
         let notes = beginnerCurrentScaleNotes
-        let fret = max(beginnerRuntime.currentRound, 0)
+        let fret = max(state.currentRound, 0)
         var map: [Int] = []
         var usedStrings: Set<Int> = []
 
@@ -312,7 +313,7 @@ extension BeginnerGameplayView {
 
     var beginnerPentatonicProgressText: String {
         let notes = beginnerCurrentScaleNotes
-        let count = min(max(beginnerRuntime.pentatonicRevealCount, 0), notes.count)
+        let count = min(max(state.pentatonicRevealCount, 0), notes.count)
         return notes.prefix(count).joined(separator: " ")
     }
 
@@ -336,11 +337,11 @@ extension BeginnerGameplayView {
         if lessonStyle == .sequential {
             guard !isCodeScreensaverMode else { return nil }
 
-            if let pendingSequentialRepeatDisplayText = beginnerRuntime.pendingSequentialRepeatDisplayText {
+            if let pendingSequentialRepeatDisplayText = state.pendingSequentialRepeatDisplayText {
                 return pendingSequentialRepeatDisplayText
             }
 
-            let revealCount = min(beginnerRuntime.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count)
+            let revealCount = min(state.sequentialRevealCount, sequentialNoteGenerator.currentNoteSequence.count)
             let revealedNotes = sequentialNoteGenerator.currentNoteSequence
                 .prefix(revealCount)
                 .map(guitarNoteDisplayText)
@@ -349,8 +350,8 @@ extension BeginnerGameplayView {
         }
 
         // Chord style: existing behavior
-        if !beginnerRuntime.answerBoxReady,
-           !beginnerRuntime.roundOneIntroActive {
+        if !state.answerBoxReady,
+           !state.roundOneIntroActive {
             return nil
         }
         switch beginnerRoundZeroIntroDisplayPhase {
@@ -397,14 +398,14 @@ extension BeginnerGameplayView {
 
     var beginnerRoundZeroIntroDisplayPhase: BeginnerRoundZeroIntroDisplayPhase {
         guard layoutMode == .beginner,
-              beginnerRuntime.roundOneIntroActive,
-              beginnerRuntime.showRoundZeroIntroSequence
+              state.roundOneIntroActive,
+              state.showRoundZeroIntroSequence
         else {
             return .inactive
         }
 
-        let currentBeatBucket = Int(floor(beginnerRuntime.roundRevealElapsedBeats))
-        let startBeatBucket = beginnerRuntime.introStartBeatBucket ?? currentBeatBucket
+        let currentBeatBucket = Int(floor(state.roundRevealElapsedBeats))
+        let startBeatBucket = state.introStartBeatBucket ?? currentBeatBucket
         let elapsedBeatBuckets = max(currentBeatBucket - startBeatBucket, 0)
 
         if elapsedBeatBuckets < 2 {
@@ -417,11 +418,28 @@ extension BeginnerGameplayView {
     }
 
     var beginnerAcceptsGameplayAnswers: Bool {
-        return !beginnerRuntime.roundOneIntroActive
+        return !state.roundOneIntroActive
     }
 
     var playDirection: LessonDirection {
         LessonDirection(rawValue: playDirectionRawValue) ?? .ascending
+    }
+
+    var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
+
+    var activeStringOrder: [Int] {
+        let baseOrder: [Int] = {
+            let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]
+            return (modeVariant == .freestyle && isProgressionLowToHigh) ? base.reversed() : base
+        }()
+        switch modeVariant {
+        case .chord:
+            return Array(baseOrder.enumerated().compactMap { index, value in
+                index.isMultiple(of: 2) ? value : nil
+            })
+        case .freestyle, .beat:
+            return baseOrder
+        }
     }
 
     var effectivePlayRepetitions: Int {
@@ -461,7 +479,7 @@ extension BeginnerGameplayView {
 
     var beginnerUsesFlats: Bool {
         guard layoutMode == .beginner else { return false }
-        return beginnerRuntime.isDescendingPhase
+        return state.isDescendingPhase
     }
 
     var backingTrackShouldPlayInGameplay: Bool {
@@ -488,12 +506,12 @@ extension BeginnerGameplayView {
     }
 
     var canPressStopButton: Bool {
-        !beginnerRuntime.isRoundArmed && !isCodeScreensaverMode && !isRoundPaused
+        !state.isRoundArmed && !isCodeScreensaverMode && !isRoundPaused
     }
 
     var shouldLockPlayDirection: Bool {
         guard layoutMode == .beginner else { return false }
-        return !beginnerRuntime.isRoundArmed
+        return !state.isRoundArmed
     }
 
     var beginnerStartupArmedText: String {

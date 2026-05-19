@@ -2,9 +2,9 @@ import SwiftUI
 import Combine
 import AVFoundation
 
-// MARK: - BeginnerGameplayView Logic: Answer / Submission Handlers (Step 4b)
+// MARK: - BeginnerGameEngine Logic: Answer / Submission Handlers
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     // MARK: - Maestro answer submission (thumb buttons)
 
@@ -43,17 +43,18 @@ extension BeginnerGameplayView {
                 launchTileOpacity = 0
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) {
-                isCodeScreensaverMode = false
-                startupSequenceActivated = false
-                startupSequenceElapsed = 0
-                startupSpeechPhase = .idle
-                startGameFromBeginning(animateNeckSlideFromStartup: true)
-                isLaunchTransitionAnimating = false
-                launchTileScale = 1
-                launchTileOpacity = 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + AnimationDurations.launchTransition) { [weak self] in
+                guard let self else { return }
+                self.isCodeScreensaverMode = false
+                self.startupSequenceActivated = false
+                self.startupSequenceElapsed = 0
+                self.startupSpeechPhase = .idle
+                self.startGameFromBeginning(animateNeckSlideFromStartup: true)
+                self.isLaunchTransitionAnimating = false
+                self.launchTileScale = 1
+                self.launchTileOpacity = 1
                 withAnimation(.easeOut(duration: 0.6)) {
-                    beginnerRuntime.questionBoxIntroProgress = 1
+                    self.beginnerRuntime.questionBoxIntroProgress = 1
                 }
             }
             return
@@ -91,15 +92,16 @@ extension BeginnerGameplayView {
             beginnerRuntime.activeAnswerFeedback = .red
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            leftThumbState = .neutral
-            rightThumbState = .neutral
-            questionBoxAssistActive = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self else { return }
+            self.leftThumbState = .neutral
+            self.rightThumbState = .neutral
+            self.questionBoxAssistActive = false
             if isCorrect {
-                beginnerRuntime.isResolvingAnswer = false
-                advanceGame(afterCorrectAnswer: true)
+                self.beginnerRuntime.isResolvingAnswer = false
+                self.advanceGame(afterCorrectAnswer: true)
             } else {
-                advanceGame(afterCorrectAnswer: false)
+                self.advanceGame(afterCorrectAnswer: false)
             }
         }
     }
@@ -301,9 +303,9 @@ extension BeginnerGameplayView {
             // Flash the pressed button red
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                beginnerPressedButtonIndex = nil
-                beginnerPressedButtonCorrect = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+                self?.beginnerPressedButtonIndex = nil
+                self?.beginnerPressedButtonCorrect = false
             }
             // Wrong answer — restart the sequence
             let useFlats = layoutMode == .beginner ? beginnerUsesFlats : false
@@ -329,9 +331,9 @@ extension BeginnerGameplayView {
 
         beginnerPressedButtonIndex = buttonIndex
         beginnerPressedButtonCorrect = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            beginnerPressedButtonIndex = nil
-            beginnerPressedButtonCorrect = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            self?.beginnerPressedButtonIndex = nil
+            self?.beginnerPressedButtonCorrect = false
         }
         if !beginnerRuntime.isAutoPlayTriggered {
             let payout = payoutForRound(beginnerRuntime.currentRound)
@@ -380,9 +382,9 @@ extension BeginnerGameplayView {
             beginnerRuntime.answerBoxReady = true
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                beginnerPressedButtonIndex = nil
-                beginnerPressedButtonCorrect = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+                self?.beginnerPressedButtonIndex = nil
+                self?.beginnerPressedButtonCorrect = false
             }
             if !beginnerRuntime.isAutoPlayTriggered {
                 let payout = payoutForRound(beginnerRuntime.currentRound)
@@ -407,9 +409,9 @@ extension BeginnerGameplayView {
             // Wrong answer — flash red, restore boxes for already-correct strings
             beginnerPressedButtonIndex = buttonIndex
             beginnerPressedButtonCorrect = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                beginnerPressedButtonIndex = nil
-                beginnerPressedButtonCorrect = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+                self?.beginnerPressedButtonIndex = nil
+                self?.beginnerPressedButtonCorrect = false
             }
             beginnerRuntime.activePickedStringNumbers = Array(beginnerRuntime.answeredNotesByStringAtCurrentFret.keys)
         }
@@ -422,13 +424,13 @@ extension BeginnerGameplayView {
         let promptStrings = beginnerRuntime.currentPromptStrings.isEmpty ? [1] : beginnerRuntime.currentPromptStrings
         for (index, stringNumber) in promptStrings.enumerated() {
             let delay = Double(index) * 0.035
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                playGuitarNote(forString: stringNumber, fret: fret, velocity: velocity)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.playGuitarNote(forString: stringNumber, fret: fret, velocity: velocity)
             }
         }
     }
 
     func playGuitarNote(forString stringNumber: Int, fret: Int, velocity: Float) {
-        guitarNoteEngine.play(string: stringNumber, fret: max(fret, 0), velocity: velocity)
+        audio.guitarNoteEngine.play(string: stringNumber, fret: max(fret, 0), velocity: velocity)
     }
 }

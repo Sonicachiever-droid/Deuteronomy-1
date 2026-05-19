@@ -4,7 +4,7 @@ import AVFoundation
 
 // MARK: - BeginnerGameplayView Logic: Reward / Progression Handlers (Step 4c)
 
-extension BeginnerGameplayView {
+extension BeginnerGameEngine {
 
     func beginnerRewardPolicyForCurrentStage() -> BeginnerRewardPolicy? {
         guard layoutMode == .beginner else { return nil }
@@ -101,13 +101,14 @@ extension BeginnerGameplayView {
         beginnerRuntime.rewardSustainMultiplier = policy.sustainMultiplier
         beginnerRuntime.rewardNoteTextByString = nil
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
-            guard beginnerRuntime.pendingRewardStageAdvance,
-                  beginnerRuntime.rewardSelectedString == selectedString,
-                  beginnerRuntime.rewardTargetBeatPosition != nil else { return }
-            beginnerRuntime.activePickedStringNumbers = []
-            beginnerRuntime.lastPickedNote = nil
-            beginnerRuntime.answerBoxReady = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) { [weak self] in
+            guard let self,
+                  self.beginnerRuntime.pendingRewardStageAdvance,
+                  self.beginnerRuntime.rewardSelectedString == selectedString,
+                  self.beginnerRuntime.rewardTargetBeatPosition != nil else { return }
+            self.beginnerRuntime.activePickedStringNumbers = []
+            self.beginnerRuntime.lastPickedNote = nil
+            self.beginnerRuntime.answerBoxReady = false
         }
     }
 
@@ -116,13 +117,14 @@ extension BeginnerGameplayView {
         beginnerRuntime.rewardSelectedString = selectedString
         beginnerRuntime.rewardTargetBeatPosition = nil
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + holdSeconds) {
-            guard beginnerRuntime.pendingRewardStageAdvance,
-                  beginnerRuntime.rewardSelectedString == selectedString,
-                  beginnerRuntime.rewardTargetBeatPosition == nil else { return }
-            beginnerRuntime.pendingRewardStageAdvance = false
-            beginnerRuntime.rewardSelectedString = nil
-            advanceBeginnerScaleStage(afterCompletionFromString: selectedString, playTransitionNote: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + holdSeconds) { [weak self] in
+            guard let self,
+                  self.beginnerRuntime.pendingRewardStageAdvance,
+                  self.beginnerRuntime.rewardSelectedString == selectedString,
+                  self.beginnerRuntime.rewardTargetBeatPosition == nil else { return }
+            self.beginnerRuntime.pendingRewardStageAdvance = false
+            self.beginnerRuntime.rewardSelectedString = nil
+            self.advanceBeginnerScaleStage(afterCompletionFromString: selectedString, playTransitionNote: false)
         }
     }
 
@@ -152,22 +154,23 @@ extension BeginnerGameplayView {
         beginnerRuntime.answerBoxReady = true
         beginnerRuntime.lastPickedNote = nil
         beginnerRuntime.rewardNoteTextByString = beginnerRuntime.rewardScheduledNoteTextByString
-        let rewardChordRingDuration = guitarNoteEngine.playChord(
+        let rewardChordRingDuration = audio.guitarNoteEngine.playChord(
             midiNotes: beginnerRuntime.rewardScheduledMIDINotes,
             velocity: AudioVelocity.full,
             sustainMultiplier: beginnerRuntime.rewardSustainMultiplier
         )
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + rewardChordRingDuration) {
-            guard beginnerRuntime.pendingRewardStageAdvance,
-                  beginnerRuntime.rewardSelectedString == selectedString else { return }
-            beginnerRuntime.pendingRewardStageAdvance = false
-            beginnerRuntime.rewardSelectedString = nil
-            beginnerRuntime.rewardScheduledStrings = []
-            beginnerRuntime.rewardScheduledMIDINotes = []
-            beginnerRuntime.rewardScheduledNoteTextByString = [:]
-            beginnerRuntime.rewardSustainMultiplier = 3.0
-            advanceBeginnerScaleStage(afterCompletionFromString: selectedString, playTransitionNote: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + rewardChordRingDuration) { [weak self] in
+            guard let self,
+                  self.beginnerRuntime.pendingRewardStageAdvance,
+                  self.beginnerRuntime.rewardSelectedString == selectedString else { return }
+            self.beginnerRuntime.pendingRewardStageAdvance = false
+            self.beginnerRuntime.rewardSelectedString = nil
+            self.beginnerRuntime.rewardScheduledStrings = []
+            self.beginnerRuntime.rewardScheduledMIDINotes = []
+            self.beginnerRuntime.rewardScheduledNoteTextByString = [:]
+            self.beginnerRuntime.rewardSustainMultiplier = 3.0
+            self.advanceBeginnerScaleStage(afterCompletionFromString: selectedString, playTransitionNote: false)
         }
     }
 
@@ -199,8 +202,8 @@ extension BeginnerGameplayView {
         )
         prepareCurrentQuestion()
 
-        DispatchQueue.main.async {
-            beginnerRuntime.pendingSequentialRepeatDisplayText = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.beginnerRuntime.pendingSequentialRepeatDisplayText = nil
         }
     }
 
@@ -265,7 +268,7 @@ extension BeginnerGameplayView {
 
         // 3-beat delay has passed - stop the MIDI playback
         beginnerRuntime.pendingMidiStopDate = nil
-        midiEngine.stop()
+        audio.midiEngine.stop()
         isBackingTrackPlaying = false
     }
 
@@ -363,26 +366,26 @@ extension BeginnerGameplayView {
 
     func applyBeginnerBassTransposeForCurrentStage() {
         guard layoutMode == .beginner else {
-            midiEngine.setBassTransposeSemitones(0)
+            audio.midiEngine.setBassTransposeSemitones(0)
             return
         }
 
         if !beginnerRuntime.isDescendingPhase {
             if lessonStyle == .sequential {
                 let transposeSemitones = playEnableHighFrets ? max(beginnerRuntime.currentRound, 0) % 12 : max(beginnerRuntime.currentRound, 0)
-                midiEngine.setBassTransposeSemitones(transposeSemitones)
+                audio.midiEngine.setBassTransposeSemitones(transposeSemitones)
             } else {
-                midiEngine.setBassTransposeSemitones(beginnerCurrentBassSemitoneTarget)
+                audio.midiEngine.setBassTransposeSemitones(beginnerCurrentBassSemitoneTarget)
             }
             return
         }
 
         if beginnerRuntime.isDescendingPhase {
-            midiEngine.setBassTransposeSemitones(max(beginnerRuntime.currentRound, 0) % 12)
+            audio.midiEngine.setBassTransposeSemitones(max(beginnerRuntime.currentRound, 0) % 12)
             return
         }
 
-        midiEngine.setBassTransposeSemitones(0)
+        audio.midiEngine.setBassTransposeSemitones(0)
     }
 
     func ensureBeginnerRoundOneRevealSequenceStarted(currentDate: Date) {

@@ -147,6 +147,31 @@ final class BeginnerGameEngine {
     // MARK: - State accessor (extensions read/write state directly)
     var beginnerRuntime: BeginnerGameState { state }
 
+    // MARK: - Shared computed properties
+
+    var currentGenerator: any NoteSequenceGenerator { sequentialNoteGenerator }
+
+    var beatBPM: Int { audioSettings.startingBPM }
+
+    var isPhaseDescending: Bool { state.isDescendingPhase }
+
+    var modeVariant: GameplayModeVariant {
+        if layoutMode == .beginner {
+            return lessonStyle == .chord ? .chord : .freestyle
+        }
+        switch selectedMode {
+        case .beat: return .beat
+        case .chord: return .chord
+        case .mixed:
+            switch state.currentRound % 3 {
+            case 1: return .beat
+            case 2: return .chord
+            default: return .freestyle
+            }
+        case .freestyle, .oneHand, .twoHand: return .freestyle
+        }
+    }
+
     // MARK: - Default scale templates
     static let defaultScaleTemplates: [BeginnerStageTemplate] = [
         BeginnerStageTemplate(root: "E", titleSuffix: "m Pentatonic", intervals: [0, 3, 5, 7, 10, 12], bassSemitoneTarget: 0, endsCycle: false),
