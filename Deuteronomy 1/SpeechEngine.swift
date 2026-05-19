@@ -20,8 +20,8 @@ final class SpeechEngine {
 
     func playNotePrompt(_ note: String, volume: Double) {
         let spoken = note
-            .replacingOccurrences(of: "#", with: " sharp ")
-            .replacingOccurrences(of: "b", with: " flat ")
+            .replacingOccurrences(of: "♯", with: " sharp ")
+            .replacingOccurrences(of: "♭", with: " flat ")
             .replacingOccurrences(of: "+", with: " and ")
         speak(
             spoken,

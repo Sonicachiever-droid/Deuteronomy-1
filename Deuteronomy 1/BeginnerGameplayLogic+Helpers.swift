@@ -204,12 +204,12 @@ extension BeginnerGameEngine {
     
     func midiNoteValue(forNote note: String) -> Int? {
         let noteToMIDI: [String: Int] = [
-            "C": 60, "C#": 61, "Db": 61,
-            "D": 62, "D#": 63, "Eb": 63,
+            "C": 60, "C♯": 61, "D♭": 61,
+            "D": 62, "D♯": 63, "E♭": 63,
             "E": 64,
-            "F": 65, "F#": 66, "Gb": 66,
-            "G": 67, "G#": 68, "Ab": 68,
-            "A": 69, "A#": 70, "Bb": 70,
+            "F": 65, "F♯": 66, "G♭": 66,
+            "G": 67, "G♯": 68, "A♭": 68,
+            "A": 69, "A♯": 70, "B♭": 70,
             "B": 71
         ]
         return noteToMIDI[note]

@@ -28,8 +28,8 @@ final class SequentialNoteGenerator: ObservableObject, NoteSequenceGenerator {
     ]
 
     func generateNoteSequence(for fret: Int, useFlats: Bool, lowToHigh: Bool = true) {
-        let sharps = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
-        let flats  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"]
+        let sharps = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"]
+        let flats  = ["C","D♭","D","E♭","E","F","G♭","G","A♭","A","B♭","B"]
         let chromatic = useFlats ? flats : sharps
         var pairs: [(note: String, string: Int)] = []
         for entry in openStringPairs {

@@ -520,7 +520,7 @@ extension MaestroGameplayView {
             guitarNoteContainsAccidental(note) == correctIsAccidental &&
             note != lastCorrect
         }
-        return pool.randomElement() ?? (correctIsAccidental ? "C#" : "C")
+        return pool.randomElement() ?? (correctIsAccidental ? "C♯" : "C")
     }
 
     // MARK: - Menu / fretboard / audio

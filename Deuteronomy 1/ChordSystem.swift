@@ -72,17 +72,17 @@ struct FretNoteCalculator {
 
     // Chromatic scale starting from E (for semitone shifting)
     static let chromaticFromE = [
-        "E", "F", "F#", "G", "G#", "A", "A#", "B", "C", "C#", "D", "D#"
+        "E", "F", "F♯", "G", "G♯", "A", "A♯", "B", "C", "C♯", "D", "D♯"
     ]
 
     // Alternative with flats for enharmonic spelling
     static let chromaticFromEFlats = [
-        "E", "F", "Gb", "G", "Ab", "A", "Bb", "B", "C", "Db", "D", "Eb"
+        "E", "F", "G♭", "G", "A♭", "A", "B♭", "B", "C", "D♭", "D", "E♭"
     ]
 
     // Get the note at a given string and fret
     static func noteAt(string: Int, fret: Int, useFlats: Bool = false) -> String {
-        guard string >= 0 && string < openStrings.count else { return "?" }
+        guard string >= 0 && string < openStrings.count else { return "" }
 
         let openNote = openStrings[string]
         let chromatic = useFlats ? chromaticFromEFlats : chromaticFromE
