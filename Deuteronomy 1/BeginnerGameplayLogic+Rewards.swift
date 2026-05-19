@@ -305,6 +305,9 @@ extension BeginnerGameplayView {
             if let nextFret {
                 beginnerRuntime.currentRound = nextFret
                 beginnerRuntime.scaleCycleSemitoneOffset = nextFret
+                withAnimation(.easeInOut(duration: 1.3)) {
+                    beginnerRuntime.currentFretStart = nextFret
+                }
                 beginnerRuntime.scaleStageIndex = 0
                 beginnerRuntime.scaleSequenceIndex = 0
                 beginnerRuntime.pentatonicRevealCount = 0
