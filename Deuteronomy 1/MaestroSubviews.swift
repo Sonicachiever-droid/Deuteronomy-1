@@ -90,6 +90,31 @@ extension MaestroGameplayView {
         startButtonBlinkOn: Bool
     ) -> some View {
         let maestroTransportCenterY: CGFloat = lowerWhitePipingY + (proxyHeight - lowerWhitePipingY) * 0.28 + 17
+        let transportBackground: some View = RoundedRectangle(cornerRadius: 20, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: consoleSkin == .tweed ? [
+                        .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
+                    ] : [
+                        .goldLight, .goldMid, .goldDark, .goldMidtone
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
+            )
+            .overlay(
+                // Dark groove line in the middle
+                Rectangle()
+                    .fill(Color.black.opacity(0.15))
+                    .frame(height: 1)
+                    .frame(maxWidth: .infinity)
+                    .offset(y: 0)
+            )
+
         HStack(spacing: 6) {
             Button("START") { handleMaestroStartButton() }
                 .frame(minWidth: 58, minHeight: 34, maxHeight: 34)
@@ -133,28 +158,11 @@ extension MaestroGameplayView {
                 .accessibilityHint(A11y.Transport.resetHint)
         }
         .font(.system(size: 12, weight: .bold, design: .monospaced))
-        .foregroundStyle(Color.black.opacity(0.92))
+        .foregroundStyle(consoleSkin == .tweed ? Color.black : Color.black.opacity(0.92))
         .buttonStyle(.plain)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: consoleSkin == .tweed ? [
-                            .white, Color(red: 0.90, green: 0.90, blue: 0.90), .chromeDark, Color(red: 0.65, green: 0.65, blue: 0.65)
-                        ] : [
-                            .goldLight, .goldMid, .goldDark, .goldMidtone
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.black.opacity(0.26), lineWidth: 1.2)
-                )
-        )
+        .background(transportBackground)
         .frame(width: min((proxyWidth - 24) * 0.88, 370) * 0.72, height: 50)
         .position(x: proxyWidth / 2, y: maestroTransportCenterY)
         .opacity(codenameNemoEnabled ? 0 : 1)

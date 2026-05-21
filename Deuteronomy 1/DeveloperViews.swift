@@ -335,6 +335,18 @@ struct DeveloperConsoleFrame: View {
                 )
                 .padding(4)
             ZStack {
+                // Streak meter — behind all content (bottom-aligned)
+                if let lit = streakMeterLitSegments {
+                    DeveloperTVStreakMeterView(
+                        litColumns: lit,
+                        failureActive: streakMeterFailureActive,
+                        streakMultiplier: streakMultiplier
+                    )
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                }
+
                 if let clockText = speedRunClockText {
                     // Speed Run layout: wallet top-right, clock centred, multiplier flash centred on top.
                     ZStack {
@@ -587,17 +599,6 @@ struct DeveloperConsoleFrame: View {
             }
         .scaleEffect(isHintVisible ? 1.02 : 1.0)
         .frame(width: width, height: height)
-        .overlay(alignment: .bottom) {
-            if let lit = streakMeterLitSegments {
-                DeveloperTVStreakMeterView(
-                    litColumns: lit,
-                    failureActive: streakMeterFailureActive,
-                    streakMultiplier: streakMultiplier
-                )
-                .padding(.horizontal, 10)
-                .padding(.bottom, 8)
-            }
-        }
         .overlay {
             // In Speed Run mode the multiplier is shown inside the clock layout instead.
             if speedRunClockText == nil, let flashText = streakMultiplierFlashText {

@@ -125,11 +125,19 @@ struct GameplayControlPlateShell: View {
                     .stroke(Color.black.opacity(0.34), lineWidth: 1.0)
             )
             .overlay(
+                // Dark groove line in the middle
+                Rectangle()
+                    .fill(Color.black.opacity(0.15))
+                    .frame(height: 1)
+                    .frame(maxWidth: .infinity)
+                    .offset(y: 0)
+            )
+            .overlay(
                 Text(title)
                     .font(.system(size: 10.35, weight: .regular, design: .monospaced))
                     .fontWidth(.compressed)
                     .kerning(0.8)
-                    .foregroundStyle(Color.black.opacity(0.92))
+                    .foregroundStyle(consoleSkin == .tweed ? Color.black : Color.black.opacity(0.92))
             )
         }
         .buttonStyle(.plain)
