@@ -511,7 +511,6 @@ private struct Deuteronomy1MenuSheet: View {
                                 )
 
                                 let progressionLocked = (layoutMode == .beginner && lessonStyleRawValue == "chord")
-                                    || (layoutMode == .maestro && lessonStyleRawValue == "speedRun")
                                 GoldPickerRow(
                                     label: "Progression",
                                     options: [
