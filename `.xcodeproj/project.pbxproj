@@ -199,7 +199,7 @@
 					};
 				};
 			};
-			buildConfigurationList = E68CF2262F9F98CE008132A7 /* Build configuration list for PBXProject "Deuteronomy 1" */;
+			buildConfigurationList = E68CF2262F9F98CE008132A7 /* Build configuration list for PBXProject "`" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -558,7 +558,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E68CF2262F9F98CE008132A7 /* Build configuration list for PBXProject "Deuteronomy 1" */ = {
+		E68CF2262F9F98CE008132A7 /* Build configuration list for PBXProject "`" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E68CF2522F9F98D1008132A7 /* Debug */,

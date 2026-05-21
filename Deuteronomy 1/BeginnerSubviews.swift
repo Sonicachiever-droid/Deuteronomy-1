@@ -43,9 +43,7 @@ struct WhiteNoteBoxOverlay: View {
             // Six individual translucent backgrounds for each answer box
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
-                let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
-                let hasNoteToDisplay = displayedNoteText != nil && !displayedNoteText!.isEmpty
-                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect && hasNoteToDisplay
+                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect
                 RoundedRectangle(cornerRadius: UIConstants.answerBoxRadius, style: .continuous)
                     .fill(Color.black.opacity(0.42))
                     .frame(width: boxWidth, height: clampedBoxHeight)
@@ -56,8 +54,7 @@ struct WhiteNoteBoxOverlay: View {
             ForEach(0..<totalStrings, id: \.self) { index in
                 let stringNumber = totalStrings - index
                 let displayedNoteText = revealedNoteTextByString?[stringNumber] ?? revealedNoteText
-                let hasNoteToDisplay = displayedNoteText != nil && !displayedNoteText!.isEmpty
-                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect && hasNoteToDisplay
+                let isActive = activeSet.contains(stringNumber) && !shouldHideBoxesOnIncorrect
                 let displayText = displayedNoteText.map(guitarNoteDisplayText)
                 let noteIsAccidental = displayedNoteText.map(guitarNoteContainsAccidental) ?? false
                 let shouldUseAccidentalStyle = noteIsAccidental

@@ -25,10 +25,10 @@ struct MaestroStartupSequenceView: View {
             .animation(.easeInOut(duration: AnimationDurations.beatFlash), value: state.isVisible)
     }
 
-    static func state(for elapsed: TimeInterval) -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
+    static func state(for elapsed: TimeInterval, armedText: String = "Memorization Sequence Armed") -> (text: String, color: Color, isVisible: Bool, phase: Phase) {
         let armedFlashPeriod: TimeInterval = AnimationDurations.armedFlashPeriod
         let isVisible = Int(elapsed / armedFlashPeriod).isMultiple(of: 2)
-        return ("Memorization Sequence Armed", Color.green.opacity(0.98), isVisible, .armed)
+        return (armedText, Color.green.opacity(0.98), isVisible, .armed)
     }
 }
 

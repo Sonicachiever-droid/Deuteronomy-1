@@ -121,6 +121,40 @@ struct MaestroGameplayView: View {
     @State var streakMultiplier: Int = 1
     @State var streakMultiplierFlashText: String? = nil
 
+    // MARK: - Speed Run state
+    @State var speedRunStartDate: Date? = nil
+    @State var speedRunElapsed: TimeInterval = 0
+    @State var speedRunFinished: Bool = false
+    @AppStorage("deuteronomy1.speedRun.bestTime.12.highToLow") var speedRunBestTime12HighToLow: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.12.lowToHigh") var speedRunBestTime12LowToHigh: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.19.highToLow") var speedRunBestTime19HighToLow: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.19.lowToHigh") var speedRunBestTime19LowToHigh: Double = 0
+
+    /// Read-only route to the best time for the current high-frets + progression combination.
+    /// Writes go directly to the keyed @AppStorage vars in advanceGame (MaestroGameplayLogic.swift)
+    /// to avoid the value-type mutation error that a setter would cause from a logic extension.
+    var speedRunBestTime: Double {
+        switch (playEnableHighFrets, playProgression) {
+        case (false, "lowToHigh"): return speedRunBestTime12LowToHigh
+        case (true,  "highToLow"): return speedRunBestTime19HighToLow
+        case (true,  "lowToHigh"): return speedRunBestTime19LowToHigh
+        default:                   return speedRunBestTime12HighToLow
+        }
+    }
+
+    /// True when the user has selected Speed Run style in the Maestro menu.
+    var isSpeedRunMode: Bool { LessonStyle(rawValue: playLessonStyle) == .speedRun }
+
+    /// Formatted clock string for the live speed run timer display (m:ss.xx).
+    var speedRunClockText: String {
+        let t = speedRunElapsed
+        guard t > 0 else { return "0:00.00" }
+        let minutes = Int(t) / 60
+        let seconds = Int(t) % 60
+        let centis  = Int(t.truncatingRemainder(dividingBy: 1) * 100)
+        return String(format: "%d:%02d.%02d", minutes, seconds, centis)
+    }
+
     enum StartupSpeechPhase {
         case idle
         case pendingArmed
@@ -252,9 +286,20 @@ struct MaestroGameplayView: View {
             }
             autoPlayNextDate = nextOnAndThreeBeatDate(after: Date(), waitForDownbeat: true)
         }
+        .onChange(of: playLessonStyle) { _, _ in
+            // When the player switches lesson style (e.g. Standard ↔ Speed Run) from the
+            // menu while a game is in progress, reset to apply the new mode immediately.
+            guard !isCodeScreensaverMode else { return }
+            handleMaestroResetButton()
+        }
         .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { date in
             if isRoundPaused {
                 return
+            }
+
+            // Speed Run: tick elapsed time while the clock is running
+            if isSpeedRunMode, let startDate = speedRunStartDate, !speedRunFinished {
+                speedRunElapsed = date.timeIntervalSince(startDate)
             }
 
             if startupSequenceActivated {
@@ -708,7 +753,7 @@ struct MaestroGameplayView: View {
                 guard startupSequenceActivated else {
                     return ("", .clear, false, .armed)
                 }
-                return MaestroStartupSequenceView.state(for: startupSequenceElapsed)
+                return MaestroStartupSequenceView.state(for: startupSequenceElapsed, armedText: isSpeedRunMode ? "Speed Run Armed" : "Memorization Sequence Armed")
             }()
             let screensaverThumbState: ThumbGlowState = {
                 guard startupState.isVisible else { return .neutral }
@@ -773,7 +818,7 @@ struct MaestroGameplayView: View {
                     startupElapsed: startupSequenceElapsed,
                     showStartupSequence: startupSequenceActivated,
                     startupShowFullSequence: false,
-                    startupArmedText: "Memorization Sequence Armed",
+                    startupArmedText: isSpeedRunMode ? "Speed Run Armed" : "Memorization Sequence Armed",
                     beginnerRoundStatusText: nil,
                     centeredStatusMessage: nil,
                     centeredStatusColor: .clear,
@@ -793,7 +838,9 @@ struct MaestroGameplayView: View {
                     consoleSkin: consoleSkin,
                     streakMeterLitSegments: isCodeScreensaverMode ? nil : streakMeterLitSegments,
                     streakMeterFailureActive: streakMeterFailureActive,
-                    streakMultiplierFlashText: streakMultiplierFlashText
+                    streakMultiplier: streakMultiplier,
+                    streakMultiplierFlashText: streakMultiplierFlashText,
+                    speedRunClockText: (isSpeedRunMode && !isCodeScreensaverMode) ? speedRunClockText : nil
                 )
                 .position(x: proxy.size.width / 2, y: topStatusCenterY)
                 .allowsHitTesting(false)
@@ -923,9 +970,9 @@ struct MaestroGameplayView: View {
                 GameplayControlPlateShell(
                     isMenuExpanded: gameplayMenuExpanded,
                     isStartupInputLockActive: false,
-                    isAutoplayActive: autoPlayEnabled,
+                    isAutoplayActive: isSpeedRunMode ? false : autoPlayEnabled,
                     onAutoplay: {
-                        autoPlayEnabled.toggle()
+                        if !isSpeedRunMode { autoPlayEnabled.toggle() }
                     },
                     onFretboard: {
                         handleFretboardButtonPress()
@@ -1060,7 +1107,7 @@ struct MaestroGameplayView: View {
         let startupState: (text: String, color: Color, isVisible: Bool, phase: MaestroStartupSequenceView.Phase) = {
             guard isCodeScreensaverMode else { return ("", .clear, false, .armed) }
             guard startupSequenceActivated else { return ("", .clear, false, .armed) }
-            return MaestroStartupSequenceView.state(for: startupSequenceElapsed)
+            return MaestroStartupSequenceView.state(for: startupSequenceElapsed, armedText: isSpeedRunMode ? "Speed Run Armed" : "Memorization Sequence Armed")
         }()
         let screensaverThumbState: ThumbGlowState = {
             guard startupState.isVisible else { return .neutral }
@@ -1189,7 +1236,7 @@ struct MaestroGameplayView: View {
                 startupElapsed: startupSequenceElapsed,
                 showStartupSequence: startupSequenceActivated,
                 startupShowFullSequence: false,
-                startupArmedText: "Memorization Sequence Armed",
+                startupArmedText: isSpeedRunMode ? "Speed Run Armed" : "Memorization Sequence Armed",
                 beginnerRoundStatusText: nil,
                 centeredStatusMessage: nil,
                 centeredStatusColor: .clear,
@@ -1209,7 +1256,9 @@ struct MaestroGameplayView: View {
                 consoleSkin: consoleSkin,
                 streakMeterLitSegments: isCodeScreensaverMode ? nil : streakMeterLitSegments,
                 streakMeterFailureActive: streakMeterFailureActive,
-                streakMultiplierFlashText: streakMultiplierFlashText
+                streakMultiplier: streakMultiplier,
+                streakMultiplierFlashText: streakMultiplierFlashText,
+                speedRunClockText: (isSpeedRunMode && !isCodeScreensaverMode) ? speedRunClockText : nil
             )
             .position(x: screenCenterX, y: consoleCenterY)
             .allowsHitTesting(false)
@@ -1350,8 +1399,8 @@ struct MaestroGameplayView: View {
             GameplayControlPlateShell(
                 isMenuExpanded: gameplayMenuExpanded,
                 isStartupInputLockActive: false,
-                isAutoplayActive: autoPlayEnabled,
-                onAutoplay: { autoPlayEnabled.toggle() },
+                isAutoplayActive: isSpeedRunMode ? false : autoPlayEnabled,
+                onAutoplay: { if !isSpeedRunMode { autoPlayEnabled.toggle() } },
                 onFretboard: { handleFretboardButtonPress() },
                 onToggleMenu: {
                     withAnimation(.easeInOut(duration: 0.18)) {
@@ -1364,6 +1413,20 @@ struct MaestroGameplayView: View {
             .scaleEffect(0.8, anchor: .bottom)
             .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
             .padding(.bottom, 0)
+        }
+        .overlay {
+            // Speed Run result overlay — shown when the run completes.
+            // Tapping anywhere dismisses it and resets for a new run.
+            if isSpeedRunMode && speedRunFinished {
+                SpeedRunResultOverlay(
+                    elapsed: speedRunElapsed,
+                    bestTime: speedRunBestTime,
+                    consoleSkin: consoleSkin
+                )
+                .contentShape(Rectangle())
+                .onTapGesture { handleMaestroResetButton() }
+                .zIndex(200)
+            }
         }
     }
 

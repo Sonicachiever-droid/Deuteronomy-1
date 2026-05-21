@@ -264,10 +264,28 @@ struct DeveloperConsoleFrame: View {
     var consoleSkin: ConsoleSkin = .classic
     var streakMeterLitSegments: Int? = nil
     var streakMeterFailureActive: Bool = false
+    var streakMultiplier: Int = 1
     var streakMultiplierFlashText: String? = nil
+    var speedRunClockText: String? = nil
 
     private var isHintVisible: Bool {
         promptText.lowercased().hasPrefix("hint:")
+    }
+
+    /// Notification text colour matching the active multiplier tier.
+    private var multiplierColor: Color {
+        switch streakMultiplier {
+        case 2:  return Color(red: 1.00, green: 0.85, blue: 0.10) // yellow-gold
+        case 3:  return Color(red: 1.00, green: 0.50, blue: 0.05) // orange
+        default: return Color.yellow
+        }
+    }
+    private var multiplierGlowColor: Color {
+        switch streakMultiplier {
+        case 2:  return Color.yellow
+        case 3:  return Color.orange
+        default: return Color.yellow
+        }
     }
 
     var body: some View {
@@ -317,7 +335,53 @@ struct DeveloperConsoleFrame: View {
                 )
                 .padding(4)
             ZStack {
-                if isScreensaverMode {
+                if let clockText = speedRunClockText {
+                    // Speed Run layout: wallet top-right, clock centred, multiplier flash centred on top.
+                    ZStack {
+                        // Wallet — top-right with padding matching normal console insets
+                        VStack(spacing: 0) {
+                            HStack {
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("WALLET")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(Color.white.opacity(0.9))
+                                    Text(bankText)
+                                        .font(.system(size: 16, weight: .black, design: .monospaced))
+                                        .foregroundStyle(Color.green.opacity(0.96))
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.top, 10)
+                            Spacer(minLength: 0)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                        // Clock — centred
+                        Text(clockText)
+                            .font(.system(size: min(width * 0.18, 44), weight: .black, design: .monospaced))
+                            .foregroundStyle(Color.white)
+                            .monospacedDigit()
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+                        // Multiplier notification — persistent, centred, tier-coloured
+                        if let mult = streakMultiplierFlashText {
+                            Text(mult)
+                                .font(.system(size: min(width * 0.11, 28), weight: .black, design: .monospaced))
+                                .foregroundStyle(multiplierColor.opacity(0.96))
+                                .shadow(color: multiplierGlowColor.opacity(0.7), radius: 10, x: 0, y: 0)
+                                .shadow(color: multiplierGlowColor.opacity(0.4), radius: 20, x: 0, y: 0)
+                                .multilineTextAlignment(.center)
+                                .transition(.opacity.combined(with: .scale(scale: 1.12)))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.25), value: streakMultiplierFlashText)
+                    .animation(.easeInOut(duration: 0.3), value: streakMultiplier)
+                    .allowsHitTesting(false)
+                } else if isScreensaverMode {
                             ZStack {
                                 if !showStartupSequence {
                                     DeveloperCodeRunnerView()
@@ -527,19 +591,21 @@ struct DeveloperConsoleFrame: View {
             if let lit = streakMeterLitSegments {
                 DeveloperTVStreakMeterView(
                     litColumns: lit,
-                    failureActive: streakMeterFailureActive
+                    failureActive: streakMeterFailureActive,
+                    streakMultiplier: streakMultiplier
                 )
                 .padding(.horizontal, 10)
                 .padding(.bottom, 8)
             }
         }
         .overlay {
-            if let flashText = streakMultiplierFlashText {
+            // In Speed Run mode the multiplier is shown inside the clock layout instead.
+            if speedRunClockText == nil, let flashText = streakMultiplierFlashText {
                 Text(flashText)
                     .font(.system(size: min(width * 0.11, 28), weight: .black, design: .monospaced))
-                    .foregroundStyle(Color.yellow.opacity(0.96))
-                    .shadow(color: Color.yellow.opacity(0.7), radius: 10, x: 0, y: 0)
-                    .shadow(color: Color.orange.opacity(0.5), radius: 20, x: 0, y: 0)
+                    .foregroundStyle(multiplierColor.opacity(0.96))
+                    .shadow(color: multiplierGlowColor.opacity(0.7), radius: 10, x: 0, y: 0)
+                    .shadow(color: multiplierGlowColor.opacity(0.4), radius: 20, x: 0, y: 0)
                     .multilineTextAlignment(.center)
                     .transition(.opacity.combined(with: .scale(scale: 1.12)))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -547,6 +613,7 @@ struct DeveloperConsoleFrame: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: streakMultiplierFlashText)
+        .animation(.easeInOut(duration: 0.3), value: streakMultiplier)
     }
 
     private func hintFontSize(for text: String) -> CGFloat {
@@ -594,10 +661,35 @@ struct DeveloperConsoleFrame: View {
 struct DeveloperTVStreakMeterView: View {
     let litColumns: Int
     let failureActive: Bool
+    var streakMultiplier: Int = 1
 
     private let columnsPerRow: Int = 20
     private let numRows: Int = 3
     private var totalSegments: Int { columnsPerRow * numRows }
+
+    // Segment fill/stroke/shadow colours keyed to the active multiplier tier.
+    // 1× = green, 2× = yellow-gold, 3× = orange
+    private var tierFill: Color {
+        switch streakMultiplier {
+        case 2:  return Color(red: 1.00, green: 0.85, blue: 0.10).opacity(0.96) // yellow-gold
+        case 3:  return Color(red: 1.00, green: 0.50, blue: 0.05).opacity(0.96) // orange
+        default: return Color(red: 0.40, green: 1.00, blue: 0.22).opacity(0.96) // green
+        }
+    }
+    private var tierStroke: Color {
+        switch streakMultiplier {
+        case 2:  return Color(red: 0.60, green: 0.45, blue: 0.02).opacity(0.9)
+        case 3:  return Color(red: 0.65, green: 0.22, blue: 0.01).opacity(0.9)
+        default: return Color(red: 0.08, green: 0.38, blue: 0.04).opacity(0.88)
+        }
+    }
+    private var tierShadow: Color {
+        switch streakMultiplier {
+        case 2:  return Color.yellow.opacity(0.55)
+        case 3:  return Color.orange.opacity(0.6)
+        default: return Color.green.opacity(0.55)
+        }
+    }
 
     var body: some View {
         let litCount = failureActive ? totalSegments : min(max(litColumns, 0), totalSegments)
@@ -611,16 +703,16 @@ struct DeveloperTVStreakMeterView: View {
                         let fillColor: Color = {
                             guard isLit else { return Color(red: 0.10, green: 0.12, blue: 0.10).opacity(0.5) }
                             if failureActive { return Color(red: 1.0, green: 0.22, blue: 0.18).opacity(0.96) }
-                            return Color(red: 0.40, green: 1.0, blue: 0.22).opacity(0.96)
+                            return tierFill
                         }()
                         let strokeColor: Color = {
                             guard isLit else { return Color.white.opacity(0.06) }
                             if failureActive { return Color(red: 0.7, green: 0.05, blue: 0.04).opacity(0.9) }
-                            return Color(red: 0.08, green: 0.38, blue: 0.04).opacity(0.88)
+                            return tierStroke
                         }()
                         let shadowColor: Color = {
                             guard isLit else { return .clear }
-                            return failureActive ? Color.red.opacity(0.6) : Color.green.opacity(0.55)
+                            return failureActive ? Color.red.opacity(0.6) : tierShadow
                         }()
 
                         RoundedRectangle(cornerRadius: 1, style: .continuous)
@@ -636,5 +728,6 @@ struct DeveloperTVStreakMeterView: View {
                 }
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: streakMultiplier)
     }
 }

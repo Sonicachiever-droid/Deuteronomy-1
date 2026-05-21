@@ -106,11 +106,23 @@ extension MaestroGameplayView {
     // MARK: - Game session
 
     func startGameFromBeginning(animateNeckSlideFromStartup: Bool = false) {
-        currentRound = playStartingFret
+        // Speed Run always starts at fret 0 ascending with 1 rep per fret,
+        // regardless of the user's stored starting fret / direction / infinite reps settings.
+        if isSpeedRunMode {
+            currentRound = 0
+            repetitionsRemainingAtFret = 1
+            isDescendingPhase = false
+            autoPlayEnabled = false
+            speedRunStartDate = nil
+            speedRunElapsed = 0
+            speedRunFinished = false
+        } else {
+            currentRound = playStartingFret
+            repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
+            isDescendingPhase = isPhaseDescending
+        }
         applyTempoForRound(currentRound)
         roundStringIndex = 0
-        repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
-        isDescendingPhase = isPhaseDescending
         if animateNeckSlideFromStartup {
             // Mirror BeginnerGameplayView: jump nut/neck off-screen, then animate slide-in.
             currentFretStart = isDescendingPhase ? maxFretOffset : minFretOffset
@@ -206,19 +218,13 @@ extension MaestroGameplayView {
             let newLit = prevLit + 1
             streakMeterLitSegments = newLit == totalSegments ? 0 : newLit
 
-            // Multiplier thresholds — trigger on crossing 25 and 50
+            // Multiplier thresholds — shown persistently until a wrong answer or reset clears them
             if newLit == 25 {
                 streakMultiplier = 2
                 streakMultiplierFlashText = "2× MULTIPLIER"
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                    if self.streakMultiplierFlashText == "2× MULTIPLIER" { self.streakMultiplierFlashText = nil }
-                }
             } else if newLit == 50 {
                 streakMultiplier = 3
                 streakMultiplierFlashText = "3× MULTIPLIER"
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                    if self.streakMultiplierFlashText == "3× MULTIPLIER" { self.streakMultiplierFlashText = nil }
-                }
             }
             lastResolvedCorrectNote = currentCorrectNote
             lastResolvedCorrectString = currentPromptStrings.first
@@ -390,34 +396,65 @@ extension MaestroGameplayView {
             balanceDollars += payout
         }
 
+        // Speed Run: start the timer on the very first correct player answer.
+        if isSpeedRunMode && !fromAutoPlay && speedRunStartDate == nil {
+            speedRunStartDate = .now
+        }
+
         // Advance to next string in round
         if roundStringIndex < activeStringOrder.count - 1 {
             roundStringIndex += 1
         } else {
             // Pass through all strings complete — decrement repetition counter
             roundStringIndex = 0
-            if playInfiniteRepetitions {
+            // Speed Run always decrements (never infinite); otherwise respect playInfiniteRepetitions.
+            if !isSpeedRunMode && playInfiniteRepetitions {
                 // Infinite mode: never decrement, stay at current fret
             } else {
                 repetitionsRemainingAtFret -= 1
                 if repetitionsRemainingAtFret <= 0 {
-                    repetitionsRemainingAtFret = max(playRepetitions, 1)
+                    // Reset rep counter for next fret (Speed Run: always 1).
+                    repetitionsRemainingAtFret = isSpeedRunMode ? 1 : max(playRepetitions, 1)
                     // Clear answered notes when neck shifts to new fret
                     answeredNotesByStringAtCurrentFret = [:]
-                    if !isPhaseDescending {
+                    if !isDescendingPhase {
                         if currentRound < (playEnableHighFrets ? 19 : 12) {
                             currentRound += 1
                         } else {
-                            // At upper boundary - reverse direction
+                            // At upper boundary - reverse direction.
+                            // Speed Run: do not write back to playDirectionRawValue (would corrupt stored setting).
                             isDescendingPhase = true
-                            playDirectionRawValue = LessonDirection.descending.rawValue
+                            if !isSpeedRunMode { playDirectionRawValue = LessonDirection.descending.rawValue }
                             currentRound = (playEnableHighFrets ? 19 : 12) - 1
                         }
                     } else {
                         if currentRound > 0 {
                             currentRound -= 1
                         } else {
-                            // At lower boundary - reverse direction
+                            // At lower boundary (fret 0 descending).
+                            if isSpeedRunMode {
+                                // Speed Run complete — stop the clock, record best time, freeze game.
+                                // Guard: startDate must be set (timer started on first correct answer).
+                                // If somehow nil, skip — avoids recording a bogus 0-second best time.
+                                guard let startDate = speedRunStartDate else { return }
+                                let elapsed = Date.now.timeIntervalSince(startDate)
+                                speedRunElapsed = elapsed
+                                let currentBest = speedRunBestTime
+                                if speedRunIsNewBest(elapsed: elapsed, bestTime: currentBest) {
+                                    // Write to the correct per-category key directly
+                                    switch (playEnableHighFrets, playProgression) {
+                                    case (false, "lowToHigh"): speedRunBestTime12LowToHigh = elapsed
+                                    case (true,  "highToLow"): speedRunBestTime19HighToLow = elapsed
+                                    case (true,  "lowToHigh"): speedRunBestTime19LowToHigh = elapsed
+                                    default:                   speedRunBestTime12HighToLow = elapsed
+                                    }
+                                }
+                                speedRunFinished = true
+                                midiEngine.stop()
+                                isResolvingAnswer = false
+                                return  // skip prepareCurrentQuestion — game is frozen until reset
+                            }
+                            // Normal mode: reverse direction.
                             isDescendingPhase = false
                             playDirectionRawValue = LessonDirection.ascending.rawValue
                             currentRound = 1
@@ -489,7 +526,8 @@ extension MaestroGameplayView {
 
     func restartAtCurrentFret() {
         roundStringIndex = 0
-        repetitionsRemainingAtFret = playInfiniteRepetitions ? Int.max : max(playRepetitions, 1)
+        // Speed Run always uses 1 rep per fret — never inherit infinite reps setting.
+        repetitionsRemainingAtFret = isSpeedRunMode ? 1 : (playInfiniteRepetitions ? Int.max : max(playRepetitions, 1))
         answeredNotesByStringAtCurrentFret = [:]
         activePickedStringNumbers = [1]
         currentPromptStrings = [1]

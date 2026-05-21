@@ -5,6 +5,7 @@ import SwiftUI
 enum LessonStyle: String, CaseIterable {
     case chord
     case sequential
+    case speedRun
 }
 
 // MARK: - Game Constants (replaces all magic numbers)

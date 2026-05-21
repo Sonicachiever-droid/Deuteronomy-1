@@ -41,7 +41,7 @@ struct OverviewPageView: View {
                                 Text("BEGINNER CONSOLE")
                                     .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                     .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
-                                Text("Six answer buttons, one per string, each showing a note name. Tap the correct note for the highlighted string. Notes are revealed progressively before each round begins.")
+                                Text("Six answer buttons, one per string, each labelled with a note name. Tap the correct string for each note as it is called. Notes are revealed one by one before each round so you can study them first.\n\nTwo lesson styles: Sequential works through each string individually. Chord works through all strings of a chord shape together, building the full chord note by note.")
                                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .foregroundColor(.white.opacity(0.88))
                             }
@@ -49,7 +49,7 @@ struct OverviewPageView: View {
                                 Text("MAESTRO CONSOLE")
                                     .font(.system(size: 14, weight: .semibold, design: .monospaced))
                                     .foregroundColor(Color(red: 0.95, green: 0.82, blue: 0.47))
-                                Text("No hints. Two answer buttons show note names — identify the correct one from memory. Wrong answers restart the current fret. A more demanding test of recall.")
+                                Text("No hints. Two answer buttons show note names — identify the correct one from memory. Wrong answers restart the current fret. A more demanding test of recall.\n\nSpeed Run mode (select in PLAY menu) races you through every fret from 0 to the top and back down to 0 against the clock. Scoring, streaks, and multipliers all apply. Your best time for each category is saved to the HOME tab.")
                                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .foregroundColor(.white.opacity(0.88))
                             }
@@ -58,17 +58,17 @@ struct OverviewPageView: View {
 
                     // Section: Scoring
                     OverviewSection(title: "SCORING") {
-                        Text("Correct answers earn dollars. Beginner earns $1 per correct note. Maestro earns $2. Wrong answers do not cost you — the fret simply restarts. Your wallet accumulates across the session. Maintain a streak of correct answers to win multipliers and earn even more points.")
+                        Text("Correct answers earn dollars. Beginner earns $1 per correct note. Maestro earns $2. Wrong answers do not cost you — the fret simply restarts. Your wallet accumulates across the session. Build a streak of consecutive correct answers to unlock multipliers and earn more per note.")
                     }
 
                     // Section: Rounds & Frets
                     OverviewSection(title: "ROUNDS & FRETS") {
-                        Text("One round covers all strings on one fret. Complete a round to advance to the next fret. Fret 0 is open strings. The game moves through all 12 frets by default, or up to fret 19 if you have purchased High Frets from the HOME tab.")
+                        Text("One round covers all six strings on one fret. Complete a round to advance to the next fret. Fret 0 is open strings. The game moves up to fret 12 by default, then reverses back down — or up to fret 19 if you have purchased High Frets. Direction and starting fret can be changed in the PLAY tab.")
                     }
 
                     // Section: Settings
                     OverviewSection(title: "SETTINGS") {
-                        Text("Open MENU during play to access four tabs: HOME (wallet, balance, purchasable upgrades like High Frets and Landscape Mode, console skins), PLAY (starting fret, repetitions, direction, progression), GUIDE (quick reference), and AUDIO (guitar tone, tempo, volume).")
+                        Text("Open MENU during play to access four tabs.\n\nHOME — wallet, balance, purchasable upgrades (High Frets, Landscape Mode), and console skins.\n\nPLAY — starting fret, repetitions per fret, direction, progression (High → Low or Low → High), and Maestro style (Standard or Speed Run).\n\nGUIDE — quick note reference.\n\nAUDIO — guitar tone, tempo, and volume.")
                     }
 
                     // Footer

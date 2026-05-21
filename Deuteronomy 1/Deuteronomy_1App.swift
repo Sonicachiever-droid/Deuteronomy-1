@@ -420,6 +420,7 @@ private struct Deuteronomy1MenuSheet: View {
                                 .accessibilityLabel("Learn the game guide")
                                 .accessibilityHint("Return to the welcome screen to learn how to play")
                             }
+                            SpeedRunRecordsSection(gold: gold)
 
                         case .learn:
                             MenuSection(title: "LESSON SETUP", gold: gold) {
@@ -433,24 +434,39 @@ private struct Deuteronomy1MenuSheet: View {
                                         selection: $lessonStyleRawValue
                                     )
                                 }
+                                if layoutMode == .maestro {
+                                    GoldPickerRow(
+                                        label: "Style",
+                                        options: [
+                                            (label: "Standard", value: "sequential"),
+                                            (label: "Speed Run", value: "speedRun")
+                                        ],
+                                        selection: $lessonStyleRawValue
+                                    )
+                                }
+
+                                // Speed Run controls its own traversal — lock all options that don't apply
+                                let speedRunLocked = layoutMode == .maestro && lessonStyleRawValue == "speedRun"
 
                                 Stepper("Repetitions: \(repetitionDisplay)", value: $repetitions, in: 1...8)
-                                    .disabled(infiniteRepetitions)
-                                    .foregroundColor(.white)
+                                    .disabled(infiniteRepetitions || speedRunLocked)
+                                    .foregroundColor(speedRunLocked ? .white.opacity(0.3) : .white)
                                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.repetitionsStepper)
                                     .accessibilityValue(A11y.Settings.repetitionsValue(repetitions))
 
                                 Toggle("Infinite Repetitions", isOn: $infiniteRepetitions)
-                                    .foregroundColor(.white)
+                                    .disabled(speedRunLocked)
+                                    .foregroundColor(speedRunLocked ? .white.opacity(0.3) : .white)
                                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.infiniteRepsToggle)
                                     .accessibilityHint(A11y.Settings.infiniteRepsHint)
 
                                 Stepper("Starting Fret: \(startingFret)", value: $startingFret, in: 0...(highFretsPurchased && enableHighFrets ? 19 : 12))
-                                    .foregroundColor(.white)
+                                    .disabled(speedRunLocked)
+                                    .foregroundColor(speedRunLocked ? .white.opacity(0.3) : .white)
                                     .font(.system(size: 16, weight: .medium, design: .monospaced))
                                     .tint(gold)
                                     .accessibilityLabel(A11y.Settings.startingFretStepper)
@@ -475,15 +491,18 @@ private struct Deuteronomy1MenuSheet: View {
                                     selection: Binding(
                                         get: { directionRawValue },
                                         set: { newValue in
+                                            guard !speedRunLocked else { return }
                                             let isDescending = newValue == LessonDirection.descending.rawValue
                                             if isDescending && descendingLocked { return }
                                             if !isDescending && ascendingLocked { return }
                                             directionRawValue = newValue
                                         }
-                                    )
+                                    ),
+                                    disabled: speedRunLocked
                                 )
 
-                                let progressionLocked = layoutMode == .beginner && lessonStyleRawValue == "chord"
+                                let progressionLocked = (layoutMode == .beginner && lessonStyleRawValue == "chord")
+                                    || (layoutMode == .maestro && lessonStyleRawValue == "speedRun")
                                 GoldPickerRow(
                                     label: "Progression",
                                     options: [
@@ -582,5 +601,59 @@ private struct Deuteronomy1MenuSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Speed Run Records Section
+
+private struct SpeedRunRecordsSection: View {
+    let gold: Color
+
+    @AppStorage("numbers3.purchased.highFrets") private var highFretsPurchased: Bool = false
+    @AppStorage("deuteronomy1.speedRun.bestTime.12.highToLow") private var best12HighToLow: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.12.lowToHigh") private var best12LowToHigh: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.19.highToLow") private var best19HighToLow: Double = 0
+    @AppStorage("deuteronomy1.speedRun.bestTime.19.lowToHigh") private var best19LowToHigh: Double = 0
+
+    var body: some View {
+        MenuSection(title: "SPEED RUN RECORDS", gold: gold) {
+            VStack(spacing: 0) {
+                SpeedRunRecordRow(label: "Frets 0–12  High → Low", time: best12HighToLow, gold: gold, locked: false)
+                SpeedRunRecordRow(label: "Frets 0–12  Low → High", time: best12LowToHigh, gold: gold, locked: false)
+                SpeedRunRecordRow(label: "Frets 0–19  High → Low", time: best19HighToLow, gold: gold, locked: !highFretsPurchased)
+                SpeedRunRecordRow(label: "Frets 0–19  Low → High", time: best19LowToHigh, gold: gold, locked: !highFretsPurchased)
+            }
+        }
+    }
+}
+
+private struct SpeedRunRecordRow: View {
+    let label: String
+    let time: Double
+    let gold: Color
+    let locked: Bool
+
+    private var timeText: String { formatSpeedRunTime(time) }
+    private var isSet: Bool { time > 0 }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label)
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundColor(locked ? .white.opacity(0.3) : .white.opacity(0.7))
+                if locked {
+                    Text("requires High Frets")
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.25))
+                }
+            }
+            Spacer()
+            Text(locked ? "--:--.--" : timeText)
+                .font(.system(size: 14, weight: .black, design: .monospaced))
+                .foregroundColor(locked ? .white.opacity(0.15) : (isSet ? gold : .white.opacity(0.25)))
+                .monospacedDigit()
+        }
+        .padding(.vertical, 5)
     }
 }
