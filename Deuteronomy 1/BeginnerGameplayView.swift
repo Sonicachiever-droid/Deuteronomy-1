@@ -671,7 +671,11 @@ struct BeginnerGameplayView: View {
             .onChange(of: playStartingFret) { _, newValue in engine.playStartingFret = newValue }
             .onChange(of: playDirectionRawValue) { _, newValue in engine.playDirectionRawValue = newValue }
             .onChange(of: playEnableHighFrets) { _, newValue in engine.playEnableHighFrets = newValue }
-            .onChange(of: playLessonStyle) { _, newValue in engine.lessonStyle = LessonStyle(rawValue: newValue) ?? .sequential }
+            .onChange(of: playLessonStyle) { _, newValue in
+                engine.lessonStyle = LessonStyle(rawValue: newValue) ?? .sequential
+                guard !engine.isCodeScreensaverMode else { return }
+                engine.handleRoundResetButton()
+            }
             .onChange(of: playProgression) { _, newValue in engine.playProgression = newValue }
             .onChange(of: engine.walletDollars) { _, newValue in walletDollars = newValue }
             .onChange(of: engine.balanceDollars) { _, newValue in balanceDollars = newValue }

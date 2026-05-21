@@ -357,26 +357,26 @@ struct DeveloperConsoleFrame: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-                        // Clock — centred
-                        Text(clockText)
-                            .font(.system(size: min(width * 0.18, 44), weight: .black, design: .monospaced))
-                            .foregroundStyle(Color.white)
-                            .monospacedDigit()
-                            .minimumScaleFactor(0.5)
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
-                        // Multiplier notification — persistent, centred, tier-coloured
-                        if let mult = streakMultiplierFlashText {
-                            Text(mult)
-                                .font(.system(size: min(width * 0.11, 28), weight: .black, design: .monospaced))
-                                .foregroundStyle(multiplierColor.opacity(0.96))
-                                .shadow(color: multiplierGlowColor.opacity(0.7), radius: 10, x: 0, y: 0)
-                                .shadow(color: multiplierGlowColor.opacity(0.4), radius: 20, x: 0, y: 0)
-                                .multilineTextAlignment(.center)
-                                .transition(.opacity.combined(with: .scale(scale: 1.12)))
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                        // Clock + multiplier — stacked vertically, centred
+                        VStack(spacing: 2) {
+                            // Multiplier notification — above clock, tier-coloured
+                            if let mult = streakMultiplierFlashText {
+                                Text(mult)
+                                    .font(.system(size: min(width * 0.10, 22), weight: .black, design: .monospaced))
+                                    .foregroundStyle(multiplierColor.opacity(0.96))
+                                    .shadow(color: multiplierGlowColor.opacity(0.7), radius: 10, x: 0, y: 0)
+                                    .shadow(color: multiplierGlowColor.opacity(0.4), radius: 20, x: 0, y: 0)
+                                    .multilineTextAlignment(.center)
+                                    .transition(.opacity.combined(with: .scale(scale: 1.12)))
+                            }
+                            Text(clockText)
+                                .font(.system(size: min(width * 0.18, 44), weight: .black, design: .monospaced))
+                                .foregroundStyle(Color.white)
+                                .monospacedDigit()
+                                .minimumScaleFactor(0.5)
+                                .lineLimit(1)
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
                     .animation(.easeInOut(duration: 0.25), value: streakMultiplierFlashText)
                     .animation(.easeInOut(duration: 0.3), value: streakMultiplier)

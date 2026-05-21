@@ -1,5 +1,57 @@
 # Deuteronomy 1 - Build Notes
 
+## Standing Orders — Read This First, Every Session
+
+These are non-negotiable rules. They apply to every task, every session, without exception.
+
+### 1. Never commit unless explicitly told to
+Do not run `git add` or `git commit` for any reason until the user says "commit" or "go ahead and commit". Not after a fix. Not after a build succeeds. Not after an audit. Wait to be told.
+
+### 2. Never assume a change is isolated
+Every change to shared state, shared UI components, or shared keys has side effects in both consoles, both orientations, and all lesson styles. Before touching anything, ask: what else reads or writes this? Walk through the full surface area before and after the change.
+
+### 3. Before any UI change — walk all pickers in both consoles
+Open the PLAY tab mentally for Beginner and Maestro. Confirm every picker still has a valid selection. Confirm disabled states are correct for every style combination. This must be done before marking a task complete, not after the user finds a problem during testing.
+
+### 4. Build before AND after every change
+A passing build before confirms the baseline. A passing build after confirms nothing was broken. Do not skip either.
+
+### 5. Do not add code without considering what it breaks
+When adding a new enum case, a new parameter, a new key, or a new mode — immediately enumerate every site that already handles the existing cases and check whether the new case is handled correctly there too.
+
+### 6. Audits are not optional
+When the user asks for an audit, read every modified file in full. Do not skim. Do not summarise from memory. Actually read the current state of the file.
+
+### 7. Do not make assumptions about desired behavior
+Execute exactly as specified. When details are ambiguous, ask for clarification before doing anything.
+
+### 8. Do not make code changes without explicit user confirmation
+State the plan with all explicit directions given. Ask for permission before implementing. Never switch from planning to code without confirmation.
+
+### 9. Do not modify Beginner mode against clear instructions
+Beginner mode is separate from Maestro. Changes to one must not bleed into the other unless explicitly requested.
+
+### 10. Never lie about what the user said
+If unsure what was asked, say so. Do not paraphrase instructions in a way that changes their meaning.
+
+### 11. Before fixing any error — investigate first
+- Read the compiler error carefully. What is it actually complaining about?
+- Check the actual function/struct signature in the source files.
+- Verify types match what is expected.
+- Do not guess. Find the root cause before touching code.
+- Start with the simplest diagnostic step.
+
+### 12. First-principles engineering (always active)
+- Reason explicitly from first principles: break problems down to fundamental truths before proposing solutions.
+- Question every assumption. Never accept conventions without justification.
+- Prefer the simplest, most robust solution that preserves existing behavior. Complexity is the enemy.
+- Avoid novelty for its own sake — no clever one-liners, over-abstractions, or tricks unless they provably reduce risk.
+- Be concise. Do not ramble or enter reasoning loops.
+- For every code change: explain impact, which invariants are preserved, how to test it, how to roll it back, and why it is the minimal change.
+- If a problem is simple, give the boring, obvious, safe answer first. Only escalate if clearly justified.
+
+---
+
 ## Current Shipped Build
 - **Version**: 1.3
 - **Build**: 6
@@ -39,9 +91,13 @@ These are the places most likely to cause subtle bugs when adding new features.
 - Valid Beginner values: `"sequential"`, `"chord"`
 - Valid Maestro values: `"sequential"`, `"speedRun"`
 - `"chord"` is Beginner-only. `"speedRun"` is Maestro-only. `"sequential"` is valid in both.
-- Both Style pickers use a coercing `Binding` (in `Deuteronomy_1App.swift`) that maps an out-of-console value to `"sequential"` on read.
-- **Risk**: any new lesson style added to either console must be added to both coercion guards, or the other console's picker will show no selection.
-- **Test after every style-related change**: switch Beginner→Maestro→Beginner and confirm the Style picker always has one button highlighted.
+- Coercing `Binding` is applied in **three places** in `Deuteronomy_1App.swift` — all three must be kept in sync:
+  1. `playLessonStyle` passed to `BeginnerGameplayView` construction (line ~91) — coerces to `"sequential"` if value is not a valid Beginner style
+  2. `playLessonStyle` passed to `MaestroGameplayView` construction (line ~113) — coerces to `"sequential"` if value is not a valid Maestro style
+  3. The Style pickers inside `Deuteronomy1MenuSheet` — same coercion for display
+- **Risk**: if coercion is only applied to the picker and not the view construction binding, the picker looks correct but the game launches with the wrong style.
+- **Risk**: any new lesson style added to either console must be added to all three coercion guards.
+- **Test after every style-related change**: switch Beginner→Maestro→Beginner, launch the game each time, and confirm the correct mode actually runs (not just that the picker looks right).
 
 ### `playDirectionRawValue` (`@AppStorage "numbers3.setup.direction"`)
 - Shared by Standard and Speed Run.

@@ -178,7 +178,7 @@ extension MaestroGameplayView {
             launchTileScale = 1
             launchTileOpacity = 1
             // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
-            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
+            currentFretStart = isDescendingPhase ? maxFretOffset : minFretOffset
             withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0
@@ -275,7 +275,7 @@ extension MaestroGameplayView {
             launchTileScale = 1
             launchTileOpacity = 1
             // Pre-position neck off-screen so it isn't briefly visible at its previous fret while the logo fades.
-            currentFretStart = isPhaseDescending ? maxFretOffset : minFretOffset
+            currentFretStart = isDescendingPhase ? maxFretOffset : minFretOffset
             withAnimation(.easeIn(duration: AnimationDurations.launchTransition)) {
                 launchTileScale = 0.1
                 launchTileOpacity = 0

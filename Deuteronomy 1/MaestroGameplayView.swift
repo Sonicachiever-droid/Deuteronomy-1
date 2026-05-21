@@ -37,7 +37,7 @@ struct MaestroGameplayView: View {
 
     var isProgressionLowToHigh: Bool { playProgression == "lowToHigh" }
 
-    var maestroUsesFlats: Bool { isPhaseDescending }
+    var maestroUsesFlats: Bool { isDescendingPhase }
 
     var activeStringOrder: [Int] {
         let base: [Int] = selectedMode == .oneHand ? [1, 2, 3, 4] : [1, 2, 3, 4, 5, 6]

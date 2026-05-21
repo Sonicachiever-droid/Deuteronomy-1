@@ -565,6 +565,12 @@ final class SharedAudioEngine: ObservableObject {
             name: AVAudioSession.interruptionNotification,
             object: AVAudioSession.sharedInstance()
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAudioRouteChange(_:)),
+            name: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance()
+        )
     }
 
     @objc private func handleAudioSessionInterruption(_ notification: Notification) {
@@ -577,18 +583,42 @@ final class SharedAudioEngine: ObservableObject {
             // iOS has taken audio away — sequencer will stop on its own
             break
         case .ended:
-            // iOS is handing audio back — restart the engine and resume if we were playing
+            // iOS is handing audio back — reload instruments (sampler state is lost on engine
+            // restart) then resume playback.
             let shouldResume = (info[AVAudioSessionInterruptionOptionKey] as? UInt)
                 .flatMap { AVAudioSession.InterruptionOptions(rawValue: $0) }
                 .map { $0.contains(.shouldResume) } ?? true
             if shouldResume {
-                startEngineIfNeeded()
-                if currentURL != nil && !sequencer.isPlaying {
-                    resume()
-                }
+                reloadAndResume()
             }
         @unknown default:
             break
+        }
+    }
+
+    @objc private func handleAudioRouteChange(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let reasonValue = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else { return }
+
+        switch reason {
+        case .newDeviceAvailable, .oldDeviceUnavailable:
+            // Output device changed (e.g. Bluetooth connected/disconnected) — the engine may
+            // have stopped and sampler instruments are no longer loaded. Reload everything.
+            reloadAndResume()
+        default:
+            break
+        }
+    }
+
+    /// Restart the engine, reload all sampler instruments, and resume the sequencer if it was playing.
+    /// Called after both audio session interruptions and route changes, since both can unload sampler state.
+    private func reloadAndResume() {
+        startEngineIfNeeded()
+        loadGuitarInstrument(for: toneConfiguration.preset)
+        loadMIDISamplers()
+        if currentURL != nil && !sequencer.isPlaying {
+            resume()
         }
     }
 

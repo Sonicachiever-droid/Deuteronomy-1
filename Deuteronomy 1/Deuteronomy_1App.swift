@@ -88,7 +88,13 @@ struct Deuteronomy_1App: App {
                             playInfiniteRepetitions: $infiniteRepetitions,
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
-                            playLessonStyle: $lessonStyleRawValue,
+                            playLessonStyle: Binding(
+                                get: {
+                                    let v = lessonStyleRawValue
+                                    return (v == "sequential" || v == "chord") ? v : "sequential"
+                                },
+                                set: { lessonStyleRawValue = $0 }
+                            ),
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints,
@@ -104,7 +110,13 @@ struct Deuteronomy_1App: App {
                             playInfiniteRepetitions: $infiniteRepetitions,
                             playDirectionRawValue: $directionRawValue,
                             playEnableHighFrets: $enableHighFrets,
-                            playLessonStyle: $lessonStyleRawValue,
+                            playLessonStyle: Binding(
+                                get: {
+                                    let v = lessonStyleRawValue
+                                    return (v == "sequential" || v == "speedRun") ? v : "sequential"
+                                },
+                                set: { lessonStyleRawValue = $0 }
+                            ),
                             playProgression: $progressionRawValue,
                             walletDollars: $walletPoints,
                             balanceDollars: $balancePoints,
