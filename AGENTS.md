@@ -29,6 +29,47 @@
 - **Audio engine crash on Audio button press**: Fixed — `play(url:)` and `resume()` in SharedAudioEngine.swift were calling `sequencer.start()` without first calling `startEngineIfNeeded()`. After any iOS audio system interruption or overload (HALC_ProxyIOContext), the engine stopped and the next sequencer start crashed with "no output node". Also added AVAudioSession interruption observer to automatically restart and resume after phone calls, Siri, etc.
 - **Chord mode repetition counter resetting upward**: Fixed — three bugs: (1) `applyLivePlayRepetitionChangeIfNeeded` in the timer loop was overwriting `scaleRepetitionsRemaining` every tick in chord mode, cancelling any countdown — fixed by guarding with `lessonStyle != .chord`. (2) `advanceBeginnerScaleStage` was resetting `scaleRepetitionsRemaining` to `effectivePlayRepetitions` unconditionally before decrementing at cycle end, so it always reached zero after one cycle regardless of the repetitions setting — fixed by removing the unconditional reset. (3) `scaleRepetitionsRemaining` was not being reset to `effectivePlayRepetitions` when advancing to a new fret — fixed by adding reset in the `nextFret` branch. One repetition = completing all chord stages through the full cycle (endsCycle). Counter decrements at cycle end; hits zero; fret advances.
 
+## Shared State — Cross-Cutting Concerns
+
+These are the places most likely to cause subtle bugs when adding new features.
+**Check all of these before committing any UI or game-logic change.**
+
+### `lessonStyleRawValue` (`@AppStorage "numbers3.setup.lessonStyle"`)
+- Single key shared by both consoles.
+- Valid Beginner values: `"sequential"`, `"chord"`
+- Valid Maestro values: `"sequential"`, `"speedRun"`
+- `"chord"` is Beginner-only. `"speedRun"` is Maestro-only. `"sequential"` is valid in both.
+- Both Style pickers use a coercing `Binding` (in `Deuteronomy_1App.swift`) that maps an out-of-console value to `"sequential"` on read.
+- **Risk**: any new lesson style added to either console must be added to both coercion guards, or the other console's picker will show no selection.
+- **Test after every style-related change**: switch Beginner→Maestro→Beginner and confirm the Style picker always has one button highlighted.
+
+### `playDirectionRawValue` (`@AppStorage "numbers3.setup.direction"`)
+- Shared by Standard and Speed Run.
+- Speed Run must NEVER write to this key — it uses only the local `isDescendingPhase` flag for traversal.
+- Standard mode writes it at direction reversal boundaries.
+- **Risk**: any refactor of `advanceGame` that removes the `!isSpeedRunMode` guard on the direction write will corrupt the user's stored direction setting after a Speed Run.
+
+### `repetitionsRemainingAtFret` / `playInfiniteRepetitions`
+- Speed Run hardcodes 1 rep per fret. Any path through `startGameFromBeginning`, `advanceGame`, or `restartAtCurrentFret` that resets this must guard on `isSpeedRunMode`.
+- Three locations currently guarded: `startGameFromBeginning`, `advanceGame` (rep decrement branch), `restartAtCurrentFret`.
+
+### `speedRunBestTime` write ordering in `advanceGame`
+- The four keyed `@AppStorage` vars are written **before** `speedRunFinished = true`.
+- The overlay's `isNewBest` computed property (`elapsed > 0 && elapsed == bestTime`) depends on this ordering.
+- **Do not reorder** these two operations.
+
+### `DeveloperConsoleFrame` parameters
+- Added `streakMultiplier` and `speedRunClockText` in v1.4. Any new console display feature needs a parameter here.
+- Called from two sites in `MaestroGameplayView.swift` (portrait and landscape). Both must be kept in sync.
+
+### Picker `disabled` state in PLAY tab
+- Speed Run locks: Repetitions, Starting Fret, Direction.
+- Speed Run does NOT lock: Progression (affects which record slot is written).
+- Beginner Chord locks: Progression.
+- Check the `speedRunLocked` and `progressionLocked` locals in the PLAY tab body whenever adding new pickers.
+
+---
+
 ## Build Commands
 ```
 xcodebuild -project "\`.xcodeproj" -scheme "Deuteronomy 1" -destination "platform=iOS Simulator,id=1FE2357C-1F63-49AC-B9AE-E38A4A98C85A" build
