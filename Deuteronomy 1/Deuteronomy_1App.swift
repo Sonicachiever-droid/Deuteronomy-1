@@ -435,13 +435,22 @@ private struct Deuteronomy1MenuSheet: View {
                                     )
                                 }
                                 if layoutMode == .maestro {
+                                    // Coerce: if stored value is a Beginner-only style (e.g. "chord"),
+                                    // treat it as "sequential" so one button is always highlighted.
+                                    let maestroStyleBinding = Binding<String>(
+                                        get: {
+                                            let v = lessonStyleRawValue
+                                            return (v == "sequential" || v == "speedRun") ? v : "sequential"
+                                        },
+                                        set: { lessonStyleRawValue = $0 }
+                                    )
                                     GoldPickerRow(
                                         label: "Style",
                                         options: [
                                             (label: "Standard", value: "sequential"),
                                             (label: "Speed Run", value: "speedRun")
                                         ],
-                                        selection: $lessonStyleRawValue
+                                        selection: maestroStyleBinding
                                     )
                                 }
 
