@@ -59,10 +59,10 @@ If unsure what was asked, say so. Do not paraphrase instructions in a way that c
 
 ## Next Build Target
 - **Version**: 1.4
-- **Build**: 5
+- **Build**: 1
 - **Status**: Ready for submission
 
-## Completed in 1.4 (Build 5)
+## Completed in 1.4 (Build 1)
 - **BeginnerGameEngine refactor**: Extracted all logic from `extension BeginnerGameplayView` into a standalone `BeginnerGameEngine` class. Uses `@Observable`. 42 unit tests added (`BeginnerGameEngineTests`). View is now a thin coordinator.
 - **Speed Run mode**: New Maestro lesson style. Races the player through every fret 0→max→0 against the clock. Records (best time per High Frets / Progression combo) shown on HOME tab. Scoring, streaks, and multipliers all apply. 35 unit tests added (`SpeedRunTests`).
   - Key invariant: `speedRunBestTime` is written to `@AppStorage` in `advanceGame` *before* `speedRunFinished = true`. The overlay's `isNewBest` computed property (`elapsed > 0 && elapsed == bestTime`) exploits this ordering — do not change sequence.
