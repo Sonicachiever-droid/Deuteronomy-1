@@ -425,13 +425,22 @@ private struct Deuteronomy1MenuSheet: View {
                         case .learn:
                             MenuSection(title: "LESSON SETUP", gold: gold) {
                                 if layoutMode == .beginner {
+                                    // Coerce: if stored value is a Maestro-only style (e.g. "speedRun"),
+                                    // treat it as "sequential" so one button is always highlighted.
+                                    let beginnerStyleBinding = Binding<String>(
+                                        get: {
+                                            let v = lessonStyleRawValue
+                                            return (v == "sequential" || v == "chord") ? v : "sequential"
+                                        },
+                                        set: { lessonStyleRawValue = $0 }
+                                    )
                                     GoldPickerRow(
                                         label: "Style",
                                         options: [
                                             (label: "Sequential", value: "sequential"),
                                             (label: "Chord", value: "chord")
                                         ],
-                                        selection: $lessonStyleRawValue
+                                        selection: beginnerStyleBinding
                                     )
                                 }
                                 if layoutMode == .maestro {
