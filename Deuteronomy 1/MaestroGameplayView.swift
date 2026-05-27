@@ -575,7 +575,7 @@ struct MaestroGameplayView: View {
             .allowsHitTesting(false)
         }
 
-        if showFretboardGuide && !isCodeScreensaverMode {
+        if showFretboardGuide && !isCodeScreensaverMode && !isSpeedRunMode {
             let guideBoxHeight = topStatusOuterHeight * 0.5
             let guideBoxCenterY = windowBottomY - (guideBoxHeight / 2) - 4
             let stringCenters = GuitarStringLayout.stringCenters(containerWidth: size.width, neckWidth: neckWidth)
@@ -985,7 +985,9 @@ struct MaestroGameplayView: View {
                     onSelectMenuOption: { option in
                         handleGameplayMenuSelection(option)
                     },
-                    consoleSkin: consoleSkin
+                    consoleSkin: consoleSkin,
+                    isFretboardDisabled: isSpeedRunMode || isCodeScreensaverMode,
+                    isFretboardActive: showFretboardGuide
                 )
                     .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
                     .padding(.bottom, 12)
@@ -1408,7 +1410,9 @@ struct MaestroGameplayView: View {
                     }
                 },
                 onSelectMenuOption: { option in handleGameplayMenuSelection(option) },
-                consoleSkin: consoleSkin
+                consoleSkin: consoleSkin,
+                isFretboardDisabled: isSpeedRunMode || isCodeScreensaverMode,
+                isFretboardActive: showFretboardGuide
             )
             .scaleEffect(0.8, anchor: .bottom)
             .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))

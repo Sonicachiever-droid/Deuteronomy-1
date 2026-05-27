@@ -11,7 +11,7 @@ Do not run `git add` or `git commit` for any reason until the user says "commit"
 Every change to shared state, shared UI components, or shared keys has side effects in both consoles, both orientations, and all lesson styles. Before touching anything, ask: what else reads or writes this? Walk through the full surface area before and after the change.
 
 ### 3. Before any UI change — walk all pickers in both consoles
-Open the PLAY tab mentally for Beginner and Maestro. Confirm every picker still has a valid selection. Confirm disabled states are correct for every style combination. This must be done before marking a task complete, not after the user finds a problem during testing.
+Open the OPTIONS tab mentally for Beginner and Maestro. Confirm every picker still has a valid selection. Confirm disabled states are correct for every style combination. This must be done before marking a task complete, not after the user finds a problem during testing.
 
 ### 4. Build before AND after every change
 A passing build before confirms the baseline. A passing build after confirms nothing was broken. Do not skip either.
@@ -53,16 +53,16 @@ If unsure what was asked, say so. Do not paraphrase instructions in a way that c
 ---
 
 ## Current Shipped Build
-- **Version**: 1.3
-- **Build**: 6
+- **Version**: 1.4
+- **Build**: 3
 - **Status**: Shipped (frozen)
 
 ## Next Build Target
-- **Version**: 1.4
-- **Build**: 1
+- **Version**: 1.5
+- **Build**: 5
 - **Status**: Ready for submission
 
-## Completed in 1.4 (Build 1)
+## Completed in 1.5 (Build 5)
 - **BeginnerGameEngine refactor**: Extracted all logic from `extension BeginnerGameplayView` into a standalone `BeginnerGameEngine` class. Uses `@Observable`. 42 unit tests added (`BeginnerGameEngineTests`). View is now a thin coordinator.
 - **Speed Run mode**: New Maestro lesson style. Races the player through every fret 0→max→0 against the clock. Records (best time per High Frets / Progression combo) shown on HOME tab. Scoring, streaks, and multipliers all apply. 35 unit tests added (`SpeedRunTests`).
   - Key invariant: `speedRunBestTime` is written to `@AppStorage` in `advanceGame` *before* `speedRunFinished = true`. The overlay's `isNewBest` computed property (`elapsed > 0 && elapsed == bestTime`) exploits this ordering — do not change sequence.
@@ -118,15 +118,15 @@ These are the places most likely to cause subtle bugs when adding new features.
 - Added `streakMultiplier` and `speedRunClockText` in v1.4. Any new console display feature needs a parameter here.
 - Called from two sites in `MaestroGameplayView.swift` (portrait and landscape). Both must be kept in sync.
 
-### Picker `disabled` state in PLAY tab
+### Picker `disabled` state in OPTIONS tab
 - Speed Run locks: Repetitions, Starting Fret, Direction.
 - Speed Run does NOT lock: Progression (affects which record slot is written).
 - Beginner Chord locks: Progression.
-- Check the `speedRunLocked` and `progressionLocked` locals in the PLAY tab body whenever adding new pickers.
+- Check the `speedRunLocked` and `progressionLocked` locals in the OPTIONS tab body whenever adding new pickers.
 
 ---
 
 ## Build Commands
 ```
-xcodebuild -project "\`.xcodeproj" -scheme "Deuteronomy 1" -destination "platform=iOS Simulator,id=1FE2357C-1F63-49AC-B9AE-E38A4A98C85A" build
+xcodebuild -project "Deuteronomy 1.xcodeproj" -scheme "Deuteronomy 1" -destination "platform=iOS Simulator,id=1FE2357C-1F63-49AC-B9AE-E38A4A98C85A" build
 ```

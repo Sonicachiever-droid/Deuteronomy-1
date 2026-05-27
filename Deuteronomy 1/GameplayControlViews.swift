@@ -11,6 +11,8 @@ struct GameplayControlPlateShell: View {
     let onToggleMenu: () -> Void
     let onSelectMenuOption: (GameplayMenuOption) -> Void
     var consoleSkin: ConsoleSkin = .classic
+    var isFretboardDisabled: Bool = false
+    var isFretboardActive: Bool = false
 
     private let menuOptions: [GameplayMenuOption] = [.home, .audio, .guide, .learn]
 
@@ -40,8 +42,8 @@ struct GameplayControlPlateShell: View {
                         .accessibilityLabel(A11y.ControlPlate.autoplay)
                         .accessibilityHint(isAutoplayActive ? A11y.ControlPlate.autoplayHintOn : A11y.ControlPlate.autoplayHintOff)
                         .accessibilityAddTraits(isAutoplayActive ? [.isSelected] : [])
-                    plateButton(title: "FRETBOARD", action: onFretboard)
-                        .disabled(isStartupInputLockActive)
+                    plateButton(title: "FRETBOARD", action: onFretboard, isActive: isFretboardActive, isDisabled: isFretboardDisabled)
+                        .disabled(isStartupInputLockActive || isFretboardDisabled)
                         .accessibilityLabel(A11y.ControlPlate.fretboard)
                         .accessibilityHint(A11y.ControlPlate.fretboardHint)
                     plateButton(title: isMenuExpanded ? "CLOSE" : "MENU", action: onToggleMenu)
@@ -99,7 +101,7 @@ struct GameplayControlPlateShell: View {
         )
     }
 
-    private func plateButton(title: String, action: @escaping () -> Void, isActive: Bool = false) -> some View {
+    private func plateButton(title: String, action: @escaping () -> Void, isActive: Bool = false, isDisabled: Bool = false) -> some View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
@@ -117,6 +119,10 @@ struct GameplayControlPlateShell: View {
                 if isActive {
                     RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
                         .fill(Color.green.opacity(0.9))
+                }
+                if isDisabled {
+                    RoundedRectangle(cornerRadius: UIConstants.controlPlateButtonRadius, style: .continuous)
+                        .fill(Color.gray.opacity(0.55))
                 }
             }
             .frame(maxWidth: .infinity, minHeight: UIConstants.controlPlateButtonHeight, maxHeight: UIConstants.controlPlateButtonHeight)

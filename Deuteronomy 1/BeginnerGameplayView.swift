@@ -598,7 +598,9 @@ struct BeginnerGameplayView: View {
                         onSelectMenuOption: { option in
                             engine.handleGameplayMenuSelection(option)
                         },
-                        consoleSkin: consoleSkin
+                        consoleSkin: consoleSkin,
+                        isFretboardDisabled: isCodeScreensaverMode,
+                        isFretboardActive: showFretboardGuide
                     )
                     .frame(maxWidth: min((proxy.size.width - 24) * 0.88, 370))
                     .padding(.bottom, 12)

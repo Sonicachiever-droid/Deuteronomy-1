@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import AVFoundation
+import GameKit
 
 // MARK: - MaestroGameplayView Logic
 // Extracted from MaestroGameplayView.swift.
@@ -447,6 +448,13 @@ extension MaestroGameplayView {
                                     case (true,  "highToLow"): speedRunBestTime19HighToLow = elapsed
                                     case (true,  "lowToHigh"): speedRunBestTime19LowToHigh = elapsed
                                     default:                   speedRunBestTime12HighToLow = elapsed
+                                    }
+                                    // Submit new best time to Game Center leaderboard (centiseconds, ASC sort).
+                                    let centiseconds = Int(elapsed * 100)
+                                    GKLeaderboard.submitScore(centiseconds, context: 0, player: GKLocalPlayer.local, leaderboardIDs: ["123456789"]) { error in
+                                        #if DEBUG
+                                        if let error { print("[GameCenter] Score submission error: \(error)") }
+                                        #endif
                                     }
                                 }
                                 speedRunFinished = true

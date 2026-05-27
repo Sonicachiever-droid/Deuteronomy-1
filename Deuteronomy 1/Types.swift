@@ -72,7 +72,7 @@ enum GameplayMenuOption: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .home: return "HOME"
-        case .learn: return "PLAY"
+        case .learn: return "OPTIONS"
         case .guide: return "GUIDE"
         case .audio: return "AUDIO"
         }

@@ -1,9 +1,19 @@
 import SwiftUI
 import AVFoundation
 import UIKit
+import GameKit
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     static var orientationLock: UIInterfaceOrientationMask = .portrait
+
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        GKLocalPlayer.local.authenticateHandler = { _, error in
+            #if DEBUG
+            if let error { print("[GameCenter] Authentication error: \(error)") }
+            #endif
+        }
+        return true
+    }
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         return AppDelegate.orientationLock
@@ -232,6 +242,26 @@ private struct MenuTextRow: View {
             .font(.system(size: 16, weight: .medium, design: .monospaced))
             .foregroundColor(.white.opacity(0.85))
             .lineSpacing(5)
+    }
+}
+
+// Label stacked above body — used in the GUIDE tab where values are sentences.
+private struct GuideRow: View {
+    let label: String
+    let value: String
+    private let gold = Color.goldBorderMid
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 12, weight: .black, design: .monospaced))
+                .foregroundColor(gold.opacity(0.75))
+                .tracking(1.5)
+            Text(value)
+                .font(.system(size: 15, weight: .medium, design: .monospaced))
+                .foregroundColor(.white.opacity(0.85))
+                .lineSpacing(4)
+        }
     }
 }
 
@@ -468,7 +498,7 @@ private struct Deuteronomy1MenuSheet: View {
                                     GoldPickerRow(
                                         label: "Style",
                                         options: [
-                                            (label: "Standard", value: "sequential"),
+                                            (label: "Sequential", value: "sequential"),
                                             (label: "Speed Run", value: "speedRun")
                                         ],
                                         selection: maestroStyleBinding
@@ -584,24 +614,66 @@ private struct Deuteronomy1MenuSheet: View {
                             }
 
                         case .guide:
-                            MenuSection(title: "THE GAME", gold: gold) {
-                                MenuTextRow("ReFret drills you on note names across the guitar neck. Each round covers one fret — from open strings (round 0) through fret 19. Complete all strings on a fret to advance.")
+                            MenuSection(title: "WHAT IS THIS?", gold: gold) {
+                                MenuTextRow(GuideContent.whatIsThis)
                             }
-                            MenuSection(title: "CONSOLES", gold: gold) {
-                                MenuTextRow("BEGINNER — Six buttons appear, one per string, each showing a note name. Tap the correct note for the highlighted string. Notes are shown before each round.")
-                                MenuTextRow("MAESTRO — No labels. Recall the correct note name from memory and tap it.")
+                            MenuSection(title: "TWO CONSOLES", gold: gold) {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Text("BEGINNER")
+                                        .font(.system(size: 13, weight: .black, design: .monospaced))
+                                        .foregroundColor(gold)
+                                        .tracking(1)
+                                    MenuTextRow(GuideContent.beginner)
+                                    Text("MAESTRO")
+                                        .font(.system(size: 13, weight: .black, design: .monospaced))
+                                        .foregroundColor(gold)
+                                        .tracking(1)
+                                        .padding(.top, 4)
+                                    MenuTextRow(GuideContent.maestro)
+                                }
                             }
                             MenuSection(title: "LESSON STYLES", gold: gold) {
-                                MenuTextRow("SEQUENTIAL — Notes are revealed string by string before each round. Answer each in order.")
-                                MenuTextRow("CHORD — All string positions are active at once. Answer the highlighted string.")
+                                VStack(alignment: .leading, spacing: 14) {
+                                    GuideRow(label: "SEQUENTIAL", value: GuideContent.LessonStyles.sequential)
+                                    GuideRow(label: "CHORD",      value: GuideContent.LessonStyles.chord)
+                                    GuideRow(label: "SPEED RUN",  value: GuideContent.LessonStyles.speedRun)
+                                }
                             }
-                            MenuSection(title: "TOOLBAR BUTTONS", gold: gold) {
-                                MenuTextRow("FRETBOARD — Shows all note names at the current fret position for reference.")
-                                MenuTextRow("AUTO — Plays correct answers automatically. Use to listen and learn. Tap again to stop.")
-                                MenuTextRow("RESET — Returns to round 0 (open strings) while preserving current settings.")
+                            MenuSection(title: "ROUNDS & FRETS", gold: gold) {
+                                MenuTextRow(GuideContent.roundsAndFrets)
+                            }
+                            MenuSection(title: "DIRECTION", gold: gold) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    MenuTextRow(GuideContent.directionIntro)
+                                    GuideRow(label: "ASCENDING",  value: GuideContent.ascending)
+                                    GuideRow(label: "DESCENDING", value: GuideContent.descending)
+                                    MenuTextRow(GuideContent.accidentals)
+                                }
+                            }
+                            MenuSection(title: "PROGRESSION", gold: gold) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    MenuTextRow(GuideContent.progressionIntro)
+                                    GuideRow(label: "HIGH → LOW", value: GuideContent.highToLow)
+                                    GuideRow(label: "LOW → HIGH", value: GuideContent.lowToHigh)
+                                }
                             }
                             MenuSection(title: "SCORING", gold: gold) {
-                                MenuTextRow("Each correct answer earns $1 (Beginner) or $2 (Maestro). Wrong answers score nothing. Balance carries forward between sessions.")
+                                MenuTextRow(GuideContent.scoring)
+                            }
+                            MenuSection(title: "CONTROL PANEL", gold: gold) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    GuideRow(label: "AUTOPLAY",  value: GuideContent.ControlPanel.autoplay)
+                                    GuideRow(label: "FRETBOARD", value: GuideContent.ControlPanel.fretboard)
+                                    GuideRow(label: "MENU",      value: GuideContent.ControlPanel.menu)
+                                }
+                            }
+                            MenuSection(title: "MENU TABS", gold: gold) {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    GuideRow(label: "HOME",    value: GuideContent.MenuTabs.home)
+                                    GuideRow(label: "OPTIONS", value: GuideContent.MenuTabs.options)
+                                    GuideRow(label: "GUIDE",   value: GuideContent.MenuTabs.guide)
+                                    GuideRow(label: "AUDIO",   value: GuideContent.MenuTabs.audio)
+                                }
                             }
 
                         case .audio:
