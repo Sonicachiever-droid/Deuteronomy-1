@@ -899,13 +899,13 @@ struct MaestroGameplayView: View {
                         .animation(.easeOut(duration: 0.08), value: beatLightFlashOn)
                         .allowsHitTesting(false)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
+                    MiniTVFrame(text: guitarNoteDisplayText(leftChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: guitarNoteContainsAccidental(leftChoiceNote), consoleSkin: consoleSkin)
                         .position(x: leftAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)
                         .opacity(codenameNemoEnabled ? 0 : introScale)
 
-                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, consoleSkin: consoleSkin)
+                    MiniTVFrame(text: guitarNoteDisplayText(rightChoiceNote), width: lowerScreenWidth, height: lowerScreenHeight, fontScale: 1.0, isDarkScreen: guitarNoteContainsAccidental(rightChoiceNote), consoleSkin: consoleSkin)
                         .position(x: rightAnswerCenterX, y: noteChoiceY)
                         .allowsHitTesting(false)
                         .accessibilityHidden(false)

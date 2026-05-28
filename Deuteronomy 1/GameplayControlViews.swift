@@ -140,9 +140,7 @@ struct GameplayControlPlateShell: View {
             )
             .overlay(
                 Text(title)
-                    .font(.system(size: 10.35, weight: .regular, design: .monospaced))
-                    .fontWidth(.compressed)
-                    .kerning(0.8)
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundStyle(consoleSkin == .tweed ? Color.black : Color.black.opacity(0.92))
             )
         }

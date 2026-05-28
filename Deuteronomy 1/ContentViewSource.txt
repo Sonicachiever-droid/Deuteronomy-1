@@ -123,7 +123,6 @@ struct DeveloperCodeRunnerView: View {
 
     private struct RenderState {
         let renderedLines: [String]
-        let firstLineIndex: Int   // original index of renderedLines[0], for stable color assignment
         let lineHeight: CGFloat
         let offsetY: CGFloat
     }
@@ -166,7 +165,7 @@ struct DeveloperCodeRunnerView: View {
                     ForEach(Array(state.renderedLines.enumerated()), id: \.offset) { index, line in
                         Text(line)
                             .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(color(for: state.firstLineIndex + index))
+                            .foregroundStyle(color(for: index))
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, minHeight: state.lineHeight, maxHeight: state.lineHeight, alignment: .leading)
                     }
@@ -203,33 +202,22 @@ struct DeveloperCodeRunnerView: View {
             Self.lines[activeLine].count
         )
 
+        var renderedLines: [String] = []
+        if activeLine > 0 {
+            renderedLines.append(contentsOf: Self.lines.prefix(activeLine))
+        }
         let activeText = String(Self.lines[activeLine].prefix(max(typedChars, 0)))
         let showCursor = cycleElapsed < Self.typingDuration && elapsedIntoLine <= typingWindow
-
-        // Build full line list up to and including the active line
-        var allLines: [String] = []
-        if activeLine > 0 {
-            allLines.append(contentsOf: Self.lines.prefix(activeLine))
-        }
-        allLines.append(activeText + (showCursor ? "▋" : ""))
-
-        // Window to only the lines that can fit in the viewport plus a small buffer,
-        // so we never render hundreds of off-screen lines.
-        let maxVisible = max(Int(ceil(viewportHeight / Self.lineHeight)) + 2, 10)
-        let firstLineIndex = max(allLines.count - maxVisible, 0)
-        let renderedLines = Array(allLines.suffix(maxVisible))
+        renderedLines.append(activeText + (showCursor ? "▋" : ""))
 
         let typedProgress = min(max((elapsedIntoLine / currentLineDuration), 0), 1)
         let contentOffset = (CGFloat(activeLine) + CGFloat(typedProgress)) * Self.lineHeight
         let baselineY = viewportHeight - Self.lineHeight
-        // Compensate offsetY for the lines we dropped from the front of the array
-        let windowOffset = CGFloat(firstLineIndex) * Self.lineHeight
 
         return RenderState(
             renderedLines: renderedLines,
-            firstLineIndex: firstLineIndex,
             lineHeight: Self.lineHeight,
-            offsetY: baselineY - contentOffset + windowOffset
+            offsetY: baselineY - contentOffset
         )
     }
 

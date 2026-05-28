@@ -53,14 +53,20 @@ If unsure what was asked, say so. Do not paraphrase instructions in a way that c
 ---
 
 ## Current Shipped Build
-- **Version**: 1.4
-- **Build**: 3
+- **Version**: 1.5
+- **Build**: 5
 - **Status**: Shipped (frozen)
 
 ## Next Build Target
-- **Version**: 1.5
-- **Build**: 5
-- **Status**: Ready for submission
+- **Version**: 1.6
+- **Build**: 1
+- **Status**: In progress
+
+## Completed in 1.6 (Build 1)
+- **Maestro portrait accidental screens**: `MaestroGameplayView.swift` portrait answer choice `MiniTVFrame` calls were missing `isDarkScreen: guitarNoteContainsAccidental(...)`. Added to both `leftChoiceNote` and `rightChoiceNote`. Landscape already had this correctly. Beginner unaffected.
+- **Control panel button text weight**: `GameplayControlViews.swift` `plateButton` text changed from `size: 10.35 / .regular / .compressed / kerning 0.8` to `size: 12 / .bold` to match the transport buttons (START/PAUSE/RESET) in both consoles. Applies to AUTOPLAY, FRETBOARD, MENU, and all menu tab buttons.
+- **Screensaver source file**: Added `ContentViewSource.txt` (copy of `DeveloperViews.swift`, 734 lines) to the app bundle. `DeveloperCodeRunnerView` now loads this reliably on all builds including TestFlight/App Store. Previously the `#filePath` fallback failed in release builds, causing the 5-6 line repeat.
+- **Screensaver viewport windowing**: `DeveloperCodeRunnerView` now renders only the lines visible in the viewport (~57) rather than all lines typed so far. Prevents unbounded `ForEach` growth during the 17-minute cycle. Visual output and cursor behavior unchanged. Color assignment uses original line index for stability.
 
 ## Completed in 1.5 (Build 5)
 - **BeginnerGameEngine refactor**: Extracted all logic from `extension BeginnerGameplayView` into a standalone `BeginnerGameEngine` class. Uses `@Observable`. 42 unit tests added (`BeginnerGameEngineTests`). View is now a thin coordinator.
