@@ -1420,15 +1420,15 @@ struct MaestroGameplayView: View {
         }
         .overlay {
             // Speed Run result overlay — shown when the run completes.
-            // Tapping anywhere dismisses it and resets for a new run.
             if isSpeedRunMode && speedRunFinished {
-                SpeedRunResultOverlay(
+                SpeedRunEndView(
                     elapsed: speedRunElapsed,
                     bestTime: speedRunBestTime,
-                    consoleSkin: consoleSkin
+                    consoleSkin: consoleSkin,
+                    onRunAgain: handleMaestroResetButton,
+                    onLeaderboard: {},
+                    onMenu: { onMenuSelection?(.home) }
                 )
-                .contentShape(Rectangle())
-                .onTapGesture { handleMaestroResetButton() }
                 .zIndex(200)
             }
         }

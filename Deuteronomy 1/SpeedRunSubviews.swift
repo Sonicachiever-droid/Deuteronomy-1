@@ -133,3 +133,194 @@ func speedRunIsNewBest(elapsed: TimeInterval, bestTime: Double) -> Bool {
     guard elapsed > 0 else { return false }
     return bestTime == 0 || elapsed < bestTime
 }
+
+// MARK: - SpeedRunEndView
+// New end-of-speed-run screen with celebration, final time, Game Center
+// reference, and explicit next actions. Wired into MaestroGameplayView.
+
+struct SpeedRunEndView: View {
+    let elapsed: TimeInterval
+    let bestTime: Double
+    let consoleSkin: ConsoleSkin
+    let onRunAgain: () -> Void
+    let onLeaderboard: () -> Void
+    let onMenu: () -> Void
+
+    private var isNewBest: Bool { elapsed > 0 && elapsed == bestTime }
+    private var gold: Color { Color.goldBorderMid }
+    private var screenBg: Color { Color.screenDark }
+
+    @State private var showContent = false
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.72)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Text("SPEED RUN ENDED!")
+                    .font(.system(size: 13, weight: .black, design: .monospaced))
+                    .foregroundStyle(gold)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(screenBg)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(gold.opacity(0.6), lineWidth: 1)
+                            )
+                    )
+
+                Spacer().frame(height: 20)
+
+                if isNewBest {
+                    Text("NEW BEST!")
+                        .font(.system(size: 22, weight: .black, design: .monospaced))
+                        .foregroundStyle(Color.feedbackGreenFill)
+                        .padding(.bottom, 8)
+                        .scaleEffect(showContent ? 1.0 : 1.4)
+                        .opacity(showContent ? 1.0 : 0.0)
+                }
+
+                Text(formatSpeedRunTime(elapsed))
+                    .font(.system(size: 48, weight: .black, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+
+                Spacer().frame(height: 14)
+
+                Text("Submitted to Game Center")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(gold.opacity(0.75))
+
+                Spacer().frame(height: 28)
+
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        actionButton(title: "RUN AGAIN", action: onRunAgain)
+                        actionButton(title: "LEADERBOARD", action: onLeaderboard)
+                    }
+                    actionButton(title: "MAIN MENU", action: onMenu)
+                }
+            }
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(screenBg.opacity(0.96))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.goldBorderLight, Color.goldBorderDark],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 1.5
+                            )
+                    )
+            )
+            .padding(.horizontal, 32)
+            .scaleEffect(showContent ? 1.0 : 0.85)
+            .opacity(showContent ? 1.0 : 0.0)
+            .animation(.spring(response: 0.55, dampingFraction: 0.7), value: showContent)
+
+            StarBurst(active: showContent)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
+                showContent = true
+            }
+        }
+    }
+
+    private func actionButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .black, design: .monospaced))
+                .foregroundColor(.black)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 16)
+                .frame(minWidth: 100)
+                .background(Color.goldBorderMid)
+                .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct StarBurst: View {
+    let active: Bool
+
+    var body: some View {
+        GeometryReader { _ in
+            ZStack {
+                ForEach(0..<6) { i in
+                    StarPiece(index: i, active: active)
+                }
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+    }
+}
+
+private struct StarPiece: View {
+    let index: Int
+    let active: Bool
+
+    @State private var scale: CGFloat = 0
+    @State private var rotation: Double = 0
+
+    private var color: Color {
+        [Color.goldBorderMid, Color.feedbackGreenFill, Color.white, Color.goldBorderLight][index % 4]
+    }
+
+    private var angle: Angle {
+        .degrees(Double(index) * 60)
+    }
+
+    var body: some View {
+        Image(systemName: "star.fill")
+            .font(.system(size: [12, 10, 14, 11, 13, 10][index % 6]))
+            .foregroundStyle(color)
+            .offset(x: cos(angle.radians) * 90, y: sin(angle.radians) * 90)
+            .scaleEffect(scale)
+            .rotationEffect(.degrees(rotation))
+            .opacity(scale)
+            .onAppear {
+                scale = 0
+                rotation = Double.random(in: -45...45)
+                withAnimation(
+                    .spring(response: 0.6, dampingFraction: 0.5)
+                    .delay(Double(index) * 0.08)
+                ) {
+                    scale = 1
+                    rotation += Double.random(in: 45...90)
+                }
+            }
+    }
+}
+
+#Preview("New Best") {
+    SpeedRunEndView(
+        elapsed: 127.43,
+        bestTime: 127.43,
+        consoleSkin: .classic,
+        onRunAgain: {},
+        onLeaderboard: {},
+        onMenu: {}
+    )
+}
+
+#Preview("Not New Best") {
+    SpeedRunEndView(
+        elapsed: 132.10,
+        bestTime: 127.43,
+        consoleSkin: .classic,
+        onRunAgain: {},
+        onLeaderboard: {},
+        onMenu: {}
+    )
+    .background(Color.black)
+}
