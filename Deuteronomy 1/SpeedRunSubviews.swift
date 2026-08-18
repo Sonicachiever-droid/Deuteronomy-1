@@ -1,4 +1,32 @@
 import SwiftUI
+import GameKit
+
+// MARK: - GameCenterLeaderboardView
+// Presents the native Game Center leaderboard UI for a given leaderboard ID.
+
+struct GameCenterLeaderboardView: UIViewControllerRepresentable {
+    let leaderboardID: String
+
+    func makeUIViewController(context: Context) -> GKGameCenterViewController {
+        let controller = GKGameCenterViewController(
+            leaderboardID: leaderboardID,
+            playerScope: .global,
+            timeScope: .allTime
+        )
+        controller.gameCenterDelegate = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: GKGameCenterViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, GKGameCenterControllerDelegate {
+        func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+            gameCenterViewController.dismiss(animated: true)
+        }
+    }
+}
 
 // MARK: - SpeedRunResultOverlay
 // Shown full-screen when a Speed Run completes. Displays elapsed time, new-best

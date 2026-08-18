@@ -125,6 +125,7 @@ struct MaestroGameplayView: View {
     @State var speedRunStartDate: Date? = nil
     @State var speedRunElapsed: TimeInterval = 0
     @State var speedRunFinished: Bool = false
+    @State var showSpeedRunLeaderboard: Bool = false
     @AppStorage("deuteronomy1.speedRun.bestTime.12.highToLow") var speedRunBestTime12HighToLow: Double = 0
     @AppStorage("deuteronomy1.speedRun.bestTime.12.lowToHigh") var speedRunBestTime12LowToHigh: Double = 0
     @AppStorage("deuteronomy1.speedRun.bestTime.19.highToLow") var speedRunBestTime19HighToLow: Double = 0
@@ -213,6 +214,9 @@ struct MaestroGameplayView: View {
             } else {
                 portraitBody(proxy: proxy)
             }
+        }
+        .sheet(isPresented: $showSpeedRunLeaderboard) {
+            GameCenterLeaderboardView(leaderboardID: "123456789")
         }
         .onAppear {
             if assetToNutBottomDelta == nil {
@@ -1032,7 +1036,7 @@ struct MaestroGameplayView: View {
                         bestTime: speedRunBestTime,
                         consoleSkin: consoleSkin,
                         onRunAgain: handleMaestroResetButton,
-                        onLeaderboard: {},
+                        onLeaderboard: { showSpeedRunLeaderboard = true },
                         onMenu: { onMenuSelection?(.home) }
                     )
                     .zIndex(200)
@@ -1440,7 +1444,7 @@ struct MaestroGameplayView: View {
                     bestTime: speedRunBestTime,
                     consoleSkin: consoleSkin,
                     onRunAgain: handleMaestroResetButton,
-                    onLeaderboard: {},
+                    onLeaderboard: { showSpeedRunLeaderboard = true },
                     onMenu: { onMenuSelection?(.home) }
                 )
                 .zIndex(200)
