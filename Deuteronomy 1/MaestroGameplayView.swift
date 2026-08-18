@@ -1024,6 +1024,20 @@ struct MaestroGameplayView: View {
                 .opacity(codenameNemoEnabled ? 0 : initialGameplayDimOpacity)
             }
             .offset(y: globalContentShiftY)
+            .overlay {
+                // Speed Run result overlay — shown when the run completes.
+                if isSpeedRunMode && speedRunFinished {
+                    SpeedRunEndView(
+                        elapsed: speedRunElapsed,
+                        bestTime: speedRunBestTime,
+                        consoleSkin: consoleSkin,
+                        onRunAgain: handleMaestroResetButton,
+                        onLeaderboard: {},
+                        onMenu: { onMenuSelection?(.home) }
+                    )
+                    .zIndex(200)
+                }
+            }
     }
 
     // MARK: - Landscape Body (Exodus 11 layout + portrait fret behavior)
