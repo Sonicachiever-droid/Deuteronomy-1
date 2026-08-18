@@ -1037,7 +1037,7 @@ struct MaestroGameplayView: View {
                         consoleSkin: consoleSkin,
                         onRunAgain: handleMaestroResetButton,
                         onLeaderboard: { showSpeedRunLeaderboard = true },
-                        onMenu: { onMenuSelection?(.home) }
+                        onMenu: handleMaestroResetButton
                     )
                     .zIndex(200)
                 }
@@ -1445,7 +1445,7 @@ struct MaestroGameplayView: View {
                     consoleSkin: consoleSkin,
                     onRunAgain: handleMaestroResetButton,
                     onLeaderboard: { showSpeedRunLeaderboard = true },
-                    onMenu: { onMenuSelection?(.home) }
+                    onMenu: handleMaestroResetButton
                 )
                 .zIndex(200)
             }
