@@ -229,7 +229,7 @@ struct SpeedRunEndView: View {
                         actionButton(title: "RUN AGAIN", action: onRunAgain)
                         actionButton(title: "LEADERBOARD", action: onLeaderboard)
                     }
-                    actionButton(title: "MAIN MENU", action: onMenu)
+                    actionButton(title: "EXIT", action: onMenu)
                 }
             }
             .padding(32)
